@@ -1,5 +1,5 @@
 # 02 — Product & Build Plan
-### KSA Denial-Management SaaS ("working name: *Rafd* — Arabic رفض, 'denial')
+### KSA Denial-Management SaaS ("working name: *Taweed* — Arabic تعويض, 'reimbursement')
 
 > Companion to `01_market_and_gtm.md`. This file is the engineering/product design.
 > Sections **4 (KSA region), 5 (NPHIES path), 6 (compliance), 10 (hosting cost)** carry researched, cited facts. The rest is design.
@@ -129,7 +129,7 @@ flowchart TD
 
 ### Repo structure (monorepo)
 ```
-rafd/
+taweed/
 ├─ apps/
 │  ├─ web/                 # Next.js app (EN/AR RTL), dashboards, upload UI
 │  └─ api/                 # API/BFF (if split from web)

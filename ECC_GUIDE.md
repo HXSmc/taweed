@@ -1,6 +1,6 @@
-# ECC Guide — Rafd (KSA Denial-Management SaaS)
+# ECC Guide — Taweed (KSA Denial-Management SaaS)
 
-> How the **Everything Claude Code (ECC)** harness is wired into this project, and which of its 92 commands / 67 agents / 86 skills actually matter for building Rafd.
+> How the **Everything Claude Code (ECC)** harness is wired into this project, and which of its 92 commands / 67 agents / 86 skills actually matter for building Taweed.
 > Companion to `02_product_build_plan.md`. ECC is a build accelerator — it does **not** know FHIR/NPHIES; that domain knowledge comes from the OSS stack in build-plan §12.3.
 
 ---
@@ -26,9 +26,9 @@ The same 86 skills are ALSO at user scope (`~/.claude/skills/`) for every future
 
 ---
 
-## 1. Commands that matter for building Rafd
+## 1. Commands that matter for building Taweed
 
-Rafd stack = **Next.js + TypeScript + Postgres + Prisma-style ORM + rules engine + PHI/PDPL**. Focus on these; ignore the rest (§4).
+Taweed stack = **Next.js + TypeScript + Postgres + Prisma-style ORM + rules engine + PHI/PDPL**. Focus on these; ignore the rest (§4).
 
 ### Planning & spec (start here each feature)
 | Command | Use |
@@ -64,7 +64,7 @@ Rafd stack = **Next.js + TypeScript + Postgres + Prisma-style ORM + rules engine
 | skill `prisma-patterns` | If using Prisma — schema, transactions, and the sharp traps (updateMany returns count, migrate dev resets DB, serverless conn exhaustion). |
 | skill `database-migrations` | Zero-downtime migrations, rollbacks across Prisma/Drizzle/Kysely. |
 
-### Security & compliance (Rafd's hardest requirement)
+### Security & compliance (Taweed's hardest requirement)
 | Command / Skill | Use |
 |---|---|
 | skill `healthcare-phi-compliance` | **Primary.** PHI/PII classification, access control, audit trails, encryption, leak vectors. Map to your PDPL spine. |
@@ -109,7 +109,7 @@ Invoke via natural language ("have the healthcare-reviewer audit this") or they'
 |---|---|
 | `architect` / `code-architect` | System design, module boundaries — use for the monorepo + data-tier design. |
 | `planner` | Feature implementation planning. |
-| `healthcare-reviewer` | PHI/clinical-data review — Rafd-specific. |
+| `healthcare-reviewer` | PHI/clinical-data review — Taweed-specific. |
 | `security-reviewer` | Vulnerability analysis. |
 | `database-reviewer` | Schema/query/RLS review. |
 | `react-reviewer` · `typescript-reviewer` | Frontend + TS review. |
@@ -122,7 +122,7 @@ Invoke via natural language ("have the healthcare-reviewer audit this") or they'
 
 ---
 
-## 3. Suggested workflow for Rafd
+## 3. Suggested workflow for Taweed
 
 ```
 Per feature (e.g. FHIR parser, rules engine, appeal generator):
@@ -140,7 +140,7 @@ Bootstrap the whole thing once with `/orch-build-mvp` pointed at `02_product_bui
 
 ---
 
-## 4. Ignore for Rafd (wrong stack)
+## 4. Ignore for Taweed (wrong stack)
 
 Installed but irrelevant to a Next.js/TS/Postgres build — don't reach for these:
 

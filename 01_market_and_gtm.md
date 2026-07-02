@@ -1,5 +1,5 @@
 # 01 — Market & Go-To-Market
-### KSA Denial-Management SaaS for mid-market private clinic groups ("working name: *Rafd*")
+### KSA Denial-Management SaaS for mid-market private clinic groups ("working name: *Taweed*")
 
 > Companion: `02_product_build_plan.md`.
 > **Citation rule:** non-obvious external claims cited inline `[source](URL)`, primary sources preferred. Unproven items marked **UNVERIFIED (H/M/L)** = confidence the claim is true.
