@@ -1,6 +1,8 @@
 # Research Findings — 2026-07-01
 ### Deep-research pass on `HUMAN_CONFIRMATION_NEEDED.md` (103 agents, 20 sources, 68 claims, 25 adversarially verified)
 
+> **🆕 2026-07-02 third pass (double-check + contact hunt, ~100 agents):** see the appendix at the bottom of this file. Headline: **all remaining ❌/🔒 verdicts STAND**; new finds = `DMO@chi.gov.sa` data-request channel, `onboarding@chi.gov.sa` vendor contact, B1/B2 docs are **NPHIES-Academy-gated** (not secret), the SAR-3B figure's academic echo still traces only to Glance Care (as **3.5–4.5B**), and derived total private claims ≈ **SAR 37.5B/yr** (CHI 2023).
+
 > Method: fan-out web search → fetch → **3-vote adversarial verification** (need 2/3 to kill) → synthesis.
 > Synthesis + the last verification/vendor slice **failed on a session limit** (reset 6:10pm Asia/Riyadh). Gaps flagged **⏳ RE-RUN** below.
 > Legend: ✅ CONFIRMED (primary) · 🟥 UNCONFIRMED-NO-PRIMARY-SOURCE · 🆕 new vs brief · ⏳ needs re-run.
@@ -96,3 +98,64 @@ Matches the brief. A denial-management vendor's tier depends on transaction volu
 
 ### Sources (primary)
 CHI 2023 · CHI 2020 · CHI report index · waseel.com/connect · PMC11342027 · PMC10727934 · PubMed 38111668 · ScienceDirect S1319016423003894 · Amazon AWS KSA press · Microsoft Azure KSA · Oracle me-riyadh-1 · King & Spalding PDPL.
+
+---
+
+## 🆕 Appendix — Third pass, 2026-07-02 (double-check + contact-email hunt)
+
+> Method: same harness (fan-out search → fetch → 3-vote adversarial verify → synthesize). First run died on a session limit mid-verify (~60 votes lost); claims below carry **direct quotes from primary URLs**; votes marked where completed. Re-run launched after 6am reset.
+
+### Part 1 — remaining claims re-tested: ALL VERDICTS STAND
+
+**A1 (national denial rate) — still ❌, evidence now stronger:**
+- CHI open-data **Statistics & Indicators** page ([chi.gov.sa/en/open-data](https://www.chi.gov.sa/en/open-data/Pages/Indicators-and-statistics.aspx)) lists only beneficiary stats + "Number of Claims in Nafis" — **no denial/rejection figures** (✅ 3-0).
+- CHI Annual Report 2023: rejections appear only **qualitatively** ("Rejected Committee", rejection-reduction workshops) — no %.
+- Peer-reviewed **Al-Kahtani, Nov 2025** (*Insurance Markets & Companies*, [businessperspectives.org PDF](https://www.businessperspectives.org/images/pdf/applications/publishing/templates/article/assets/23345/IMC_2025_02_Al-Kahtani.pdf)): "empirical data on claim rejection rates in Saudi Arabia is sparse" in the literature.
+- 🆕 Lever: CHI runs a formal **Data Sharing Request** channel — **Data Management Office, `DMO@chi.gov.sa`** ([access-data page](https://www.chi.gov.sa/en/open-data/Pages/access-data.aspx), ✅ 3-0).
+
+**A2 (national denied-SAR value) — still ❌, vendor-trace academically corroborated:**
+- The Al-Kahtani paper cites the figure as **SAR 3.5–4.5B** — and its ONLY source (ref 22) is the **Glance Care 2022 vendor knowledge-center page**. The academic echo is NOT independent; do not cite it as such.
+- 🆕 Derived context now usable: CHI 2023 states medicines = SAR 6B = **16% of total claims value → total private claims ≈ SAR 37.5B/yr** (cite as "derived from CHI 2023").
+
+**B1/B2 (PKI + sandbox/conformance) — still 🔒, but the gate is LOCATED:**
+- [portal.nphies.sa/ig/conformance.html](https://portal.nphies.sa/ig/conformance.html): FHIR profile SHALL/SHOULD only — **zero** PKI/sandbox/test-procedure content.
+- Docs are **Academy-gated, not secret**: [v-academy course 11 "System Vendors Onboarding Course"](https://v-academy.nphies.sa/courses/11/system-vendors-onboarding-course?lang=en) — completing it is **a requirement for linking with the platform** (mandatory vendor-certification track confirmed); [academy course 6 "Registering in nphies Platform"](https://academy.nphies.sa/courses/6/registering-in-nphies-platform?lang=en) includes downloadable **"nphies Registration Guide V1.3"**. Detailed steps sit behind course completion + unified-portal registration.
+- ⚠️ Reported (nphies.sa FAQ content): system vendors must maintain an **official office inside Saudi Arabia** — verify on call.
+- nphies.chi.gov.sa (vendor-cert program site) unreachable this pass (ERR_EMPTY_RESPONSE) — retry later.
+
+**Waseel-scope — still unconfirmed (unchanged):** [waseel.com/connect](https://waseel.com/connect/) remains silent on carrying a vendor's PKI/conformance; tiers re-confirmed (SAR 1,499 / 1,999 / Enterprise).
+
+### Part 2 — contact roster (all from primary sources)
+
+| Target | Email | Phone | Source |
+|---|---|---|---|
+| CHI data requests | **DMO@chi.gov.sa** | 19977 / 920001177 | chi.gov.sa access-data page (✅ 3-0) |
+| CHI general | info@chi.gov.sa | 19977 | chi.gov.sa Contact page + 2023 report back matter |
+| NPHIES onboarding / vendor cert | **onboarding@chi.gov.sa** | 920033808 | NPHIES Academy FAQ (academy.nphies.sa/page/7) |
+| NPHIES onboarding (variant) | onboarding@cchi.gov.sa | 920004299 | CHI public-provider onboarding PDF (chi.gov.sa/Rules/article11) |
+| NPHIES platform support | support@nphies.sa | 920033808 | nphies.sa |
+| CHI billing standards / unlisted codes | cchi-bs@cchi.gov.sa | — | CHI onboarding PDF |
+| Waseel business | **bdr@waseel.com** | 9200 120 99 | waseel.com/contact-us |
+| Waseel care / regional sales | customercare@ · abbodmo@ (Jed) · salamahna@ (Kho) · motabberib@ (Riy) @waseel.com | WhatsApp 011 510 0517 | waseel.com/contact-us |
+| Oracle KSA | contact@oracle.com (+ sales form/chat) | — | oracle.com/sa/corporate/contact |
+| HL7 Saudi Arabia | **none public** — still "in establishment" (HL7 Confluence 2024); route via onboarding@chi.gov.sa | — | confluence.hl7.org ADDC |
+
+> Copy-paste-ready outreach emails (EN + AR, per-recipient language recommendation): see `HUMAN_CONFIRMATION_NEEDED.md` → "✉️ Emails to send".
+
+### 🆕 Third-pass verification completed after 6am reset (run 2 of 2026-07-02) — 14 claims formally verified
+- **A1/A2 absence in CHI sources: now 3-0 VERIFIED** (open-data page, annual-reports index, 2023 report qualitative-only, complaints-stats news page).
+- **🆕 CHI Annual Report 2024** (published 02/06/2025, 70 pp, **Arabic-only**) — downloaded + full-text-searched locally this session (normalized Arabic search): **zero occurrences of رفض/مرفوض**; KPIs = "% paid claims" (المطالبات المدفوعة), % Saudi-Billing-System claims, NPHIES alert counts. **2020 + 2023 + 2024 all read → all silent on denial rate/value.**
+- **Al-Kahtani Nov 2025 paper (3-0):** BOTH the "20–25% SME-hospital rejection rate" AND the "SAR 3.5–4.5B annual loss" cite **only Glance Care (2022)** — no official source. Paper also projects KSA healthcare market → SAR 141B by 2030 (same vendor cite).
+- **Denominator (3-0):** CHI 2023 medicines SAR 6B = 16% of claims value → **total ≈ SAR 37.5B**; a ~3B denied value ⇒ **~8% of claims value** (sanity-scale only, still unsourced).
+- **info@chi.gov.sa** printed on CHI 2023 report back cover (p.192) — 3-0.
+- ⏳ **Still pending re-verify (session limit hit again, resets 11am Riyadh):** ~27 B-series votes (conformance-page silence, Academy gating, onboarding email provenance) + final synthesis. Claims all carry direct primary quotes; resume queued.
+
+### ✅ Third-pass FINAL synthesis (run 3, completed 2026-07-02 ~11:30 Riyadh after limit reset) — workflow fully done
+All 5 target claims formally synthesized, **high confidence, votes mostly 3-0 unanimous**:
+- **A1 — no national denial rate exists in ANY accessible primary source** (6 independent sources checked incl. CHI TPA/claims-management-company regulation — also silent). ⚠️ New nuance: CHI 2023 carries a **"91.36% Paid claims" KPI** — a CHI *performance metric*, NOT a denial-rate complement; never derive "8.64% denied" from it.
+- **A2 — vendor-only, final.** Al-Kahtani (2025) cites CHI + Insurance Authority elsewhere for other stats yet cites **only Glance Care 2022** for the 3.5–4.5B figure — vendor provenance is deliberate-looking, not accidental. SAR 37.5B denominator arithmetic verified (6B/0.16); "value of claims" undefined (submitted vs paid) → the ~8% ratio is indicative only.
+- **B1 — PKI issuance NOT in any freely accessible source** (conformance page: 0 hits for PKI/certificat*/X.509/TLS/mTLS across 164KB HTML, grep-verified twice; Academy public pages mention only training-completion certificates).
+- **B2 — gated, not public.** The **System Vendors Onboarding Course is a 39-lesson mandatory program**; "Registering in nphies Platform" (course 6) is the **mandatory registration course** with **13 attachment PDFs incl. "nphies Registration Guide V1.3 - English" + "nphies Readiness & Activation Guide V1.2 - English"** — verified live; downloads unlock after **free Academy registration** (anonymous sees titles only). ⚠️ 2 refuter votes correctly flagged: conformance-page silence alone doesn't *prove* B2 is unpublished — the synthesis verdict rests on the Academy gating, which held 3-0.
+- **Waseel-scope — no official document answers it** (conformance page grep: 0 hits for waseel/clearinghouse/intermediar*). Still a Waseel + NPHIES call question.
+- **Contacts (synthesis-graded):** `info@chi.gov.sa` (multiple primary CHI sources, high) · `onboarding@chi.gov.sa` + 920033808 (official Academy Contact-Us page + FAQ, medium-high — one refuter found it ALSO on academy.nphies.sa/page/6 اتصل-بنا) · Waseel/Oracle emails verified separately in-session from their own contact pages (see roster above).
+**Run stats:** 3 runs × 99 agents, ~4.3M subagent tokens total, ~880 tool calls. Runs 1–2 died on session limits mid-verify; run 3 resumed from journal cache (search/fetch/extract replayed free) and completed everything.
