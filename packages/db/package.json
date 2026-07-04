@@ -14,6 +14,9 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
+    "@taweed/fhir": "workspace:*",
+    "@taweed/normalizer": "workspace:*",
+    "@taweed/synthetic-fhir": "workspace:*",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10"
   }

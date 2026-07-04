@@ -46,6 +46,15 @@ importers:
         specifier: ^8.22.0
         version: 8.22.0
     devDependencies:
+      '@taweed/fhir':
+        specifier: workspace:*
+        version: link:../fhir
+      '@taweed/normalizer':
+        specifier: workspace:*
+        version: link:../normalizer
+      '@taweed/synthetic-fhir':
+        specifier: workspace:*
+        version: link:../../test/synthetic-fhir
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
