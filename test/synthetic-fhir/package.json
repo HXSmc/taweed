@@ -1,0 +1,13 @@
+{
+  "name": "@taweed/synthetic-fhir",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@medplum/fhirtypes": "^5.1.23",
+    "@taweed/fhir": "workspace:*",
+    "@taweed/shared": "workspace:*"
+  }
+}
