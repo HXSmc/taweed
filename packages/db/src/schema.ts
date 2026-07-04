@@ -1,0 +1,236 @@
+import {
+  boolean,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+// Canonical relational model (build-plan §7). Property names are snake_case to
+// match the *_Row types in @taweed/shared, so normalizer output inserts
+// directly. `tenant_id` is on every tenant-scoped table; RLS is applied in the
+// hand-written migration drizzle/0001_rls.sql (ENABLE + FORCE + policy).
+//
+// Money is numeric(14,2) (returned as string by drizzle). Date-ish FHIR values
+// (submitted_at, received_at) are kept as text to preserve the source string
+// exactly this pass; analytics can cast later.
+
+const money = (name: string) => numeric(name, { precision: 14, scale: 2 });
+
+/** Root of tenant isolation — has no tenant_id itself. */
+export const tenants = pgTable("tenants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+});
+
+export const branches = pgTable("branches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  name: text("name").notNull(),
+  city: text("city"),
+  license: text("license"),
+});
+
+export const providers = pgTable("providers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  name: text("name").notNull(),
+  specialty: text("specialty"),
+  nphies_practitioner_id: text("nphies_practitioner_id"),
+});
+
+export const payers = pgTable("payers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  name: text("name").notNull(),
+  nphies_payer_id: text("nphies_payer_id"),
+  type: text("type"),
+});
+
+/** PHI — minimized; encryption + access audit handled in later phases. */
+export const patients = pgTable("patients", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  pseudonym: text("pseudonym").notNull(),
+  birth_year: integer("birth_year"),
+  gender: text("gender"),
+});
+
+export const claims = pgTable("claims", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  branch_id: uuid("branch_id")
+    .notNull()
+    .references(() => branches.id),
+  provider_id: uuid("provider_id")
+    .notNull()
+    .references(() => providers.id),
+  payer_id: uuid("payer_id")
+    .notNull()
+    .references(() => payers.id),
+  patient_id: uuid("patient_id")
+    .notNull()
+    .references(() => patients.id),
+  nphies_claim_id: text("nphies_claim_id"),
+  status: text("status").notNull(),
+  submitted_at: text("submitted_at"),
+  total_amount: money("total_amount").notNull(),
+  currency: text("currency").notNull(),
+});
+
+export const claimLines = pgTable("claim_lines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  claim_id: uuid("claim_id")
+    .notNull()
+    .references(() => claims.id),
+  line_number: integer("line_number").notNull(),
+  sbs_code: text("sbs_code"),
+  icd10am_code: text("icd10am_code"),
+  qty: integer("qty").notNull(),
+  unit_price: money("unit_price").notNull(),
+  line_amount: money("line_amount").notNull(),
+});
+
+export const claimResponses = pgTable("claim_responses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  claim_id: uuid("claim_id")
+    .notNull()
+    .references(() => claims.id),
+  nphies_response_id: text("nphies_response_id"),
+  outcome: text("outcome").notNull(),
+  adjudicated_amount: money("adjudicated_amount"),
+  received_at: text("received_at"),
+});
+
+/** Exploded analytics row: one per denied line × reason. */
+export const denials = pgTable("denials", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  claim_line_id: uuid("claim_line_id")
+    .notNull()
+    .references(() => claimLines.id),
+  reason_code: text("reason_code").notNull(),
+  reason_text: text("reason_text"),
+  category: text("category"),
+  denied_amount: money("denied_amount").notNull(),
+});
+
+// --- Tables-only for later phases (no logic this pass) ---
+
+export const rules = pgTable("rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  scope: text("scope").notNull(),
+  condition: jsonb("condition"),
+  severity: text("severity"),
+  message_en: text("message_en"),
+  message_ar: text("message_ar"),
+  version: integer("version").notNull().default(1),
+  active: boolean("active").notNull().default(true),
+});
+
+export const scrubResults = pgTable("scrub_results", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  claim_id: uuid("claim_id")
+    .notNull()
+    .references(() => claims.id),
+  rule_id: uuid("rule_id")
+    .notNull()
+    .references(() => rules.id),
+  risk_score: numeric("risk_score", { precision: 5, scale: 2 }),
+  flagged_at: timestamp("flagged_at", { withTimezone: true }).defaultNow(),
+});
+
+export const appealTemplates = pgTable("appeal_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  denial_category: text("denial_category"),
+  payer_id: uuid("payer_id").references(() => payers.id),
+  body_en: text("body_en"),
+  body_ar: text("body_ar"),
+  required_docs: jsonb("required_docs"),
+});
+
+export const appeals = pgTable("appeals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  denial_id: uuid("denial_id")
+    .notNull()
+    .references(() => denials.id),
+  template_id: uuid("template_id").references(() => appealTemplates.id),
+  status: text("status").notNull().default("draft"),
+  recovered_amount: money("recovered_amount"),
+  generated_at: timestamp("generated_at", { withTimezone: true }),
+  submitted_at: timestamp("submitted_at", { withTimezone: true }),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  actor: text("actor"),
+  action: text("action").notNull(),
+  entity: text("entity"),
+  entity_id: text("entity_id"),
+  at: timestamp("at", { withTimezone: true }).defaultNow(),
+  ip: text("ip"),
+});
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  role: text("role").notNull(),
+  locale: text("locale").notNull().default("en"),
+  email: text("email"),
+});
+
+/** Tenant-scoped tables (everything except `tenants`) — RLS applies to these. */
+export const TENANT_SCOPED_TABLES = [
+  "branches",
+  "providers",
+  "payers",
+  "patients",
+  "claims",
+  "claim_lines",
+  "claim_responses",
+  "denials",
+  "rules",
+  "scrub_results",
+  "appeal_templates",
+  "appeals",
+  "audit_logs",
+  "users",
+] as const;
