@@ -1,6 +1,9 @@
 -- Row-Level Security for tenant isolation (build-plan §3, §6).
--- FORCE so even the table owner is subject to RLS — the integration test
--- connects as the owner and still must not see other tenants rows.
+-- The app connects as a non-owner, NOBYPASSRLS role (taweed_app), so RLS binds
+-- to its queries; the integration test proves isolation via that role.
+-- FORCE is defense-in-depth: it also subjects the table OWNER to RLS (a
+-- non-superuser owner would otherwise bypass it). Superusers always bypass RLS,
+-- which is why migrations (superuser) and app queries (taweed_app) are split.
 -- app.tenant_id is set per-transaction by withTenant() (missing_ok=true so an
 -- unset GUC yields NULL -> no rows, never an error).
 

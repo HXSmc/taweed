@@ -8,7 +8,10 @@ import type { DenialReasonCode } from "./denial-codes.js";
 // reason (build-plan §3, §7).
 
 export type ClaimStatus = "active" | "cancelled" | "draft" | "entered-in-error";
-export type ClaimOutcome = "complete" | "error" | "partial";
+// Full FHIR R4 ClaimResponse.outcome value set — "queued" (interim, not yet
+// adjudicated) must be representable so it is never silently coerced to a
+// terminal state by downstream denial-rate math.
+export type ClaimOutcome = "queued" | "complete" | "error" | "partial";
 
 /** Root of tenant isolation. */
 export interface TenantRow {

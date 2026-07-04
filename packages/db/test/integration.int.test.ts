@@ -29,9 +29,9 @@ const ctxA: NormalizeContext = {
 };
 
 async function seedTenant(id: string, name: string): Promise<void> {
-  const client = await pool.connect();
+  // tenants has no RLS and the app role has no access to it — seed via admin.
+  const client = await adminPool.connect();
   try {
-    // tenants has no RLS (it is the isolation root) — insert directly.
     await client.query("INSERT INTO tenants (id, name) VALUES ($1, $2)", [
       id,
       name,

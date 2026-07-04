@@ -36,7 +36,12 @@ export async function withTenant<T>(
     await client.query("COMMIT");
     return result;
   } catch (error) {
-    await client.query("ROLLBACK");
+    // Never let a failing ROLLBACK mask the original error that triggered it.
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // swallow rollback failure; the original error below is the real cause
+    }
     throw error;
   } finally {
     client.release();
