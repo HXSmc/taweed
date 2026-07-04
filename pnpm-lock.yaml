@@ -73,6 +73,10 @@ importers:
       '@taweed/shared':
         specifier: workspace:*
         version: link:../shared
+    devDependencies:
+      '@taweed/synthetic-fhir':
+        specifier: workspace:*
+        version: link:../../test/synthetic-fhir
 
   packages/rules-engine: {}
 

@@ -9,5 +9,8 @@
     "@medplum/fhirtypes": "^5.1.23",
     "@taweed/fhir": "workspace:*",
     "@taweed/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@taweed/synthetic-fhir": "workspace:*"
   }
 }
