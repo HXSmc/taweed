@@ -18,6 +18,11 @@ export default defineWorkspace([
       name: "integration",
       include: ["packages/*/test/**/*.int.test.ts"],
       exclude: ["**/node_modules/**"],
+      // Each integration file destructively migrates the SAME Postgres, so files
+      // must run one at a time — parallel workers would DROP SCHEMA under each
+      // other. A single fork runs every integration file sequentially.
+      pool: "forks",
+      poolOptions: { forks: { singleFork: true } },
     },
   },
 ]);

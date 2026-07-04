@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Taweed design tokens — the single source of truth (design-brief §4.2 color,
+ * §4.3 type, §4.4 radius/spacing/shadow, §5 RTL). No component hardcodes a hex;
+ * everything references a token. Cool graphite neutrals (~265 hue), one locked
+ * cobalt accent, money as a reserved data-viz scale (never decorative).
+ */
+:root {
+  /* Neutrals — light (paper) */
+  --bg: #fbfbfc;
+  --surface-1: #ffffff;
+  --surface-2: #f4f4f6;
+  --surface-3: #ececef;
+  --hairline: #e4e4e9;
+  --hairline-strong: #d2d2d9;
+  --text: #111114;
+  --text-muted: #5b5b64;
+  --text-faint: #8a8a93;
+
+  /* Brand accent (locked) — Taweed Cobalt */
+  --accent: #2557e4;
+  --accent-hover: #1e49c8;
+  --accent-fg: #ffffff;
+  --accent-subtle: #eaf0fe;
+
+  /* Money semantics — reserved, never decorative */
+  --at-risk: #c2410c;
+  --at-risk-soft: #d98324;
+  --at-risk-bg: #fbede4;
+  --at-risk-text: #9a3208;
+  --recovered: #0e9f6e;
+  --recovered-soft: #14b8a6;
+  --recovered-bg: #e6f6f0;
+  --recovered-text: #07734f;
+  --money-neutral: #64748b;
+
+  /* Categorical chart rotation (semantics-safe: no amber/emerald, no AI-purple) */
+  --cat-1: #2557e4;
+  --cat-2: #64748b;
+  --cat-3: #0891b2;
+  --cat-4: #be185d;
+  --cat-5: #4338ca;
+
+  /* Radius scale (one, locked) */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 12px;
+  --r-full: 9999px;
+
+  /* Elevation — ink-tinted, overlays only */
+  --shadow-sm: 0 1px 2px oklch(14% 0.02 265 / 0.06);
+  --shadow-md: 0 4px 12px oklch(14% 0.02 265 / 0.1);
+  --shadow-lg: 0 12px 32px oklch(14% 0.02 265 / 0.14);
+
+  /* Type — font faces are CSS variables so the pairing is swappable in one place.
+   * Geist / Geist Mono come from the bundled `geist` package (no build-time fetch).
+   * Cabinet Grotesk (display) and IBM Plex Sans Arabic are named first with graceful
+   * fallbacks; drop the real webfonts in via @font-face when assets are confirmed. */
+  --font-ui: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cabinet Grotesk", var(--font-geist-sans), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  --font-arabic: "IBM Plex Sans Arabic", "Geeza Pro", "Noto Sans Arabic", var(--font-geist-sans), sans-serif;
+}
+
+/* Dark (ink) — driven by the `.dark` class on <html> (theme toggle), which also
+ * reflects the system default on first load. */
+.dark {
+  --bg: #0a0a0b;
+  --surface-1: #131316;
+  --surface-2: #1b1b1f;
+  --surface-3: #242429;
+  --hairline: #2a2a30;
+  --hairline-strong: #37373f;
+  --text: #f4f4f6;
+  --text-muted: #a1a1ac;
+  --text-faint: #6e6e78;
+  --accent-subtle: #16233f;
+  --at-risk-bg: #2a1710;
+  --recovered-bg: #0c2620;
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.5);
+  --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.55);
+}
+
+@layer base {
+  * {
+    border-color: var(--hairline);
+  }
+  html {
+    font-family: var(--font-ui);
+  }
+  html[lang="ar"] {
+    --font-ui: var(--font-arabic);
+    --font-display: var(--font-arabic);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    color: var(--text);
+  }
+}
+
+@layer utilities {
+  /* Tabular-figure rule (locked): all money/table/code content. LTR-isolated so
+   * Latin numerals stay correct inside Arabic sentences (§5). Figures keep their
+   * element's own font (Geist in tables, display face in hero). */
+  .num {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .num-hero {
+    font-family: var(--font-display);
+  }
+  .mono {
+    font-family: var(--font-mono);
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+  /* Tight 2px cobalt focus ring, no offset halo (design-brief §4.1). */
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  }
+}
+
+/* Reduced motion: collapse every motion (count-up + reveals) to an instant final
+ * state (design-brief §4.5, §13). One global guard. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
