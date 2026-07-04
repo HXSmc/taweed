@@ -15,3 +15,10 @@ apps/web/next-env.d.ts
 # env
 .env
 .env.local
+
+# macOS
+.DS_Store
+
+# private planning artifacts (kept local, not published)
+docs/superpowers/
+docs/NEXT_STEP_PROMPT.md
