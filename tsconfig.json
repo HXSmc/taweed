@@ -9,8 +9,7 @@
     "packages/*/test/**/*.ts",
     "test/synthetic-fhir/src/**/*.ts",
     "test/synthetic-fhir/test/**/*.ts",
-    "vitest.workspace.ts",
-    "eslint.config.js"
+    "vitest.workspace.ts"
   ],
   "exclude": ["**/node_modules/**", "**/dist/**", "apps/**"]
 }

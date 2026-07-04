@@ -16,7 +16,6 @@ import {
 
 const CURRENCY = "SAR";
 const SBS_SYSTEM = "http://taweed.local/fhir/CodeSystem/sbs-placeholder";
-const ICD_SYSTEM = "http://taweed.local/fhir/CodeSystem/icd10am-placeholder";
 const ADJUDICATION_SYSTEM =
   "http://taweed.local/fhir/CodeSystem/adjudication-placeholder";
 const DENIAL_SYSTEM = "http://taweed.local/fhir/CodeSystem/denial-placeholder";
