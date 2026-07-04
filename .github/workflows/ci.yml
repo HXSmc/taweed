@@ -1,0 +1,54 @@
+name: CI
+
+# CREATE-phase CI skeleton (build-plan §8 wk1): lint + typecheck + test on push.
+# The KSA-region cloud env (in-Kingdom infra + NPHIES creds) is deferred to the
+# DEPLOY phase — see docs/02_product_build_plan.md §4/§10.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  integration:
+    name: Integration (parse → normalize → insert + RLS)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: taweed
+          POSTGRES_PASSWORD: taweed
+          POSTGRES_DB: taweed
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taweed -d taweed"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgres://taweed:taweed@localhost:5432/taweed
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:int
