@@ -5,6 +5,8 @@ import {
   moneyScope,
   reasonPareto,
   trend,
+  getLatestBaseline,
+  type BaselineSnapshot,
   type DimRate,
   type MoneyScope,
   type ReasonRow,
@@ -181,12 +183,18 @@ export interface RecoveryBundle {
   medianDays: number;
   sharePct: number;
   shareSar: string;
+  // EXECUTE B8: the onboarding baseline, so the ROI band can show progress
+  // against a fixed at-risk starting point (null if none captured yet).
+  baseline: BaselineSnapshot | null;
   rows: AppealPipelineRow[];
 }
 
 export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
   return withSession(tenantId, async (db) => {
-    const money = await moneyScope(db);
+    const [money, baseline] = await Promise.all([
+      moneyScope(db),
+      getLatestBaseline(db),
+    ]);
     const rows = await db.execute<{
       appeal_id: string;
       claim_id: string;
@@ -238,7 +246,7 @@ export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
     const sharePct = 0.12; // recovery-share model (design-brief §12); DEPLOY: per-contract
     const shareSar = (recovered * sharePct).toFixed(2);
 
-    return { money, winRate, medianDays, sharePct, shareSar, rows: list };
+    return { money, winRate, medianDays, sharePct, shareSar, baseline, rows: list };
   });
 }
 

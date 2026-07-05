@@ -14,6 +14,7 @@ import { parseBundle } from "@taweed/fhir";
 import { normalize, type NormalizeContext } from "@taweed/normalizer";
 import { generateBundle, SCENARIOS } from "@taweed/synthetic-fhir";
 import { SCRUBBER_RULES } from "@taweed/rules-engine";
+import { captureBaseline } from "@taweed/analytics";
 import { newId, type NormalizedClaim } from "@taweed/shared";
 import {
   getPool,
@@ -293,6 +294,9 @@ async function main(): Promise<void> {
       for (const nc of claims) await insertNormalizedClaim(db, nc);
       totalRules += await seedRules(db, t.id);
       await seedUsers(db, t);
+      // EXECUTE B8: capture the onboarding baseline BEFORE any appeals exist, so
+      // it snapshots the true starting at-risk figure (build-plan §11).
+      await captureBaseline(db, "seed onboarding baseline");
       return claims;
     });
 

@@ -27,6 +27,11 @@ function parseHalalas(value: string): number {
   return negative ? -total : total;
 }
 
+/** Parse a money string into signed integer halalas (exact, no float). */
+export function moneyToHalalas(value: string): number {
+  return parseHalalas(value);
+}
+
 /** Format signed integer halalas back to a 2-decimal SAR string. */
 export function toSar(halalas: number): string {
   const rounded = Math.round(halalas);

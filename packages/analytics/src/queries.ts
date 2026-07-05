@@ -3,6 +3,7 @@ import type { Database } from "@taweed/db";
 import { denialLabel, isDenialReasonCode } from "@taweed/shared";
 import type {
   AnalyticsFilters,
+  BaselineSnapshot,
   DimRate,
   MoneyScope,
   ReasonRow,
@@ -230,6 +231,69 @@ export async function moneyScope(
     deniedCount: row?.denied_count ?? 0,
     claimCount: row?.claim_count ?? 0,
   };
+}
+
+type BaselineRow = {
+  id: string;
+  captured_at: string;
+  at_risk_sar: string;
+  denied_count: number;
+  claim_count: number;
+  note: string | null;
+};
+
+function toBaseline(r: BaselineRow): BaselineSnapshot {
+  return {
+    id: r.id,
+    capturedAt: r.captured_at,
+    atRiskSar: r.at_risk_sar,
+    deniedCount: r.denied_count,
+    claimCount: r.claim_count,
+    note: r.note,
+  };
+}
+
+/**
+ * EXECUTE B8 — snapshot the current at-risk figure as the recovery baseline
+ * (build-plan §11). Runs inside withTenant; tenant_id comes from the RLS GUC so a
+ * baseline can never be misattributed. Returns the row it wrote.
+ */
+export async function captureBaseline(
+  db: Database,
+  note?: string,
+): Promise<BaselineSnapshot> {
+  const m = await moneyScope(db);
+  const res = await db.execute<BaselineRow>(sql`
+    INSERT INTO recovery_baselines
+      (tenant_id, baseline_at_risk_sar, baseline_denied_count, baseline_claim_count, note)
+    VALUES (
+      current_setting('app.tenant_id')::uuid,
+      ${m.atRiskSar}::numeric, ${m.deniedCount}, ${m.claimCount}, ${note ?? null})
+    RETURNING id,
+              captured_at,
+              baseline_at_risk_sar::numeric(14,2)::text AS at_risk_sar,
+              baseline_denied_count AS denied_count,
+              baseline_claim_count AS claim_count,
+              note`);
+  return toBaseline(res.rows[0]!);
+}
+
+/** Latest recovery baseline for the tenant, or null if none captured yet. */
+export async function getLatestBaseline(
+  db: Database,
+): Promise<BaselineSnapshot | null> {
+  const res = await db.execute<BaselineRow>(sql`
+    SELECT id,
+           captured_at,
+           baseline_at_risk_sar::numeric(14,2)::text AS at_risk_sar,
+           baseline_denied_count AS denied_count,
+           baseline_claim_count AS claim_count,
+           note
+      FROM recovery_baselines
+     ORDER BY captured_at DESC
+     LIMIT 1`);
+  const row = res.rows[0];
+  return row ? toBaseline(row) : null;
 }
 
 type TrendRow = {

@@ -203,6 +203,23 @@ export const appeals = pgTable("appeals", {
   submitted_at: timestamp("submitted_at", { withTimezone: true }),
 });
 
+/**
+ * EXECUTE B8 — recovery baseline snapshot captured at onboarding (build-plan §11).
+ * Fixes the at-risk denominator so recovered-SAR ROI is measured against a stable
+ * starting point, not a moving target, keeping attribution conservative and honest.
+ */
+export const recoveryBaselines = pgTable("recovery_baselines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  captured_at: timestamp("captured_at", { withTimezone: true }).defaultNow(),
+  baseline_at_risk_sar: money("baseline_at_risk_sar").notNull(),
+  baseline_denied_count: integer("baseline_denied_count").notNull(),
+  baseline_claim_count: integer("baseline_claim_count").notNull(),
+  note: text("note"),
+});
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenant_id: uuid("tenant_id")
@@ -240,6 +257,7 @@ export const TENANT_SCOPED_TABLES = [
   "scrub_results",
   "appeal_templates",
   "appeals",
+  "recovery_baselines",
   "audit_logs",
   "users",
 ] as const;
