@@ -16,6 +16,13 @@ apps/web/next-env.d.ts
 .env
 .env.local
 
+# terraform / secrets (never commit state, vars, or key material)
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.pem
+*.key
+
 # macOS
 .DS_Store
 
@@ -23,4 +30,5 @@ apps/web/next-env.d.ts
 docs/superpowers/
 docs/NEXT_STEP_PROMPT.md
 docs/STEP_SUMMARY.md
+docs/blocker.md
 docs/screenshots/

@@ -6,6 +6,7 @@ import {
   type ClaimResponseRow,
   type ClaimRow,
   type ClaimStatus,
+  type DataOrigin,
   type DenialRow,
   type NormalizedClaim,
 } from "@taweed/shared";
@@ -16,6 +17,24 @@ export interface NormalizeContext {
   providerId: string;
   payerId: string;
   patientId: string;
+  // EXECUTE B5: 'production' locks out the synthetic scrubber projection downstream.
+  dataOrigin: DataOrigin;
+}
+
+/**
+ * Pre-authorization signal (EXECUTE B5). A preAuthRef on any insurance line means
+ * a pre-auth exists; insurance present with none means it does not; NO insurance
+ * array at all means the source carries no signal → null → rule goes unevaluable.
+ */
+function preauthPresent(claim: Claim): boolean | null {
+  if (!claim.insurance || claim.insurance.length === 0) return null;
+  return claim.insurance.some((ins) => (ins.preAuthRef?.length ?? 0) > 0);
+}
+
+/** Supporting-documentation signal (EXECUTE B5): supportingInfo present → boolean, absent → null. */
+function hasDocumentation(claim: Claim): boolean | null {
+  if (claim.supportingInfo === undefined) return null;
+  return claim.supportingInfo.length > 0;
 }
 
 const DEFAULT_CURRENCY = "SAR";
@@ -57,6 +76,13 @@ export function normalize(
     submitted_at: claim.created ?? null,
     total_amount: moneyStr(claim.total?.value),
     currency: claim.total?.currency ?? DEFAULT_CURRENCY,
+    data_origin: ctx.dataOrigin,
+    preauth_present: preauthPresent(claim),
+    // Eligibility outcome is a CoverageEligibilityResponse, not on the Claim, and
+    // duplicate detection is cross-claim — both resolved at ingest, null here.
+    eligibility_verified: null,
+    is_duplicate: null,
+    has_documentation: hasDocumentation(claim),
   };
 
   // line_number → row, so denials can resolve their line by itemSequence.

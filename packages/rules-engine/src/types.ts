@@ -6,22 +6,27 @@
 export interface ClaimFacts {
   claimId: string;
   payerId: string;
-  hasPreAuth: boolean;
+  // null when the real claim carries no pre-auth signal at all (EXECUTE B5).
+  // A rule that reads it then goes "unevaluable", never a silent pass.
+  hasPreAuth: boolean | null;
   patientGender: "male" | "female" | "other" | "unknown";
   // null when age is genuinely unknown — a rule that needs it must go
   // "unevaluable", never silently pass (design-brief §8.3).
   patientAgeYears: number | null;
   serviceDate: string;
-  policyActive: boolean;
+  // null when eligibility was never verified for this claim (EXECUTE B5).
+  policyActive: boolean | null;
   sbsCodes: string[];
   // per-SBS billed units, e.g. { "SBS-0002": 6 }.
   lineUnits: Record<string, number>;
   totalAmount: number;
-  // Added facts the rules need — all present (boolean, never null) so the only
-  // "unevaluable" trigger is patientAgeYears being null (needs-data, not false pass).
-  isDuplicate: boolean;
-  hasDiagnosis: boolean;
-  hasDocumentation: boolean;
+  // EXECUTE B5: real-column signals. null = the signal is genuinely absent on the
+  // real claim, so any rule that reads it goes "unevaluable" (needs data, not a
+  // false pass, design-brief §8.3). The synthetic projection always supplies a
+  // boolean; the real projection passes null through when the column is null.
+  isDuplicate: boolean | null;
+  hasDiagnosis: boolean; // derived from claim lines (icd10am present) — always known
+  hasDocumentation: boolean | null;
 }
 
 export type Severity = "info" | "warn" | "high";

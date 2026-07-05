@@ -80,6 +80,10 @@ export async function ingestBundle(formData: FormData): Promise<IngestResult> {
     providerId: dims.provider.id,
     payerId: dims.payer.id,
     patientId: dims.patient.id,
+    // In-app uploads are demo/synthetic in this pass. TODO(nphies-creds): real
+    // partner ingest (BLK-1) tags 'production', which routes the scrubber to the
+    // real-column projection and hard-blocks the synthetic one (EXECUTE B5).
+    dataOrigin: "synthetic",
   };
 
   let parsed;

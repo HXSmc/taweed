@@ -162,6 +162,7 @@ function buildClaims(
         providerId: dims.providers[i % dims.providers.length]!.id,
         payerId: dims.payers[(seed + s) % dims.payers.length]!.id,
         patientId: dims.patients[i % dims.patients.length]!.id,
+        dataOrigin: "synthetic",
       };
       const normalized = normalize(pairs[0]!, ctx);
       // Guarantee nphies_claim_id uniqueness per tenant (idempotency index).
@@ -184,6 +185,7 @@ function buildClaims(
         providerId: dims.providers[i % dims.providers.length]!.id,
         payerId: dims.payers[(seed + k) % dims.payers.length]!.id,
         patientId: dims.patients[i % dims.patients.length]!.id,
+        dataOrigin: "synthetic",
       };
       const normalized = normalize(pairs[0]!, ctx);
       normalized.claim.nphies_claim_id = `clean-x-${seed}-${k}`;

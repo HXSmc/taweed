@@ -52,6 +52,11 @@ export interface PatientRow {
   gender: "male" | "female" | "other" | "unknown" | null;
 }
 
+/** How a claim entered the system. Gates the synthetic scrubber projection:
+ *  synthetic hash-derived facts may NEVER run against a production-tagged claim
+ *  (EXECUTE B5 hard gate). */
+export type DataOrigin = "synthetic" | "production";
+
 export interface ClaimRow {
   id: string;
   tenant_id: string;
@@ -64,6 +69,14 @@ export interface ClaimRow {
   submitted_at: string | null;
   total_amount: string;
   currency: string;
+  // EXECUTE B5 — origin tag + real scrubber-signal columns. The signal columns are
+  // null when the source data does not carry that signal, so the scrubber marks
+  // the dependent rule "unevaluable" instead of silently passing (design-brief §8.3).
+  data_origin: DataOrigin;
+  preauth_present: boolean | null; // a pre-authorization reference exists
+  eligibility_verified: boolean | null; // policy confirmed active on service date
+  is_duplicate: boolean | null; // resolved against prior claims at ingest
+  has_documentation: boolean | null; // supporting documentation attached
 }
 
 export interface ClaimLineRow {

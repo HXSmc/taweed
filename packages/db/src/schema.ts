@@ -8,6 +8,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { DataOrigin } from "@taweed/shared";
 
 // Canonical relational model (build-plan §7). Property names are snake_case to
 // match the *_Row types in @taweed/shared, so normalizer output inserts
@@ -89,6 +90,14 @@ export const claims = pgTable("claims", {
   submitted_at: text("submitted_at"),
   total_amount: money("total_amount").notNull(),
   currency: text("currency").notNull(),
+  // EXECUTE B5 — origin tag (gates the synthetic scrubber projection) + real
+  // scrubber-signal columns. Signals are nullable: null = the source carries no
+  // such signal, so the rule that reads it goes "unevaluable" (design-brief §8.3).
+  data_origin: text("data_origin").notNull().default("synthetic").$type<DataOrigin>(),
+  preauth_present: boolean("preauth_present"),
+  eligibility_verified: boolean("eligibility_verified"),
+  is_duplicate: boolean("is_duplicate"),
+  has_documentation: boolean("has_documentation"),
 });
 
 export const claimLines = pgTable("claim_lines", {

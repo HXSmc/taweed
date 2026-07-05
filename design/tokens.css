@@ -1,0 +1,167 @@
+/* ============================================================
+   Taweed — tokens.css
+   Single source of design tokens (brief §4.2, §4.3, §4.4, §4.5).
+   No component hardcodes hex; everything references these vars.
+   ============================================================ */
+
+/* ---------- Fonts (font-swap per locale, brief §5) ---------- */
+:root {
+  --font-display: "Cabinet Grotesk", "Geist", system-ui, sans-serif;
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist", ui-monospace, monospace;
+  --font-ar: "IBM Plex Sans Arabic", "Geist", system-ui, sans-serif;
+}
+html[lang="en"] { --font-ui: "Geist", system-ui, sans-serif; --font-display: "Cabinet Grotesk", "Geist", sans-serif; }
+html[lang="ar"] { --font-ui: "IBM Plex Sans Arabic", system-ui, sans-serif; --font-display: "IBM Plex Sans Arabic", sans-serif; }
+
+/* ---------- Type scale (brief §4.3) ---------- */
+:root {
+  --fs-hero: clamp(44px, 3vw + 28px, 72px);
+  --fs-display: 40px;
+  --fs-h1: 28px;
+  --fs-h2: 20px;
+  --fs-h3: 16px;
+  --fs-body: 14px;
+  --fs-small: 12.5px;
+  --fs-mono: 13px;
+}
+
+/* ---------- Radius scale (one, locked, brief §4.4) ---------- */
+:root {
+  --r-sm: 4px;   /* badges, chips, code pills */
+  --r-md: 6px;   /* buttons, inputs, selects (default control) */
+  --r-lg: 8px;   /* cards, panels, modals */
+  --r-xl: 12px;  /* hero stat banners only */
+  --r-full: 9999px;
+}
+
+/* ---------- Spacing (4px base grid, brief §4.4) ---------- */
+:root {
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px;
+}
+
+/* ---------- Ink-tinted shadows (overlays only, brief §4.4) ---------- */
+:root {
+  --shadow-sm: 0 1px 2px oklch(14% 0.02 265 / 0.06);
+  --shadow-md: 0 4px 12px oklch(14% 0.02 265 / 0.10);
+  --shadow-lg: 0 12px 32px oklch(14% 0.02 265 / 0.14);
+}
+
+/* ---------- Neutrals + brand + money (LIGHT, brief §4.2) ---------- */
+:root {
+  --bg: #FBFBFC;
+  --surface-1: #FFFFFF;
+  --surface-2: #F4F4F6;
+  --surface-3: #ECECEF;
+  --hairline: #E4E4E9;
+  --hairline-strong: #D2D2D9;
+  --text: #111114;
+  --text-muted: #5B5B64;
+  --text-faint: #8A8A93;
+
+  --accent: #2557E4;
+  --accent-hover: #1E49C8;
+  --accent-fg: #FFFFFF;
+  --accent-subtle: #EAF0FE;
+
+  --at-risk: #C2410C;
+  --at-risk-soft: #D98324;
+  --at-risk-bg: #FBEDE4;
+  --recovered: #0E9F6E;
+  --recovered-soft: #14B8A6;
+  --recovered-bg: #E6F6F0;
+  --at-risk-text: #9A3208;
+  --recovered-text: #07734F;
+  --money-neutral: #64748B;
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  color-scheme: light;
+}
+
+/* ---------- Dark overrides (brief §4.2) ---------- */
+html.dark {
+  --bg: #0A0A0B;
+  --surface-1: #131316;
+  --surface-2: #1B1B1F;
+  --surface-3: #242429;
+  --hairline: #2A2A30;
+  --hairline-strong: #37373F;
+  --text: #F4F4F6;
+  --text-muted: #A1A1AC;
+  --text-faint: #6E6E78;
+
+  --accent: #2557E4;
+  --accent-hover: #4C79FF;
+  --accent-fg: #FFFFFF;
+  --accent-subtle: #16233F;
+
+  --at-risk: #E86A2C;
+  --at-risk-soft: #D98324;
+  --at-risk-bg: #2A1710;
+  --recovered: #14B88A;
+  --recovered-soft: #14B8A6;
+  --recovered-bg: #0C2620;
+  --at-risk-text: #F0A277;
+  --recovered-text: #58D6AC;
+  --money-neutral: #8A98AD;
+
+  /* deepen overlay shadows + top hairline highlight in dark */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.45);
+  --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.50);
+  --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.55);
+  color-scheme: dark;
+}
+
+/* ---------- Base reset ---------- */
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+
+/* ---------- Numeric utilities (brief §4.3, §5) ---------- */
+/* .num sets tabular + LTR isolation ONLY; figures keep their element's own font */
+.num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* money-hero figures: display face + tabular */
+.num--hero {
+  font-family: var(--font-display);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* codes: SBS/CPT/CARC/claim IDs, LTR mono */
+code, .mono {
+  font-family: var(--font-mono);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ---------- Reveal keyframe (brief §4.5) ---------- */
+@keyframes tw-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Reduced motion: collapse every motion to instant ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
