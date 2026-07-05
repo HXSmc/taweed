@@ -3,10 +3,14 @@ import { test, expect } from "@playwright/test";
 // EXECUTE A1 — smoke: the app boots and locale routing mirrors EN/AR. Runs without
 // a session (login is the unauthenticated entry). Deterministic waits only.
 
-test("unauthenticated root redirects into the localized login", async ({ page }) => {
+test("unauthenticated root shows the marketing landing with the number-as-hero", async ({
+  page,
+}) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/(ar|en)\/login/);
-  await expect(page.locator("h1, h2").first()).toBeVisible();
+  await expect(page).toHaveURL(/\/(ar|en)$/);
+  // The at-risk hero figure is present; a sign-in path exists.
+  await expect(page.getByText(/SAR/).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /sign in|تسجيل الدخول/i })).toBeVisible();
 });
 
 test("Arabic surface renders RTL", async ({ page }) => {
