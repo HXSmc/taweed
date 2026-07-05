@@ -15,7 +15,9 @@
 ## 1. Current standpoint (from `docs/handoff.md`, 2026-07-05)
 
 - CREATE ✅ · IMPLEMENT ✅ · **EXECUTE buildable pass ✅ merged to `main`** (B5–B8, C swaps, A1/A4).
-  206 unit tests green, build green. `back-up` = pre-EXECUTE tip.
+- **AI-0 + AI-1 ✅ merged to `main` (2026-07-05):** `@taweed/ai` foundation + the bilingual scrub-flag
+  explainer — PHI-free, additive, fail-closed OFF by default. 266 unit + 6 integration green, coverage 92%,
+  build green. Next in this plan = §9 PROMPT 2 (AI-3 + AI-2). `back-up` = pre-AI-phase `main` tip.
 - Still pending from the old track: **A2 first-run corridor, A3 free-audit report** (UI tail, synthetic
   data) and the **real-data headline** (gated BLK-1 partner data / BLK-2 real codes / BLK-9 SME sign-off).
 - **Zero AI dependencies in the lockfile today.** `packages/appeals` explicitly "NO LLM by design".
@@ -197,8 +199,8 @@ money numbers) are never replaced, only augmented.
 
 | Phase | Builds | Gates | Est |
 |---|---|---|---|
-| **AI-0 Foundation** | `@taweed/ai` package, `llm_calls` migration, pseudonymizer, FixtureProvider, kill switches, eval scaffold (evalite/promptfoo) | none — PHI-free infra; Anthropic org w/ ZDR (BLK-AI-2) needed only for live calls | ~1 wk |
-| **AI-1 Explainer** | `explainFlag` (Haiku, dedupe by rule-version×locale), UI popover on ScrubResult flags, both locales/themes | none — PHI-free | ~3–4 d |
+| **AI-0 Foundation ✅** | `@taweed/ai` package, `llm_calls` migration (0006), pseudonymizer, FixtureProvider, kill switches, eval scaffold — **DONE 2026-07-05** (merged to `main`; 266 unit + 6 integration green, coverage 92%) | none — PHI-free infra; Anthropic org w/ ZDR (BLK-AI-2) needed only for live calls | ~1 wk → done |
+| **AI-1 Explainer ✅** | `explainFlag` (Haiku, dedupe by (tenant,rule,version)), UI popover on scrubber flags, both locales/themes — **DONE 2026-07-05** (multi-lens review + fixes: pool-exhaustion, NUL bytes, audit-on-failure, SFDA prompt hardening) | none — PHI-free | ~3–4 d → done |
 | **AI-2 Appeal assist** | `assistAppeal` (Opus): suggested-paragraph field on `AppealDraft` (additive; template body untouched), slot-fill + digit-diff + glossary + verify pass + AR post-processor, SME edit tracking | **BLK-AI-1 counsel** for real-PHI use; synthetic-data build proceeds now; BLK-9 gates clinic shipping | ~1–1.5 wk |
 | **AI-3 Rule authoring** | `authorRule` (Opus) + bounded schema + dry-run + golden gate + approval UI (rcm/admin role) | none for build (PHI-free); golden corpus required | ~1–1.5 wk |
 | **AI-4 PDF extraction** | `ClaudeVisionOcrAdapter` behind `OcrAdapter`, validators (cross-totals, text-layer match, enums), review-queue UI, 30–50-doc EN/AR ground-truth eval harness | **Production route = decision gate** (§3.3): counsel + hosting pick; eval pass ≥ target on synthetic + de-identified docs first | ~1.5–2 wk build + eval |
