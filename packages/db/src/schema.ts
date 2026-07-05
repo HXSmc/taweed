@@ -93,7 +93,9 @@ export const claims = pgTable("claims", {
   // EXECUTE B5 — origin tag (gates the synthetic scrubber projection) + real
   // scrubber-signal columns. Signals are nullable: null = the source carries no
   // such signal, so the rule that reads it goes "unevaluable" (design-brief §8.3).
-  data_origin: text("data_origin").notNull().default("synthetic").$type<DataOrigin>(),
+  // Default 'production' fails CLOSED: only an explicit 'synthetic' tag uses the
+  // fabricating projection; untagged data is treated as real, never fabricated.
+  data_origin: text("data_origin").notNull().default("production").$type<DataOrigin>(),
   preauth_present: boolean("preauth_present"),
   eligibility_verified: boolean("eligibility_verified"),
   is_duplicate: boolean("is_duplicate"),

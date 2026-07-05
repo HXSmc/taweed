@@ -51,4 +51,18 @@ describe("parseDelimited — CSV", () => {
     const { rows } = parseDelimited("a,b,c\n1,2");
     expect(rows[0]).toEqual({ a: "1", b: "2", c: "" });
   });
+
+  it("drops fully-blank lines (trailing and mid-file) instead of emitting phantom rows", () => {
+    expect(parseDelimited("a,b\n1,2\n\n").rows).toEqual([{ a: "1", b: "2" }]);
+    expect(parseDelimited("a,b\n1,2\n\n3,4").rows).toEqual([
+      { a: "1", b: "2" },
+      { a: "3", b: "4" },
+    ]);
+  });
+
+  it("disambiguates duplicate headers so no column's data is silently dropped", () => {
+    const { headers, rows } = parseDelimited("Amount,Amount\n1,2");
+    expect(headers).toEqual(["Amount", "Amount_2"]);
+    expect(rows[0]).toEqual({ Amount: "1", Amount_2: "2" });
+  });
 });

@@ -65,6 +65,18 @@ describe("B5 production guard — synthetic projection is blocked on real data",
     // the full rule range.
     expect(facts.hasPreAuth === null).toBe(false);
   });
+
+  it("fails CLOSED: an untagged/unknown data_origin uses the real projection, never fabricated", () => {
+    // A value outside the union (untagged/corrupt) must NOT reach the fabricating
+    // projection — it degrades to the real column mapping (null → unevaluable).
+    const claim = {
+      ...prodClaim({ preauth_present: null }),
+      data_origin: "" as ProjectionClaim["data_origin"],
+    };
+    const facts = projectClaimFacts(claim, LINES, PATIENT, YEAR);
+    expect(facts.hasPreAuth).toBeNull();
+    expect(() => claimToFactsSynthetic(claim, LINES, PATIENT, YEAR)).toThrow();
+  });
 });
 
 describe("B5 real projection — unknown signal drives 'unevaluable', not a false pass", () => {

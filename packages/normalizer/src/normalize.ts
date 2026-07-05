@@ -37,6 +37,30 @@ function hasDocumentation(claim: Claim): boolean | null {
   return claim.supportingInfo.length > 0;
 }
 
+/** Map Claim.diagnosis[].sequence → its code, so line items can resolve the
+ *  diagnosis they reference via item.diagnosisSequence (EXECUTE B5). Without this
+ *  every real line reads as "missing diagnosis" and the HIGH rule fires falsely. */
+function diagnosisCodeBySequence(claim: Claim): Map<number, string> {
+  const bySeq = new Map<number, string>();
+  for (const d of claim.diagnosis ?? []) {
+    const code = d.diagnosisCodeableConcept?.coding?.[0]?.code;
+    if (d.sequence !== undefined && code) bySeq.set(d.sequence, code);
+  }
+  return bySeq;
+}
+
+/** The first diagnosis code an item references, or null when it references none. */
+function lineDiagnosisCode(
+  item: NonNullable<Claim["item"]>[number],
+  bySeq: Map<number, string>,
+): string | null {
+  for (const seq of item.diagnosisSequence ?? []) {
+    const code = bySeq.get(seq);
+    if (code) return code;
+  }
+  return null;
+}
+
 const DEFAULT_CURRENCY = "SAR";
 
 function moneyStr(value: number | undefined): string {
@@ -87,6 +111,7 @@ export function normalize(
 
   // line_number → row, so denials can resolve their line by itemSequence.
   const lineByNumber = new Map<number, ClaimLineRow>();
+  const diagBySeq = diagnosisCodeBySequence(claim);
   const lines: ClaimLineRow[] = [];
   (claim.item ?? []).forEach((item, index) => {
     const lineNumber = item.sequence ?? index + 1;
@@ -96,7 +121,7 @@ export function normalize(
       claim_id: claimRow.id,
       line_number: lineNumber,
       sbs_code: item.productOrService?.coding?.[0]?.code ?? null,
-      icd10am_code: null,
+      icd10am_code: lineDiagnosisCode(item, diagBySeq),
       qty: item.quantity?.value ?? 1,
       unit_price: moneyStr(item.unitPrice?.value),
       line_amount: moneyStr(item.net?.value),

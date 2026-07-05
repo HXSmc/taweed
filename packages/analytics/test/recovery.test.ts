@@ -67,4 +67,16 @@ describe("resolveRecovery — recovered-exceeds-appealed guardrail (§8.5)", () 
     });
     expect(r.recoveredSar).toBe("0.10");
   });
+
+  it("never returns a negative recovered amount even if the appealed ceiling is negative", () => {
+    // A negative appealed amount (bad upstream data) must not leak a negative
+    // recovered figure — the ceiling floors at zero.
+    const r = resolveRecovery({
+      outcome: "won",
+      appealedSar: "-5.00",
+      requestedRecoveredSar: "10.00",
+    });
+    expect(r.recoveredSar).toBe("0.00");
+    expect(r.corrected).toBe(true);
+  });
 });

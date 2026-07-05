@@ -117,9 +117,12 @@ export function claimToFactsSynthetic(
   patient: ProjectionPatient | undefined,
   currentYear: number,
 ): ClaimFacts {
-  if (claim.data_origin === "production") {
+  // Fail-closed: fabricate ONLY for an explicit 'synthetic' tag. Anything else
+  // (production, unknown, or an unexpected value) is refused, so synthetic signals
+  // can never reach real or untagged PHI (EXECUTE B5 gate).
+  if (claim.data_origin !== "synthetic") {
     throw new Error(
-      `refusing to run the synthetic hash projection on production-tagged claim ${claim.id}; use claimToFactsReal (EXECUTE B5 gate)`,
+      `refusing to run the synthetic hash projection on claim ${claim.id} tagged '${claim.data_origin}'; only explicit 'synthetic' is allowed (EXECUTE B5 gate)`,
     );
   }
 
@@ -165,7 +168,10 @@ export function projectClaimFacts(
   patient: ProjectionPatient | undefined,
   currentYear: number,
 ): ClaimFacts {
-  return claim.data_origin === "production"
-    ? claimToFactsReal(claim, lines, patient, currentYear)
-    : claimToFactsSynthetic(claim, lines, patient, currentYear);
+  // Fail-closed: only an explicit 'synthetic' tag uses the fabricating projection;
+  // production, untagged, and any unexpected value use the real column mapping
+  // (null signals → unevaluable, never fabricated).
+  return claim.data_origin === "synthetic"
+    ? claimToFactsSynthetic(claim, lines, patient, currentYear)
+    : claimToFactsReal(claim, lines, patient, currentYear);
 }

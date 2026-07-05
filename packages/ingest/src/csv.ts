@@ -75,20 +75,41 @@ function toMatrix(text: string, delimiter: string): string[][] {
   return matrix;
 }
 
+/** Suffix repeated headers (`Amount`, `Amount_2`, ...) so no column's data is
+ *  silently overwritten when a source file has duplicate column names. */
+function dedupeHeaders(raw: string[]): string[] {
+  const seen = new Map<string, number>();
+  return raw.map((h) => {
+    const count = seen.get(h) ?? 0;
+    seen.set(h, count + 1);
+    return count === 0 ? h : `${h}_${count + 1}`;
+  });
+}
+
+/** A row is blank when every cell is empty — a stray line break, not data. */
+function isBlankRow(cells: string[]): boolean {
+  return cells.every((c) => c === "");
+}
+
 /**
  * Parse delimited text into a header + row-objects table. `delimiter` defaults to
- * a comma; pass "\t" for TSV. Rows shorter than the header are padded with "".
+ * a comma; pass "\t" for TSV. Rows shorter than the header are padded with "";
+ * fully-blank lines are dropped; duplicate headers are disambiguated so no column
+ * is lost.
  */
 export function parseDelimited(text: string, delimiter = ","): DelimitedTable {
   const matrix = toMatrix(text, delimiter);
   if (matrix.length === 0) return { headers: [], rows: [] };
-  const headers = matrix[0]!.map((h) => h.trim());
-  const rows = matrix.slice(1).map((cells) => {
-    const record: Record<string, string> = {};
-    headers.forEach((h, idx) => {
-      record[h] = cells[idx] ?? "";
+  const headers = dedupeHeaders(matrix[0]!.map((h) => h.trim()));
+  const rows = matrix
+    .slice(1)
+    .filter((cells) => !isBlankRow(cells))
+    .map((cells) => {
+      const record: Record<string, string> = {};
+      headers.forEach((h, idx) => {
+        record[h] = cells[idx] ?? "";
+      });
+      return record;
     });
-    return record;
-  });
   return { headers, rows };
 }

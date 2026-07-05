@@ -3,8 +3,12 @@
 -- The synthetic pipeline derived pre-auth / eligibility / duplicate / documentation
 -- signals from a per-claim hash purely to exercise the rule set. Real NPHIES claims
 -- carry these as data. This migration adds:
---   * data_origin: the hard gate. 'production' locks out the synthetic hash projection
---     in the app (apps/web/lib/data.ts) so synthetic signals can never touch real PHI.
+--   * data_origin: the hard gate. Only an explicit 'synthetic' tag uses the fabricating
+--     hash projection; everything else (including this DEFAULT) uses the real-column
+--     projection, so synthetic signals can never touch real or untagged PHI. The default
+--     is 'production' so the gate FAILS CLOSED: an untagged insert is treated as real
+--     (null signals -> unevaluable), never silently fabricated. Seeding tags 'synthetic'
+--     explicitly.
 --   * the four real signal columns. They are NULLABLE on purpose: NULL = the source
 --     carries no such signal, so the scrubber marks the dependent rule "unevaluable"
 --     (needs data, never a false pass — design-brief §8.3), driven by the fact the rule
@@ -14,7 +18,7 @@
 -- automatically cover the new columns; no policy or grant change needed.
 
 ALTER TABLE claims
-  ADD COLUMN data_origin text NOT NULL DEFAULT 'synthetic',
+  ADD COLUMN data_origin text NOT NULL DEFAULT 'production',
   ADD COLUMN preauth_present boolean,
   ADD COLUMN eligibility_verified boolean,
   ADD COLUMN is_duplicate boolean,

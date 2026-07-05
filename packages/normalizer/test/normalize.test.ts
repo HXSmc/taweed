@@ -166,4 +166,47 @@ describe("normalize — EXECUTE B5 real signal columns", () => {
     expect(n.claim.eligibility_verified).toBeNull();
     expect(n.claim.is_duplicate).toBeNull();
   });
+
+  it("maps a line's diagnosis code from Claim.diagnosis via item.diagnosisSequence", () => {
+    const n = normalize(
+      claimPair({
+        diagnosis: [
+          {
+            sequence: 1,
+            diagnosisCodeableConcept: { coding: [{ code: "K02.1" }] },
+          },
+        ],
+        item: [
+          {
+            sequence: 1,
+            diagnosisSequence: [1],
+            productOrService: { coding: [{ code: "SBS-0001" }] },
+            quantity: { value: 1 },
+            unitPrice: { value: 100 },
+            net: { value: 100 },
+          },
+        ],
+      }),
+      CTX,
+    );
+    expect(n.lines[0]!.icd10am_code).toBe("K02.1");
+  });
+
+  it("leaves icd10am_code null when the line references no diagnosis", () => {
+    const n = normalize(
+      claimPair({
+        item: [
+          {
+            sequence: 1,
+            productOrService: { coding: [{ code: "SBS-0001" }] },
+            quantity: { value: 1 },
+            unitPrice: { value: 100 },
+            net: { value: 100 },
+          },
+        ],
+      }),
+      CTX,
+    );
+    expect(n.lines[0]!.icd10am_code).toBeNull();
+  });
 });
