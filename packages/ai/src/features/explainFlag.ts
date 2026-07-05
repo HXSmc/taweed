@@ -206,11 +206,11 @@ export async function explainFlag(
     suggested_fix_ar: normalizeArabicOutput(parsed.suggested_fix_ar),
   };
 
-  // Short txn: UPSERT then re-read the CANONICAL row. onConflictDoUpdate (not
-  // DoNothing) so a STALE row — one cached under an older prompt — is overwritten
-  // with the freshly generated wording + its new prompt_sha256; for the same
-  // prompt it is idempotent. Re-reading means concurrent callers converge on
-  // identical text.
+  // Short txn: UPSERT (guarded) then re-read the CANONICAL row. onConflictDoUpdate
+  // with `setWhere prompt_sha256 <> new`: a STALE row (older prompt) is overwritten
+  // with the fresh wording (cache invalidation), but a SAME-prompt conflict is a
+  // no-op — so it stays idempotent AND two concurrent first-callers converge (the
+  // loser's re-read returns the winner's row) instead of clobbering each other.
   const modelId = provider.mapModelId("haiku");
   const canonical = await withTenant(opts.pool, opts.tenantId, async (db) => {
     await db
@@ -241,6 +241,10 @@ export async function explainFlag(
           suggested_fix_ar: explanation.suggested_fix_ar,
           created_at: sql`now()`,
         },
+        // Overwrite ONLY when the incoming prompt differs from the stored one, so a
+        // same-prompt concurrent insert is a no-op (callers converge) while a
+        // changed prompt still invalidates the stale row.
+        setWhere: sql`${schema.flagExplanations.prompt_sha256} <> ${promptSha256}`,
       });
     const rows = await db
       .select({
