@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { newId } from "@taweed/shared";
 import { getPool, withTenant, schema, type Pool } from "@taweed/db";
 import { migrate, appConnectionString } from "../../db/test/migrate.js";
-import { explainFlag, type ExplainableFlag } from "../src/features/explainFlag.js";
-import { AiDisabledError } from "../src/errors.js";
+import {
+  explainFlag,
+  type ExplainableFlag,
+} from "../src/features/explainFlag.js";
+import { AiConfigError, AiDisabledError } from "../src/errors.js";
 import type { LlmProvider } from "../src/provider.js";
 import type { FlagExplanation } from "../src/schemas/flagExplanation.js";
 
@@ -263,6 +266,147 @@ describe("explainFlag — audited dedupe cache over Postgres (RLS active)", () =
         .where(errorState());
       expect(errRows.length).toBeGreaterThanOrEqual(1);
     });
+  });
+});
+
+describe("explainFlag — cache invalidation + config validation (RLS active)", () => {
+  it("regenerates when the prompt content changes — never serves stale wording", async () => {
+    const A: FlagExplanation = {
+      explanation_en: "Answer A (original prompt).",
+      explanation_ar: "Answer A ar.",
+      suggested_fix_en: "Fix A.",
+      suggested_fix_ar: "Fix A ar.",
+    };
+    const B: FlagExplanation = {
+      explanation_en: "Answer B (hardened prompt).",
+      explanation_ar: "Answer B ar.",
+      suggested_fix_en: "Fix B.",
+      suggested_fix_ar: "Fix B ar.",
+    };
+    const base: ExplainableFlag = {
+      ...FLAG,
+      ruleId: "cache-inval-rule",
+      ruleVersion: 1,
+      message_en: "Original message.",
+    };
+
+    // 1) First generation under prompt P1 -> cached.
+    const g1 = makeStubProvider({ kind: "ok", output: A });
+    const r1 = await explainFlag({
+      actor: "user-a",
+      tenantId: tenantA,
+      pool,
+      flag: base,
+      provider: g1.provider,
+      env: ENABLED,
+    });
+    expect(r1.explanation_en).toBe(A.explanation_en);
+    expect(g1.calls()).toBe(1);
+
+    // 2) Same (rule, version) but the prompt text changed -> STALE -> regenerate,
+    //    never serve the weaker A.
+    const g2 = makeStubProvider({ kind: "ok", output: B });
+    const changed: ExplainableFlag = {
+      ...base,
+      message_en: "Hardened SFDA message.",
+    };
+    const r2 = await explainFlag({
+      actor: "user-a",
+      tenantId: tenantA,
+      pool,
+      flag: changed,
+      provider: g2.provider,
+      env: ENABLED,
+    });
+    expect(g2.calls()).toBe(1);
+    expect(r2.explanation_en).toBe(B.explanation_en);
+
+    // Exactly ONE row for (rule, version): the upsert OVERWROTE, not duplicated.
+    await withTenant(pool, tenantA, async (db) => {
+      const rows = await db
+        .select()
+        .from(schema.flagExplanations)
+        .where(
+          and(
+            eq(schema.flagExplanations.rule_id, "cache-inval-rule"),
+            eq(schema.flagExplanations.rule_version, 1),
+          ),
+        );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.explanation_en).toBe(B.explanation_en);
+    });
+
+    // 3) Same (now-current) prompt again -> cache HIT, no third paid call.
+    const g3 = makeStubProvider({ kind: "ok", output: A });
+    const r3 = await explainFlag({
+      actor: "user-a",
+      tenantId: tenantA,
+      pool,
+      flag: changed,
+      provider: g3.provider,
+      env: ENABLED,
+    });
+    expect(g3.calls()).toBe(0);
+    expect(r3.explanation_en).toBe(B.explanation_en);
+  });
+
+  it("throws AiConfigError (distinct from off) when enabled but unconfigured", async () => {
+    // ENABLED turns the switches on but carries NO ANTHROPIC_API_KEY, and no
+    // provider is injected -> the live path must FAIL LOUD + DISTINCT, never
+    // collapse into the same silent AiDisabledError/"unavailable" as a real off.
+    await expect(
+      explainFlag({
+        actor: "user-a",
+        tenantId: tenantA,
+        pool,
+        flag: { ...FLAG, ruleId: "unconfigured-rule", ruleVersion: 1 },
+        env: ENABLED,
+      }),
+    ).rejects.toBeInstanceOf(AiConfigError);
+  });
+});
+
+describe("llm_calls — append-only enforced by PRIVILEGE (not convention)", () => {
+  // Each attempt runs in its OWN withTenant transaction: a permission-denied
+  // error aborts the transaction, so UPDATE and DELETE cannot share one. drizzle
+  // wraps the pg error as "Failed query: …" and puts the real cause on `.cause`,
+  // so assert permission-denied against the whole error chain (message + cause
+  // message + SQLSTATE 42501 = insufficient_privilege).
+  async function expectPermissionDenied(run: Promise<unknown>): Promise<void> {
+    let caught: unknown = null;
+    try {
+      await run;
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught, "expected the query to be rejected").not.toBeNull();
+    const e = caught as {
+      message?: string;
+      cause?: { message?: string; code?: string };
+    };
+    const chain = `${e.message ?? ""} ${e.cause?.message ?? ""} ${e.cause?.code ?? ""}`;
+    expect(chain).toMatch(/permission denied|42501/i);
+  }
+
+  it("denies the app role UPDATE on llm_calls", async () => {
+    await expectPermissionDenied(
+      withTenant(pool, tenantA, (db) =>
+        db.execute(sql`UPDATE llm_calls SET purpose = 'tampered'`),
+      ),
+    );
+  });
+
+  it("denies the app role DELETE on llm_calls", async () => {
+    await expectPermissionDenied(
+      withTenant(pool, tenantA, (db) => db.execute(sql`DELETE FROM llm_calls`)),
+    );
+  });
+
+  it("still allows the app role to SELECT its own audit rows (append-only, not read-blocked)", async () => {
+    const rows = await withTenant(pool, tenantA, (db) =>
+      db.select().from(schema.llmCalls),
+    );
+    expect(Array.isArray(rows)).toBe(true);
   });
 });
 

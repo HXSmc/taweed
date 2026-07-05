@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isAiEnabled, isFeatureEnabled, featureEnvVar } from "../src/config.js";
+import {
+  isAiEnabled,
+  isFeatureEnabled,
+  featureEnvVar,
+  missingProviderConfig,
+} from "../src/config.js";
 
 describe("isAiEnabled (fails closed)", () => {
   it("is false when the switch is unset", () => {
@@ -42,5 +47,21 @@ describe("isFeatureEnabled (defense in depth)", () => {
 
   it("exposes the backing env var name", () => {
     expect(featureEnvVar("explain")).toBe("TAWEED_AI_EXPLAIN_ENABLED");
+  });
+});
+
+describe("missingProviderConfig (enabled-but-unconfigured fails loud)", () => {
+  it("reports a reason when ANTHROPIC_API_KEY is absent", () => {
+    expect(missingProviderConfig({})).not.toBeNull();
+  });
+
+  it("reports a reason for a blank/whitespace-only key", () => {
+    expect(missingProviderConfig({ ANTHROPIC_API_KEY: "   " })).not.toBeNull();
+  });
+
+  it("returns null when a non-empty key is present", () => {
+    expect(
+      missingProviderConfig({ ANTHROPIC_API_KEY: "sk-ant-xxx" }),
+    ).toBeNull();
   });
 });

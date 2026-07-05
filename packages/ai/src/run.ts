@@ -8,6 +8,7 @@
 // and releases the pooled connection immediately — a slow/hung LLM call never
 // holds a Postgres connection, so it cannot exhaust the shared pool and block
 // other tenants (security review, availability).
+import "server-only";
 import { withTenant, schema, type Pool, type Database } from "@taweed/db";
 import { AiDisabledError } from "./errors.js";
 import { isFeatureEnabled, type AiFeature } from "./config.js";
@@ -91,26 +92,46 @@ export async function runStructured<T>(ctx: RunContext<T>): Promise<T> {
         cacheReadTokens: 0,
         flagsState: ctx.flagsState ?? `${ctx.feature}=error`,
       }),
-    ).catch(() => {});
+    ).catch((auditErr: unknown) => {
+      // Never let an audit-write failure MASK the provider error (rethrown
+      // below). But do not swallow it silently either — a failed audit write is
+      // a compliance-trail gap ops must be able to see.
+      console.error(
+        `[llm-audit] write FAILED on the provider-error path (feature=${ctx.feature}); the provider error is preserved but this attempt is UNAUDITED`,
+        auditErr,
+      );
+    });
     throw err;
   }
 
-  await withTenant(ctx.pool, ctx.tenantId, (db) =>
-    writeLlmCall(db, {
-      actorId: ctx.actor,
-      purpose,
-      model: result.model,
-      provider: ctx.provider.name,
-      promptSha256,
-      outputSha256: sha256Hex(result.rawOutput),
-      inputTokens: result.usage.inputTokens,
-      outputTokens: result.usage.outputTokens,
-      cacheReadTokens: result.usage.cacheReadTokens,
-      requestId: result.requestId,
-      latencyMs: result.latencyMs,
-      flagsState: ctx.flagsState ?? `${ctx.feature}=enabled`,
-    }),
-  );
+  try {
+    await withTenant(ctx.pool, ctx.tenantId, (db) =>
+      writeLlmCall(db, {
+        actorId: ctx.actor,
+        purpose,
+        model: result.model,
+        provider: ctx.provider.name,
+        promptSha256,
+        outputSha256: sha256Hex(result.rawOutput),
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        cacheReadTokens: result.usage.cacheReadTokens,
+        requestId: result.requestId,
+        latencyMs: result.latencyMs,
+        flagsState: ctx.flagsState ?? `${ctx.feature}=enabled`,
+      }),
+    );
+  } catch (auditErr) {
+    // A successful, billable model call that cannot be audited must NOT be served
+    // silently — the audit trail is the compliance control, so fail CLOSED. But
+    // fail LOUDLY (distinct log) so ops can tell "audit DB failing" apart from
+    // "AI intentionally off". The generated answer is intentionally discarded.
+    console.error(
+      `[llm-audit] write FAILED after a SUCCESSFUL call (feature=${ctx.feature}); failing closed — the generated answer is discarded because it cannot be audited`,
+      auditErr,
+    );
+    throw auditErr;
+  }
 
   if (result.parsed === null) {
     throw new Error(

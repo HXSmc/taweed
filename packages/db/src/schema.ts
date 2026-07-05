@@ -95,7 +95,10 @@ export const claims = pgTable("claims", {
   // such signal, so the rule that reads it goes "unevaluable" (design-brief §8.3).
   // Default 'production' fails CLOSED: only an explicit 'synthetic' tag uses the
   // fabricating projection; untagged data is treated as real, never fabricated.
-  data_origin: text("data_origin").notNull().default("production").$type<DataOrigin>(),
+  data_origin: text("data_origin")
+    .notNull()
+    .default("production")
+    .$type<DataOrigin>(),
   preauth_present: boolean("preauth_present"),
   eligibility_verified: boolean("eligibility_verified"),
   is_duplicate: boolean("is_duplicate"),
@@ -244,7 +247,9 @@ export const llmCalls = pgTable("llm_calls", {
   request_id: text("request_id"),
   latency_ms: integer("latency_ms"),
   flags_state: text("flags_state"),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 /**
@@ -265,7 +270,9 @@ export const flagExplanations = pgTable("flag_explanations", {
   explanation_ar: text("explanation_ar").notNull(),
   suggested_fix_en: text("suggested_fix_en").notNull(),
   suggested_fix_ar: text("suggested_fix_ar").notNull(),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 /**

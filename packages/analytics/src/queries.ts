@@ -47,7 +47,8 @@ function whereFrom(conds: SQL[]): SQL {
   return sql` WHERE ${sql.join(conds, sql` AND `)}`;
 }
 
-export type DenialDimension = "payer" | "branch" | "provider" | "reason" | "sbs";
+export type DenialDimension =
+  "payer" | "branch" | "provider" | "reason" | "sbs";
 
 interface DimConfig {
   keyExpr: SQL;
@@ -138,7 +139,8 @@ export async function denialRateBy(
       label,
       claims: r.claims,
       denied: r.denied,
-      rate: r.claims > 0 ? Math.round((r.denied / r.claims) * 10000) / 10000 : 0,
+      rate:
+        r.claims > 0 ? Math.round((r.denied / r.claims) * 10000) / 10000 : 0,
       atRiskSar: r.at_risk_sar,
     };
   });
@@ -193,28 +195,33 @@ type MoneyScopeRow = {
 };
 
 /**
- * Headline money KPIs. atRiskSar = denied amount NOT yet recovered (no won
- * appeal on the denial); recoveredSar = recovered amount on won appeals;
- * deniedCount = denial rows in scope; claimCount = claims in scope. Each metric
- * is a scalar subquery so their different bases don't fan out against each
- * other.
+ * Headline money KPIs. atRiskSar = denied amount NOT yet recovered = each
+ * denial's denied_amount MINUS what a won appeal recovered on it, floored at 0
+ * per denial — so a PARTIAL win keeps its unrecovered remainder at-risk and
+ * `atRiskSar + recoveredSar` reconciles to total denied (design-brief §8.5
+ * partial-pay auto-diff; the ROI integrity recovery-share pricing depends on).
+ * recoveredSar = recovered amount on won appeals; deniedCount = denial rows in
+ * scope; claimCount = claims in scope. Each metric is a scalar subquery so their
+ * different bases don't fan out against each other.
  */
 export async function moneyScope(
   db: Database,
   f?: AnalyticsFilters,
 ): Promise<MoneyScope> {
   const cc = claimConds(f);
-  const atRiskWhere = whereFrom([sql`a.id IS NULL`, ...cc]);
   const recoveredWhere = whereFrom([sql`a.status = 'won'`, ...cc]);
   const claimScopeWhere = whereFrom(cc);
   const result = await db.execute<MoneyScopeRow>(sql`
     SELECT
-      (SELECT COALESCE(SUM(d.denied_amount), 0)::numeric(14,2)::text
+      (SELECT COALESCE(SUM(GREATEST(d.denied_amount - COALESCE(won.recovered, 0), 0)), 0)::numeric(14,2)::text
          FROM denials d
          JOIN claim_lines cl ON cl.id = d.claim_line_id
          JOIN claims c ON c.id = cl.claim_id
-         LEFT JOIN appeals a ON a.denial_id = d.id AND a.status = 'won'
-         ${atRiskWhere}) AS at_risk_sar,
+         LEFT JOIN (
+           SELECT denial_id, SUM(recovered_amount) AS recovered
+             FROM appeals WHERE status = 'won' GROUP BY denial_id
+         ) won ON won.denial_id = d.id
+         ${claimScopeWhere}) AS at_risk_sar,
       (SELECT COALESCE(SUM(a.recovered_amount), 0)::numeric(14,2)::text
          FROM appeals a
          JOIN denials d ON d.id = a.denial_id
@@ -288,7 +295,9 @@ export async function captureBaseline(
  * rates, so the scrubber/queue can prioritize winnable combos. Reuses the pure
  * aggregator so DB and in-memory results stay identical.
  */
-export async function recoverability(db: Database): Promise<RecoverabilityRow[]> {
+export async function recoverability(
+  db: Database,
+): Promise<RecoverabilityRow[]> {
   const res = await db.execute<{
     payer_id: string;
     reason_code: string;

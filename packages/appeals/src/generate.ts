@@ -1,4 +1,9 @@
-import type { AppealContext, AppealDraft, PdfDoc, PdfSegment } from "./types.js";
+import type {
+  AppealContext,
+  AppealDraft,
+  PdfDoc,
+  PdfSegment,
+} from "./types.js";
 import type { AppealTemplate } from "./templates.js";
 import {
   APPEAL_TEMPLATES,
@@ -10,6 +15,10 @@ import {
 // so nothing spurious gets LTR-isolated later). Unknown keys are left literal.
 function merge(template: string, ctx: AppealContext): string {
   const values: Record<string, string> = {
+    // Payer-facing claim reference: the NPHIES id the payer recognizes, falling
+    // back to the internal id only when no NPHIES ref exists. Templates use
+    // {claimRef}; the raw internal DB UUID {claimId} is not payer-correlatable.
+    claimRef: ctx.nphiesClaimId ?? ctx.claimId,
     claimId: ctx.claimId,
     nphiesClaimId: ctx.nphiesClaimId ?? "—",
     sbsCode: ctx.sbsCode ?? "—",
@@ -29,11 +38,21 @@ function merge(template: string, ctx: AppealContext): string {
 
 // Select template by denial code; a payer override (if present) wins and flips
 // payerSpecific=true. Unknown code → neutral GENERIC_TEMPLATE, payerSpecific=false.
+// Own-property lookup: index the template maps ONLY by own keys, so an untrusted
+// denialCode/payerName equal to an inherited Object member ("toString",
+// "constructor", "__proto__", ...) resolves to undefined — not the built-in
+// function — and falls through to GENERIC_TEMPLATE instead of crashing merge().
+function ownGet<T>(obj: Record<string, T>, key: string): T | undefined {
+  return Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : undefined;
+}
+
 export function generateAppeal(ctx: AppealContext): AppealDraft {
-  const override: AppealTemplate | undefined =
-    PAYER_TEMPLATE_OVERRIDES[ctx.payerName]?.[ctx.denialCode];
+  const payerOverrides = ownGet(PAYER_TEMPLATE_OVERRIDES, ctx.payerName);
+  const override: AppealTemplate | undefined = payerOverrides
+    ? ownGet(payerOverrides, ctx.denialCode)
+    : undefined;
   const template: AppealTemplate =
-    override ?? APPEAL_TEMPLATES[ctx.denialCode] ?? GENERIC_TEMPLATE;
+    override ?? ownGet(APPEAL_TEMPLATES, ctx.denialCode) ?? GENERIC_TEMPLATE;
 
   return {
     subject_en: merge(template.subject_en, ctx),
@@ -85,9 +104,11 @@ export function appealToPdfModel(
   const title = isAr ? draft.subject_ar : draft.subject_en;
   const body = isAr ? draft.body_ar : draft.body_en;
   const sbs = ctx.sbsCode ?? "—";
+  // Payer-facing reference: NPHIES id (fallback internal id), matching the body.
+  const claimRef = ctx.nphiesClaimId ?? ctx.claimId;
   const header = isAr
-    ? `مرجع ${ctx.claimId} · العضو ${ctx.memberId} · رمز الخدمة ${sbs} · تاريخ الخدمة ${ctx.serviceDate}`
-    : `Ref ${ctx.claimId} · Member ${ctx.memberId} · SBS ${sbs} · Service date ${ctx.serviceDate}`;
+    ? `مرجع ${claimRef} · العضو ${ctx.memberId} · رمز الخدمة ${sbs} · تاريخ الخدمة ${ctx.serviceDate}`
+    : `Ref ${claimRef} · Member ${ctx.memberId} · SBS ${sbs} · Service date ${ctx.serviceDate}`;
 
   const lines = [header, ...body.split("\n")].filter(
     (line) => line.trim().length > 0,

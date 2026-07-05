@@ -52,7 +52,10 @@ export async function migrate(pool: Pool): Promise<void> {
     await client.query("DROP SCHEMA IF EXISTS public CASCADE;");
     await client.query("CREATE SCHEMA public;");
     for (const file of files) {
-      const sql = readFileSync(fileURLToPath(new URL(file, DRIZZLE_DIR)), "utf8");
+      const sql = readFileSync(
+        fileURLToPath(new URL(file, DRIZZLE_DIR)),
+        "utf8",
+      );
       await client.query(sql);
     }
     await ensureAppRole(client);
@@ -84,6 +87,19 @@ async function ensureAppRole(client: pg.PoolClient): Promise<void> {
   // it directly (that would expose every tenant's identity). Seeding/admin of
   // tenants goes through the superuser/admin connection only.
   await client.query(`REVOKE ALL ON TABLE tenants FROM ${role};`);
+  // `llm_calls` is an APPEND-ONLY compliance trail (0006 header): the app role
+  // may INSERT + SELECT but must NEVER UPDATE or DELETE an audit row. The blanket
+  // GRANT above (UPDATE, DELETE ON ALL TABLES) re-grants those on every table, so
+  // this REVOKE must run AFTER it — a REVOKE placed inside 0006_llm_calls.sql
+  // would be silently clobbered by this ensureAppRole() call, which runs last.
+  // The production forward-only migrator MUST preserve this same REVOKE.
+  await client.query(`REVOKE UPDATE, DELETE ON TABLE llm_calls FROM ${role};`);
+  // `audit_logs` is the primary APPEND-ONLY PHI-access trail (packages/audit) —
+  // same immutability guarantee as llm_calls: the app role may INSERT + SELECT
+  // but must NEVER UPDATE or DELETE a row. Enforced by PRIVILEGE (RLS scopes but
+  // does not prevent mutating the tenant's own rows). The production forward-only
+  // migrator MUST preserve this REVOKE too.
+  await client.query(`REVOKE UPDATE, DELETE ON TABLE audit_logs FROM ${role};`);
 }
 
 /** Derive the app-role connection URL from an admin DATABASE_URL. */

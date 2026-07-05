@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { schema, type Database } from "@taweed/db";
 import {
   moneyScope,
@@ -113,7 +113,10 @@ export interface ScrubRow {
   ruleVersions: Record<string, number>;
 }
 
-export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> {
+export function getScrubRows(
+  tenantId: string,
+  limit = 60,
+): Promise<ScrubRow[]> {
   return withSession(tenantId, async (db) => {
     const claims = await db
       .select()
@@ -126,9 +129,18 @@ export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> 
     const payerIds = Array.from(new Set(claims.map((c) => c.payer_id)));
 
     const [lines, patients, payers] = await Promise.all([
-      db.select().from(schema.claimLines).where(inArray(schema.claimLines.claim_id, claimIds)),
-      db.select().from(schema.patients).where(inArray(schema.patients.id, patientIds)),
-      db.select().from(schema.payers).where(inArray(schema.payers.id, payerIds)),
+      db
+        .select()
+        .from(schema.claimLines)
+        .where(inArray(schema.claimLines.claim_id, claimIds)),
+      db
+        .select()
+        .from(schema.patients)
+        .where(inArray(schema.patients.id, patientIds)),
+      db
+        .select()
+        .from(schema.payers)
+        .where(inArray(schema.payers.id, payerIds)),
     ]);
     const linesByClaim = new Map<string, (typeof lines)[number][]>();
     for (const l of lines) {
@@ -165,7 +177,8 @@ export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> 
         return {
           claimId: claim.id,
           nphiesClaimId: claim.nphies_claim_id,
-          patientLabel: patientById.get(claim.patient_id)?.pseudonym ?? "PT-????",
+          patientLabel:
+            patientById.get(claim.patient_id)?.pseudonym ?? "PT-????",
           payerName: payerById.get(claim.payer_id)?.name ?? "Unknown payer",
           sbsCodes: facts.sbsCodes,
           amount: claim.total_amount,
@@ -245,7 +258,11 @@ export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
 
     // Win rate + median days over ALL appeals (not the display-limited/recovered-
     // biased rows), so the ROI metrics are honest.
-    const agg = await db.execute<{ won: number; lost: number; median_days: number }>(sql`
+    const agg = await db.execute<{
+      won: number;
+      lost: number;
+      median_days: number;
+    }>(sql`
       SELECT
         count(*) FILTER (WHERE status = 'won')::int  AS won,
         count(*) FILTER (WHERE status = 'lost')::int AS lost,
@@ -261,7 +278,15 @@ export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
     const sharePct = 0.12; // recovery-share model (design-brief §12); DEPLOY: per-contract
     const shareSar = (recovered * sharePct).toFixed(2);
 
-    return { money, winRate, medianDays, sharePct, shareSar, baseline, rows: list };
+    return {
+      money,
+      winRate,
+      medianDays,
+      sharePct,
+      shareSar,
+      baseline,
+      rows: list,
+    };
   });
 }
 
@@ -276,7 +301,11 @@ export interface BranchRow {
 export function getBranches(tenantId: string): Promise<BranchRow[]> {
   return withSession(tenantId, async (db) => {
     const rows = await db
-      .select({ id: schema.branches.id, name: schema.branches.name, city: schema.branches.city })
+      .select({
+        id: schema.branches.id,
+        name: schema.branches.name,
+        city: schema.branches.city,
+      })
       .from(schema.branches)
       .orderBy(schema.branches.name);
     return rows;

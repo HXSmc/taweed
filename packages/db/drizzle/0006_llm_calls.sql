@@ -11,6 +11,18 @@
 --   tenant_ai_settings per-tenant kill switch. Absent row = enabled (the global
 --                      env switch is the fail-closed gate); a row can turn a
 --                      single tenant OFF.
+--
+-- APPEND-ONLY (llm_calls): the compliance trail is INSERT + SELECT only for the
+-- app role — enforced by PRIVILEGE, not convention. The app role is REVOKEd
+-- UPDATE, DELETE on llm_calls (packages/db/test/migrate.ts ensureAppRole, which
+-- runs after the blanket GRANT; the production forward-only migrator MUST apply
+-- the same REVOKE). created_at is NOT NULL so no audit row is timestamp-less.
+--
+-- FORWARD-ONLY: like 0001/0005 this is bare CREATE (no IF NOT EXISTS, no down).
+-- The test migrator DROPs + reapplies from zero each run; production uses a
+-- forward-only migrator (deferred to DEPLOY) that tracks applied migrations in a
+-- ledger (apply-once), so a partial/failed 0006 is recovered by fixing forward,
+-- never by blind re-execution.
 
 CREATE TABLE "llm_calls" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,7 +39,7 @@ CREATE TABLE "llm_calls" (
   "request_id" text,
   "latency_ms" integer,
   "flags_state" text,
-  "created_at" timestamptz DEFAULT now()
+  "created_at" timestamptz NOT NULL DEFAULT now()
 );
 --> statement-breakpoint
 ALTER TABLE "llm_calls" ENABLE ROW LEVEL SECURITY;
@@ -53,7 +65,7 @@ CREATE TABLE "flag_explanations" (
   "explanation_ar" text NOT NULL,
   "suggested_fix_en" text NOT NULL,
   "suggested_fix_ar" text NOT NULL,
-  "created_at" timestamptz DEFAULT now(),
+  "created_at" timestamptz NOT NULL DEFAULT now(),
   UNIQUE ("tenant_id", "rule_id", "rule_version")
 );
 --> statement-breakpoint

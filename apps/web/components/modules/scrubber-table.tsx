@@ -7,15 +7,17 @@ import type { ScrubFlag } from "@taweed/rules-engine";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { TableWrap, Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TBody,
+  TR,
+  TH,
+  TD,
+} from "@/components/ui/table";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { FlagExplainer } from "@/components/modules/flag-explainer";
-
-const SEV_COLOR: Record<string, string> = {
-  high: "bg-at-risk",
-  warn: "bg-at-risk-soft",
-  info: "bg-money-neutral",
-};
 
 function riskColor(score: number): string {
   if (score >= 60) return "bg-at-risk";
@@ -70,7 +72,10 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
                       </span>
                       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-surface-3">
                         <div
-                          className={cn("h-full rounded-full", riskColor(r.result.riskScore))}
+                          className={cn(
+                            "h-full rounded-full",
+                            riskColor(r.result.riskScore),
+                          )}
                           style={{ width: `${r.result.riskScore}%` }}
                         />
                       </div>
@@ -83,8 +88,12 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
                       </span>
                     </div>
                   </TD>
-                  <TD className="mono text-label">{r.nphiesClaimId ?? r.claimId.slice(0, 8)}</TD>
-                  <TD className="mono text-label text-muted">{r.patientLabel}</TD>
+                  <TD className="mono text-label">
+                    {r.nphiesClaimId ?? r.claimId.slice(0, 8)}
+                  </TD>
+                  <TD className="mono text-label text-muted">
+                    {r.patientLabel}
+                  </TD>
                   <TD>{r.payerName}</TD>
                   <TD>
                     <span className="mono text-label text-muted">
@@ -106,11 +115,16 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
               <span className="mono text-label">
                 {selected.nphiesClaimId ?? selected.claimId.slice(0, 8)}
               </span>
-              <span className="num text-h3 font-medium">{selected.result.riskScore}</span>
+              <span className="num text-h3 font-medium">
+                {selected.result.riskScore}
+              </span>
             </div>
             <ul className="flex flex-col gap-3">
               {selected.result.flags.map((f) => (
-                <li key={f.ruleId} className="rounded-md border border-hairline p-3">
+                <li
+                  key={f.ruleId}
+                  className="rounded-md border border-hairline p-3"
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-body font-medium">{f.ruleName}</span>
                     <Badge

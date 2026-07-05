@@ -8,7 +8,12 @@
 // gates + typed error (so callers can fall back to the deterministic path), and
 // the pure de-identification / AR post-processing foundation.
 
-export { AiDisabledError, isAiDisabledError } from "./errors.js";
+export {
+  AiConfigError,
+  AiDisabledError,
+  isAiConfigError,
+  isAiDisabledError,
+} from "./errors.js";
 export {
   isAiEnabled,
   isFeatureEnabled,

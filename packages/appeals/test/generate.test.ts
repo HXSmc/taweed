@@ -6,6 +6,7 @@ import type { AppealContext } from "../src/index.js";
 // Latin ids/codes are merged verbatim; Arabic body must carry real script.
 const AR_SCRIPT = /[؀-ۿ]/;
 const CLAIM_ID = "550e8400-e29b-41d4-a716-446655440000";
+const NPHIES_REF = "NPHIES-CLM-77"; // payer-facing ref (ctxFor sets nphiesClaimId)
 const PAYER = "Tawuniya";
 const AT_RISK = "1500.00";
 
@@ -36,9 +37,11 @@ describe("generateAppeal", () => {
     expect(draft.subject_ar.trim().length).toBeGreaterThan(0);
     expect(draft.body_ar.trim().length).toBeGreaterThan(0);
 
-    // Merged fields present verbatim in BOTH bodies (Latin ids stay literal).
+    // Merged fields present verbatim in BOTH bodies (Latin ids stay literal). The
+    // claim reference is the payer-facing NPHIES id, NEVER the internal DB UUID.
     for (const body of [draft.body_en, draft.body_ar]) {
-      expect(body).toContain(CLAIM_ID);
+      expect(body).toContain(NPHIES_REF);
+      expect(body).not.toContain(CLAIM_ID);
       expect(body).toContain(PAYER);
       expect(body).toContain(AT_RISK);
     }
@@ -98,5 +101,41 @@ describe("generateAppeal", () => {
       payerName: "Some Other Insurer",
     });
     expect(neutral.payerSpecific).toBe(false);
+  });
+
+  it("references the payer-facing NPHIES id in subject + body, not the internal UUID", () => {
+    const d = generateAppeal(ctxFor("TWD-D01"));
+    expect(d.subject_en).toContain(NPHIES_REF);
+    expect(d.subject_ar).toContain(NPHIES_REF);
+    expect(d.subject_en).not.toContain(CLAIM_ID);
+    expect(d.body_en).not.toContain(CLAIM_ID);
+  });
+
+  it("falls back to the internal claim id only when no NPHIES reference exists", () => {
+    const d = generateAppeal({ ...ctxFor("TWD-D01"), nphiesClaimId: null });
+    expect(d.subject_en).toContain(CLAIM_ID);
+    expect(d.body_en).toContain(CLAIM_ID);
+  });
+
+  it("does not crash on a denial code equal to an inherited Object member (prototype-safe)", () => {
+    for (const code of [
+      "toString",
+      "constructor",
+      "hasOwnProperty",
+      "__proto__",
+      "valueOf",
+    ]) {
+      const d = generateAppeal(ctxFor(code));
+      expect(d.payerSpecific).toBe(false);
+      // GENERIC_TEMPLATE, not a TypeError from an inherited built-in.
+      expect(d.body_en.trim().length).toBeGreaterThan(0);
+      expect(AR_SCRIPT.test(d.body_ar)).toBe(true);
+    }
+  });
+
+  it("does not crash on a payer name equal to an inherited Object member", () => {
+    const d = generateAppeal({ ...ctxFor("TWD-D02"), payerName: "toString" });
+    expect(d.payerSpecific).toBe(false);
+    expect(d.body_en.trim().length).toBeGreaterThan(0);
   });
 });

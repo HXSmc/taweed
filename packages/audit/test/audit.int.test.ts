@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { sql } from "drizzle-orm";
 import { newId } from "@taweed/shared";
 import { getPool, withTenant, schema, type Pool } from "@taweed/db";
 import { logAudit } from "../src/index.js";
@@ -71,5 +72,43 @@ describe("logAudit — append-only, tenant-scoped audit row (RLS active)", () =>
       const rows = await db.select().from(schema.auditLogs);
       expect(rows).toHaveLength(0);
     });
+  });
+
+  it("denies the app role UPDATE and DELETE on audit_logs (append-only by privilege)", async () => {
+    // drizzle wraps the pg error as "Failed query: …"; the real cause carries the
+    // permission-denied message + SQLSTATE 42501. Each in its own transaction.
+    const expectDenied = async (run: Promise<unknown>): Promise<void> => {
+      let caught: unknown = null;
+      try {
+        await run;
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught, "expected the query to be rejected").not.toBeNull();
+      const e = caught as {
+        message?: string;
+        cause?: { message?: string; code?: string };
+      };
+      const chain = `${e.message ?? ""} ${e.cause?.message ?? ""} ${e.cause?.code ?? ""}`;
+      expect(chain).toMatch(/permission denied|42501/i);
+    };
+
+    await expectDenied(
+      withTenant(pool, tenantA, (db) =>
+        db.execute(sql`UPDATE audit_logs SET actor = 'tampered'`),
+      ),
+    );
+    await expectDenied(
+      withTenant(pool, tenantA, (db) =>
+        db.execute(sql`DELETE FROM audit_logs`),
+      ),
+    );
+
+    // INSERT + SELECT stay allowed (append-only, not read-blocked): tenantA has a
+    // row from the first test, still visible.
+    const rows = await withTenant(pool, tenantA, (db) =>
+      db.select().from(schema.auditLogs),
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 });

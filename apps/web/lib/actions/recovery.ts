@@ -46,10 +46,19 @@ export async function markAppealOutcome(
       SELECT d.denied_amount FROM appeals a
         JOIN denials d ON d.id = a.denial_id
        WHERE a.id = ${appealId} LIMIT 1`);
-    const appealedSar = rows.rows[0]?.denied_amount ?? "0.00";
+    const appeal = rows.rows[0];
+    // No such appeal for this tenant (stale/wrong/deleted id, or RLS-scoped out):
+    // do NOTHING. Otherwise the UPDATE below matches 0 rows yet we'd still write a
+    // spurious 'write' audit row and report ok:true for a change that never happened.
+    if (!appeal) return null;
+    const appealedSar = appeal.denied_amount;
 
     // B8 guardrail: recovered can never exceed appealed, never go negative.
-    const r = resolveRecovery({ outcome, appealedSar, requestedRecoveredSar: recoveredSar });
+    const r = resolveRecovery({
+      outcome,
+      appealedSar,
+      requestedRecoveredSar: recoveredSar,
+    });
 
     await db
       .update(schema.appeals)
@@ -72,10 +81,17 @@ export async function markAppealOutcome(
     return r;
   });
 
+  // Appeal not found for this tenant → nothing was changed or audited.
+  if (!resolution) return { ok: false };
+
   // Revalidate the whole authenticated layout so the ROI band, overview, and the
   // command-bar money indicator all recompute.
   revalidatePath("/[locale]/(app)", "layout");
-  return { ok: true, corrected: resolution.corrected, recoveredSar: resolution.recoveredSar };
+  return {
+    ok: true,
+    corrected: resolution.corrected,
+    recoveredSar: resolution.recoveredSar,
+  };
 }
 
 /** Form-action shape (returns void): reads appealId + outcome (+ optional recovered) from the form. */

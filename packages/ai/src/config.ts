@@ -37,3 +37,22 @@ export function isFeatureEnabled(
 export function featureEnvVar(feature: AiFeature): string {
   return FEATURE_ENV[feature];
 }
+
+/**
+ * On the LIVE path (no test/dev provider injected), the Anthropic client reads
+ * ANTHROPIC_API_KEY from the environment. If a feature is enabled but the key is
+ * absent, that is a MISCONFIGURATION, not an off-state — return the reason so the
+ * caller can throw AiConfigError and fail LOUD (distinct from AiDisabledError),
+ * rather than letting the SDK throw an auth error at request time that collapses
+ * into the same silent "unavailable" as a deliberate off. Returns null when the
+ * live provider can be constructed. Only call this when no provider is injected.
+ */
+export function missingProviderConfig(
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  const key = env.ANTHROPIC_API_KEY;
+  if (key === undefined || key.trim() === "") {
+    return "ANTHROPIC_API_KEY is not set (feature enabled but provider unconfigured)";
+  }
+  return null;
+}

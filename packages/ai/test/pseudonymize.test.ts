@@ -100,3 +100,36 @@ describe("detokenize — token prefix safety", () => {
     expect(detokenize("[P_10] and [P_1]", map)).toBe("ten and one");
   });
 });
+
+describe("ageBand — birthday + boundary branches", () => {
+  it("labels a future birth date as unknown (negative age -> null)", () => {
+    // NOW = 2026-07-05; a DOB in 2030 yields a negative age -> null -> unknown.
+    expect(ageBand("2030-01-01", NOW)).toBe("unknown");
+  });
+
+  it("does not credit the current year's birthday before it occurs (monthDelta<0)", () => {
+    // DOB month (Dec) is after NOW month (Jul) -> birthday not reached -> age 29.
+    expect(ageBand("1996-12-01", NOW)).toBe("20-29");
+  });
+
+  it("decrements when same month but the day has not been reached yet", () => {
+    // NOW day 5 < DOB day 6, same month -> age 39, not 40.
+    expect(ageBand("1986-07-06", NOW)).toBe("30-39");
+  });
+
+  it("does not decrement once the birthday day has passed in the same month", () => {
+    // NOW day 5 >= DOB day 4, same month -> full age 40.
+    expect(ageBand("1986-07-04", NOW)).toBe("40-49");
+  });
+});
+
+describe("pseudonymize — allowlisted free-text null handling", () => {
+  it("skips an allowlisted free-text column whose value is null", () => {
+    const { record } = pseudonymize(
+      { clinical_note: null },
+      { identifiers: {}, freeTextAllow: ["clinical_note"] },
+      NOW,
+    );
+    expect(record.clinical_note).toBeUndefined();
+  });
+});

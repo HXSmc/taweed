@@ -5,7 +5,6 @@ import { listDemoAccounts } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { DEV_AUTH_ENABLED } from "@/lib/auth";
 import { signInWithEmail } from "@/lib/actions/auth";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 // Local/dev sign-in (build-plan §4). Picking a demo account mints a real session
@@ -42,7 +41,9 @@ export default async function LoginPage({
         <p className="mt-1 text-body text-muted">{t("signInSubtitle")}</p>
 
         <div className="mt-6 rounded-lg border border-hairline bg-surface-1 p-1.5">
-          <p className="px-3 py-2 text-label text-muted">{t("chooseAccount")}</p>
+          <p className="px-3 py-2 text-label text-muted">
+            {t("chooseAccount")}
+          </p>
           <ul className="flex flex-col">
             {accounts.map((a) => (
               <li key={a.id}>
@@ -52,8 +53,12 @@ export default async function LoginPage({
                     className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-start transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     <span className="flex flex-col">
-                      <span className="text-body font-medium">{a.tenantName}</span>
-                      <span className="mono text-label text-muted">{a.email}</span>
+                      <span className="text-body font-medium">
+                        {a.tenantName}
+                      </span>
+                      <span className="mono text-label text-muted">
+                        {a.email}
+                      </span>
                     </span>
                     <Badge variant="accent" className="uppercase">
                       {tr(a.role as "owner")}
