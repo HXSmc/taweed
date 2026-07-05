@@ -271,6 +271,12 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
+  packages/ingest:
+    dependencies:
+      '@taweed/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/normalizer:
     dependencies:
       '@medplum/fhirtypes':
@@ -1241,12 +1247,6 @@ packages:
 
   '@next/swc-linux-x64-gnu@15.5.20':
     resolution: {integrity: sha512-DkWLEdKajJwdGt27M3i1VEO2kelTvZrK6Pcb7JvW2BY+nofWm7FBsBNDj7g7Pr1NuQ5PLJvqEqYa20GTsBDnKQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@next/swc-linux-x64-musl@15.5.20':
-    resolution: {integrity: sha512-rAO5b7pKHvX+ExdmJskusDXTNbiNZfptifIPZItbUx+AOXxxTydVBsPt7Oz84DRd5mY8e0DcE8kvLj3AIfjE6w==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -4023,9 +4023,6 @@ snapshots:
   '@next/swc-linux-x64-gnu@15.5.20':
     optional: true
 
-  '@next/swc-linux-x64-musl@15.5.20':
-    optional: true
-
   '@next/swc-win32-arm64-msvc@15.5.20':
     optional: true
 
@@ -5501,7 +5498,6 @@ snapshots:
       '@next/swc-linux-arm64-gnu': 15.5.20
       '@next/swc-linux-arm64-musl': 15.5.20
       '@next/swc-linux-x64-gnu': 15.5.20
-      '@next/swc-linux-x64-musl': 15.5.20
       '@next/swc-win32-arm64-msvc': 15.5.20
       '@next/swc-win32-x64-msvc': 15.5.20
       '@playwright/test': 1.61.1
