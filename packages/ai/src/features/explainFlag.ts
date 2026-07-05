@@ -1,8 +1,9 @@
+import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 import { withTenant, schema, type Pool } from "@taweed/db";
 import type { Severity } from "@taweed/rules-engine";
-import { AiDisabledError } from "../errors.js";
-import { isFeatureEnabled } from "../config.js";
+import { AiConfigError, AiDisabledError } from "../errors.js";
+import { isFeatureEnabled, missingProviderConfig } from "../config.js";
 import { normalizeArabicOutput } from "../postprocess-ar.js";
 import { sha256Hex } from "../sha256.js";
 import { runStructured, isTenantAiEnabled } from "../run.js";
@@ -127,12 +128,27 @@ export async function explainFlag(
     throw new AiDisabledError("feature 'explain' is disabled");
   }
 
+  // Derive the prompt up front (pure). The cache is keyed by (rule, version) but
+  // must be INVALIDATED when the prompt CONTENT changes: hardening the SFDA
+  // SYSTEM_PROMPT — or editing a rule's text without bumping its version — must
+  // force regeneration, never keep serving the stale/weaker wording. We compare
+  // the stored prompt_sha256 to the current one below (compliance-critical).
+  const system = SYSTEM_PROMPT;
+  const user = buildUserPrompt(opts.flag);
+  const promptSha256 = sha256Hex(`${system}\n${user}`);
+
   // Short txn: per-tenant kill switch + dedupe cache read. A disabled tenant
   // sees no AI at all — not even a cached explanation.
   const gate = await withTenant(opts.pool, opts.tenantId, async (db) => {
     if (!(await isTenantAiEnabled(db))) return { enabled: false as const };
     const rows = await db
-      .select()
+      .select({
+        prompt_sha256: schema.flagExplanations.prompt_sha256,
+        explanation_en: schema.flagExplanations.explanation_en,
+        explanation_ar: schema.flagExplanations.explanation_ar,
+        suggested_fix_en: schema.flagExplanations.suggested_fix_en,
+        suggested_fix_ar: schema.flagExplanations.suggested_fix_ar,
+      })
       .from(schema.flagExplanations)
       .where(
         and(
@@ -144,11 +160,23 @@ export async function explainFlag(
     return { enabled: true as const, hit: rows[0] };
   });
   if (!gate.enabled) throw new AiDisabledError("tenant AI flag is off");
-  if (gate.hit) return toExplanation(gate.hit);
+  // Cache hit ONLY when the stored prompt matches the current one. A stored row
+  // whose prompt_sha256 differs is STALE (prompt/rule text changed) → treat as a
+  // miss and regenerate with the current wording, then overwrite it below.
+  if (gate.hit && gate.hit.prompt_sha256 === promptSha256) {
+    return toExplanation(gate.hit);
+  }
 
+  // Live path: a feature that is ENABLED but has no configured provider (no
+  // injected provider AND no ANTHROPIC_API_KEY) is a MISCONFIGURATION, not an
+  // off-state — fail LOUD and DISTINCT (AiConfigError) so ops can tell it apart
+  // from a deliberate off, instead of the SDK throwing an auth error at request
+  // time that collapses into the same silent "unavailable".
+  if (opts.provider === undefined) {
+    const missing = missingProviderConfig(env);
+    if (missing) throw new AiConfigError(missing);
+  }
   const provider = opts.provider ?? createAnthropicProvider();
-  const system = SYSTEM_PROMPT;
-  const user = buildUserPrompt(opts.flag);
 
   // The provider call + its audit row happen here (audit inside a short txn).
   const parsed = await runStructured<FlagExplanation>({
@@ -178,8 +206,12 @@ export async function explainFlag(
     suggested_fix_ar: normalizeArabicOutput(parsed.suggested_fix_ar),
   };
 
-  // Short txn: persist (idempotent) then re-read the CANONICAL row, so if a
-  // concurrent caller won the insert, both callers return the same cached text.
+  // Short txn: UPSERT then re-read the CANONICAL row. onConflictDoUpdate (not
+  // DoNothing) so a STALE row — one cached under an older prompt — is overwritten
+  // with the freshly generated wording + its new prompt_sha256; for the same
+  // prompt it is idempotent. Re-reading means concurrent callers converge on
+  // identical text.
+  const modelId = provider.mapModelId("haiku");
   const canonical = await withTenant(opts.pool, opts.tenantId, async (db) => {
     await db
       .insert(schema.flagExplanations)
@@ -187,16 +219,36 @@ export async function explainFlag(
         tenant_id: sql`current_setting('app.tenant_id')::uuid`,
         rule_id: opts.flag.ruleId,
         rule_version: opts.flag.ruleVersion,
-        model: provider.mapModelId("haiku"),
-        prompt_sha256: sha256Hex(`${system}\n${user}`),
+        model: modelId,
+        prompt_sha256: promptSha256,
         explanation_en: explanation.explanation_en,
         explanation_ar: explanation.explanation_ar,
         suggested_fix_en: explanation.suggested_fix_en,
         suggested_fix_ar: explanation.suggested_fix_ar,
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: [
+          schema.flagExplanations.tenant_id,
+          schema.flagExplanations.rule_id,
+          schema.flagExplanations.rule_version,
+        ],
+        set: {
+          model: modelId,
+          prompt_sha256: promptSha256,
+          explanation_en: explanation.explanation_en,
+          explanation_ar: explanation.explanation_ar,
+          suggested_fix_en: explanation.suggested_fix_en,
+          suggested_fix_ar: explanation.suggested_fix_ar,
+          created_at: sql`now()`,
+        },
+      });
     const rows = await db
-      .select()
+      .select({
+        explanation_en: schema.flagExplanations.explanation_en,
+        explanation_ar: schema.flagExplanations.explanation_ar,
+        suggested_fix_en: schema.flagExplanations.suggested_fix_en,
+        suggested_fix_ar: schema.flagExplanations.suggested_fix_ar,
+      })
       .from(schema.flagExplanations)
       .where(
         and(

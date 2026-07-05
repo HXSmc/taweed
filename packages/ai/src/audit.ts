@@ -5,6 +5,7 @@
 // the *_sha256 fields are actually 64-hex — so raw text accidentally routed
 // into a hash column is rejected, not persisted. Row is scoped to the ACTIVE
 // RLS tenant, never a passed-in tenant id.
+import "server-only";
 import { sql } from "drizzle-orm";
 import { schema, type Database } from "@taweed/db";
 
