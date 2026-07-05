@@ -17,11 +17,15 @@ export {
   trend,
   captureBaseline,
   getLatestBaseline,
+  recoverability,
   type DenialDimension,
 } from "./queries.js";
 export {
   resolveRecovery,
+  recoverabilityByPayerReason,
   type AppealOutcome,
   type RecoveryResolution,
   type ResolveRecoveryInput,
+  type AppealOutcomeFact,
+  type RecoverabilityRow,
 } from "./recovery.js";

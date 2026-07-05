@@ -10,6 +10,10 @@ import type {
   TrendPoint,
 } from "./types.js";
 import { cumulativePareto } from "./money.js";
+import {
+  recoverabilityByPayerReason,
+  type RecoverabilityRow,
+} from "./recovery.js";
 
 // Rollups over the CANONICAL relational model only (build-plan §3, §6) — never
 // raw FHIR. Every function MUST be called inside `withTenant`, so RLS scopes all
@@ -276,6 +280,32 @@ export async function captureBaseline(
               baseline_claim_count AS claim_count,
               note`);
   return toBaseline(res.rows[0]!);
+}
+
+/**
+ * EXECUTE B7 — recovered-outcome feedback loop over real appeals (design-brief
+ * §10 flywheel). Aggregates resolved appeals into per payer+reason recovery
+ * rates, so the scrubber/queue can prioritize winnable combos. Reuses the pure
+ * aggregator so DB and in-memory results stay identical.
+ */
+export async function recoverability(db: Database): Promise<RecoverabilityRow[]> {
+  const res = await db.execute<{
+    payer_id: string;
+    reason_code: string;
+    status: string;
+  }>(sql`
+    SELECT c.payer_id, d.reason_code, a.status
+      FROM appeals a
+      JOIN denials d ON d.id = a.denial_id
+      JOIN claim_lines cl ON cl.id = d.claim_line_id
+      JOIN claims c ON c.id = cl.claim_id`);
+  return recoverabilityByPayerReason(
+    res.rows.map((r) => ({
+      payerId: r.payer_id,
+      reasonCode: r.reason_code,
+      status: r.status,
+    })),
+  );
 }
 
 /** Latest recovery baseline for the tenant, or null if none captured yet. */

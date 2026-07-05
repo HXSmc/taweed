@@ -2,6 +2,7 @@
 export * from "./types.js";
 export { SCRUBBER_RULES } from "./rules.js";
 export { scrub } from "./scrub.js";
+export { selectRulesForClaim, type RuleSelector } from "./select.js";
 export {
   projectClaimFacts,
   claimToFactsReal,

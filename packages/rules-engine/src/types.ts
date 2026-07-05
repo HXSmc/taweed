@@ -33,6 +33,8 @@ export type Severity = "info" | "warn" | "high";
 
 /** A scrubber rule expressed as DATA (json-rules-engine condition tree, no eval). */
 export interface ScrubRule {
+  // Logical rule identity. Multiple rows may share an id across versions; the
+  // highest version wins (EXECUTE B7 per-payer tuning).
   id: string;
   name: string;
   scope: "global" | "tenant" | "payer";
@@ -44,6 +46,11 @@ export interface ScrubRule {
   message_ar: string;
   // json-rules-engine TopLevelCondition; kept `unknown` so rules stay pure data.
   conditions: unknown;
+  // EXECUTE B7 — scope bindings. A payer rule with payerId applies only to that
+  // payer (null/undefined = any payer); a tenant rule likewise. Global rules
+  // ignore both. These let rule SETS be authored + versioned per payer as data.
+  payerId?: string | null;
+  tenantId?: string | null;
 }
 
 /** One raised flag — traces back to the rule id + name and the field that failed. */

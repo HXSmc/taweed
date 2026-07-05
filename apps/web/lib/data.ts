@@ -15,6 +15,7 @@ import {
 import {
   scrub,
   SCRUBBER_RULES,
+  selectRulesForClaim,
   projectClaimFacts,
   type ScrubResult,
 } from "@taweed/rules-engine";
@@ -147,7 +148,13 @@ export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> 
           patientById.get(claim.patient_id),
           SCRUB_YEAR,
         );
-        const result = await scrub(facts, SCRUBBER_RULES);
+        // B7: scope the rule library to this claim's payer/tenant before scrubbing
+        // (global + this payer's tuned rules + this tenant's overrides).
+        const rules = selectRulesForClaim(SCRUBBER_RULES, {
+          payerId: claim.payer_id,
+          tenantId,
+        });
+        const result = await scrub(facts, rules);
         return {
           claimId: claim.id,
           nphiesClaimId: claim.nphies_claim_id,
