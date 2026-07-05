@@ -2,38 +2,99 @@
 
 > Companion to `docs/04_agentic_retrofit_plan.md` §9 (PROMPT 1 built AI-0 + AI-1 on branch
 > `ai-phase-0-1`). This is the **hardening loop** that runs after that build lands on the branch and
-> before it merges to `main`: it sweeps every error and every *latent* ("possible") error across the
+> before it merges to `main`: it sweeps every error and every _latent_ ("possible") error across the
 > whole product, fixes them at the root, and stops only when the branch is genuinely deploy-ready for
 > the first-retrofit stage. It never adds features and never autonomously touches the money path.
 >
 > This doc was adversarially critiqued (4 lenses: completeness / tool-reality / termination /
 > repo-facts) and the findings are folded in. Notably: the explainer dedupes by
 > `(tenantId, ruleId, ruleVersion)` with **both locales in one row** (NOT by locale); `llm_calls` is
-> append-only *by convention only* today (no DB grant blocks UPDATE/DELETE); the terminal merge is
+> append-only _by convention only_ today (no DB grant blocks UPDATE/DELETE); the terminal merge is
 > **human-gated**, not autonomous.
+
+## HANDOFF — current state (a fresh agent resumes HERE)
+
+> Written mid-run so another agent (or a future you) can take over cleanly. **Read
+> `docs/ai-deploy-readiness.md` (the durable ledger) FIRST — it is the loop's memory
+> (counters, DoD ticks, defect log, the open escalation).** This block is the fast summary.
+
+**Where we are (2026-07-05):** AI-0/AI-1 already merged to `origin/main` (`8425801`), so the loop was
+ADAPTED: hardening runs on a fresh fix-branch **`ai-harden`** off main (NOT the merged `ai-phase-0-1`).
+Fixes land on `ai-harden`; at DEPLOY-READY a human reviews + merges the PR into main. `ai-harden` is
+**local only — NOT pushed** (that's why CI on `main` still shows the pre-fix red).
+
+**Committed on `ai-harden` (2 commits; iteration 3 in progress, uncommitted working tree):**
+
+- **iter1 `99ff12d`** — AI compliance core: `llm_calls` append-only-by-privilege (REVOKE), cache
+  invalidation on `prompt_sha256`, distinct `AiConfigError`, `server-only` markers (+ vitest alias
+  `test/stubs/server-only.js`), audit-write observability, `created_at NOT NULL`, pseudonymize→100%;
+  fixed the standing **CI E2E** blocker (money-arc filled a nonexistent email input — dev login is a
+  demo-account PICKER; now clicks the owner button).
+- **iter2 `cdb7021`** — deferred AI fixes (rate-limit on `explainFlagAction`, i18n loud-missing-message,
+  a11y `aria-live`) + a 10-area full-product prior-core sweep (Workflow + adversarial verify). Fixed 6
+  confirmed non-money-path defects: **`audit_logs` append-only** (CRITICAL, was mutable — same gap as
+  llm_calls), appeals prototype-safe template lookup, appeals uses payer-facing `nphiesClaimId` not the
+  internal UUID, CSV stray-quote + header-collision data-loss.
+- **iter3 (uncommitted)** — verified the 3 session-limited findings: `recovery.ts` markAppealOutcome
+  no-row-check → **FIXED** (guard on a missing appeal; no money-math change); `auth.ts` dev-auth-in-prod
+  → **by-design** (documented env escape hatch, AUTH_SECRET fails closed in prod); normalizer
+  `0.00`-vs-quarantine → **latent** (synthetic data always sets the amount) → documented for BLK-1.
+
+**⚠ OPEN — DO NOT auto-fix (money path = moat, human-gated):** `analytics/queries.ts:207,216`
+`moneyScope` excludes a PARTIALLY-won denial from at-risk entirely while counting only the partial
+recovered — the unrecovered remainder falls into neither figure (contradicts the docstring intent).
+**A human must decide** whether that remainder is still "at-risk" (bug) or a resolved write-off
+(by-design). **DEPLOY-READY is blocked on this.** If the human says "bug, fix it", the at-risk subquery
+must subtract the partial recovery — still a human-approved money-path edit.
+
+**Still PENDING (next iterations, none money-path-gated except the above):**
+
+1. Push `ai-harden` (or a human merges) so CI verifies — CI on main is red only because the fix is unpushed.
+2. Local Playwright E2E verify of the money-arc fix (a run was in flight at handoff: seed + `playwright
+install chromium` + `next build` + `test:e2e` money-arc; browsers were not previously installed).
+3. `apps/web` ESLint gap (react reviewer CRITICAL): `eslint.config.mjs` ignores `apps/web/**` → `next
+lint` lints ZERO files. Wiring eslint-config-next may cascade — triage in a dedicated iteration.
+4. chrome-devtools runtime smoke (gate 6): 3 config states distinguishable, EN/AR RTL × light/dark,
+   reduced-motion, WCAG AA, digit law, version-desync.
+5. a11y row-semantics: `scrubber-table.tsx` `<TR role="button">` strips table row semantics.
+6. drizzle-kit stale journal (MEDIUM dev-tooling): `db:generate` emits duplicate DDL — regenerate the
+   snapshot or drop the script; the live migration path is the hand-written SQL, unaffected.
+7. Give the recovery.ts fix a test (needs an apps/web test harness — tied to item 3).
+
+**Toolchain gotchas (also in the ledger + [[toolchain-quirks]] memory):** pnpm at `~/.local/bin`; fish
+shell (`env VAR=val` prefix); RTK compresses tsc/vitest/eslint stdout → write to a file + read it;
+`--project unit` / `--project integration`; Docker CLI HANGS on daemon metadata (`info`/`ps`/`version`/
+`compose exec`) — bring Postgres up with `docker compose up -d`, then probe port 5432 via a Node `net`
+socket (never `docker info`); `server-only` throws in vitest → aliased to a no-op stub; session limits
+can kill parallel subagents mid-workflow (re-verify after reset).
+
+**To resume:** read the ledger → run gates 1–7 for the current HEAD → work the PENDING list one
+iteration per turn → update the ledger every iteration → STOP at DEPLOY-READY (2 consecutive zero-change
+clean passes, all DoD fresh) or ESCALATE (per SAFETY CAPS). The money-path item above is the one hard
+gate on DEPLOY-READY until the human decides.
 
 ## When to run
 
 - After PROMPT 1 has committed AI-0 + AI-1 on `ai-phase-0-1` (currently **N commits ahead of `main`,
   not yet merged** — check live with `git rev-list --count main..HEAD`; it grows as the loop commits
   fixes). This loop is the gate before the merge/push ritual.
-- **Two-tier scope.** "Deploy-ready" is a *product-level* bar, so the loop audits the WHOLE product,
+- **Two-tier scope.** "Deploy-ready" is a _product-level_ bar, so the loop audits the WHOLE product,
   not just the new layer:
   - **Primary (deepest scrutiny) — the AI-0/AI-1 diff** (`git diff main...HEAD`) and anything it
     touches: `packages/ai/**`, migration `0006_llm_calls.sql`, the scrubber flag-explainer UI.
   - **Full-product regression + latent-defect sweep — everything already on `main`** from the prior
     phases (CREATE / IMPLEMENT / EXECUTE): `packages/{rules-engine, appeals, ingest, db, audit,
-    platform, shared}`, the whole `apps/web` app, `test/synthetic-fhir`, `scripts/`, `infra/`. Prior
+platform, shared}`, the whole `apps/web` app, `test/synthetic-fhir`, `scripts/`, `infra/`. Prior
     versions do not get a pass just because they predate this branch — a real error anywhere blocks
     deployment.
-- It will *not* start AI-2/AI-3/AI-4 (those are PROMPT 2/3) and does **not** rewrite or speculatively
-  "improve" the deterministic core — it only *fixes genuine defects*, and any change to the money path
+- It will _not_ start AI-2/AI-3/AI-4 (those are PROMPT 2/3) and does **not** rewrite or speculatively
+  "improve" the deterministic core — it only _fixes genuine defects_, and any change to the money path
   is escalated to a human, never made autonomously (see SAFETY CAPS).
 
 ## How to invoke (two modes)
 
 - **Self-paced loop (recommended):** paste the fenced block below into `/loop` with **no interval** —
-  `/loop <paste the block>`. Self-paced means *the model decides when to continue*: each iteration
+  `/loop <paste the block>`. Self-paced means _the model decides when to continue_: each iteration
   does one full sweep + fixes, updates the durable ledger, then — if the CONTINUE condition holds —
   schedules the next iteration; when DEPLOY-READY or ESCALATE it prints the report and ends the turn
   **without** scheduling (loop stops).

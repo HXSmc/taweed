@@ -13,9 +13,9 @@
 
 ## Counters (loop memory)
 
-- `iteration_counter` = 2
-- `change_iteration_counter` = 2 _(only iterations that changed product source count toward the cap of 12)_
-- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 2 changed product source)_
+- `iteration_counter` = 3
+- `change_iteration_counter` = 3 _(only iterations that changed product source count toward the cap of 12)_
+- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 3 changed product source)_
 - `last_clean_head_sha` = _(empty)_
 
 ## ⚠ OPEN ESCALATION — money-path semantics (HUMAN decision required, NOT patched)
@@ -124,3 +124,13 @@ _(terse per-iteration status appended below each pass)_
 - **Deferred (documented)**: drizzle-kit journal stale (0001-0006 not snapshotted → `pnpm db:generate` emits duplicate DDL; MEDIUM dev-tooling); apps/web ESLint gap; chrome-devtools runtime smoke; E2E Playwright local verify; row-semantics a11y.
 - Gates this iteration: root+web typecheck/build ✓, lint ✓, unit **284/284** ✓, int **23/23** ✓. **EXIT = CONTINUE** (money-path escalation open; unverified findings + runtime smoke + Playwright + lint-infra pending; consecutive_clean_passes=0).
 - Constraint: hit the session limit (resets 8:20pm Asia/Riyadh) — 15 sweep verifier subagents failed; main-agent work unaffected.
+
+### iteration 3 — re-verify the 3 session-limited findings + handoff + CI diagnosis
+
+- Re-verified (myself, session reset) the 3 findings whose sweep verifiers died:
+  - `recovery.ts:43` markAppealOutcome no-row-check — **CONFIRMED + FIXED**: a stale/wrong/RLS-scoped-out `appealId` → SELECT finds nothing → previously UPDATE matched 0 rows yet still logged a 'write' audit + returned `ok:true`. Guard: `if (!appeal) return null` → outer `if (!resolution) return {ok:false}`. Does NOT change `resolveRecovery` math (safe, non-money-path-logic).
+  - `auth.ts:19` dev-auth-in-prod — **REFUTED / by-design**: `DEV_AUTH_ENABLED = !IS_PROD || TAWEED_ENABLE_DEV_AUTH==="1"` is an intentional, documented env escape hatch; AUTH_SECRET fails closed in prod (`:26`). Not a defect (KSA-OIDC swap is the DEPLOY replacement).
+  - `normalizer/normalize.ts:191` `0.00`-vs-quarantine — **CONFIRMED but LATENT + money-path-adjacent** → documented, NOT patched: a missing adjudication amount → `moneyStr(undefined)` → "0.00" (understates denied/at-risk). The synthetic generator ALWAYS sets the amount (`generate.ts:76,93`), so it can't trigger today; the right behavior (throw like the missing-line case at `:178`, or quarantine like the EXECUTE claim-amount pattern) is a real-data (BLK-1) decision that affects money numbers → defer to the real-data phase.
+- **Handoff added** to `docs/AI_HARDEN_LOOP.md` (new "## HANDOFF — current state" block) so a fresh agent can take over.
+- **CI diagnosis (user asked)**: CI on `main` is red only because **`ai-harden` is NOT pushed** (origin has main/back-up/back-up-not-agentic only); the latest run `28741047013` is the pre-fix main merge. **Local Playwright can't run** — playwright 1.61 TS-config loader fails under the pinned node **20.2.0** (`Cannot use import statement outside a module`); CI's newer node 20.x loads it fine. The money-arc fix is root-caused with high confidence; definitive verification = push `ai-harden` (or the human merges) → CI runs.
+- Gates: root+web typecheck ✓, lint ✓, unit **284/284** ✓, int unchanged (23/23; no DB/schema change). **EXIT = CONTINUE** (money-path escalation open; push-for-CI, runtime smoke, lint-gap, a11y row-semantics, drizzle journal, normalizer-at-real-data pending).
