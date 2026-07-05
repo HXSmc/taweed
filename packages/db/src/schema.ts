@@ -222,6 +222,64 @@ export const recoveryBaselines = pgTable("recovery_baselines", {
   note: text("note"),
 });
 
+/**
+ * AI-0 — append-only LLM audit trail (plan 04 §5). HASHES ONLY; the @taweed/ai
+ * audit guard refuses any raw prompt/output or PHI-bearing field. One row per
+ * model call. `purpose` CHECK enum enforced in migration 0006.
+ */
+export const llmCalls = pgTable("llm_calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  actor_id: text("actor_id").notNull(),
+  purpose: text("purpose").notNull(),
+  model: text("model").notNull(),
+  provider: text("provider").notNull(),
+  prompt_sha256: text("prompt_sha256").notNull(),
+  output_sha256: text("output_sha256").notNull(),
+  input_tokens: integer("input_tokens").notNull().default(0),
+  output_tokens: integer("output_tokens").notNull().default(0),
+  cache_read_tokens: integer("cache_read_tokens").notNull().default(0),
+  request_id: text("request_id"),
+  latency_ms: integer("latency_ms"),
+  flags_state: text("flags_state"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * AI-1 — bilingual scrub-flag explanation cache (plan 04 §2, §4.4). Deduped by
+ * (rule, version) per tenant so each rule is explained once, not per claim; both
+ * locales live in one row (a single model call returns all four fields).
+ */
+export const flagExplanations = pgTable("flag_explanations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  rule_id: text("rule_id").notNull(),
+  rule_version: integer("rule_version").notNull(),
+  model: text("model").notNull(),
+  prompt_sha256: text("prompt_sha256").notNull(),
+  explanation_en: text("explanation_en").notNull(),
+  explanation_ar: text("explanation_ar").notNull(),
+  suggested_fix_en: text("suggested_fix_en").notNull(),
+  suggested_fix_ar: text("suggested_fix_ar").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * AI-0 — per-tenant kill switch (plan 04 §5). Absent row = enabled (the global
+ * env switch is the fail-closed gate); a row can turn a single tenant OFF.
+ */
+export const tenantAiSettings = pgTable("tenant_ai_settings", {
+  tenant_id: uuid("tenant_id")
+    .primaryKey()
+    .references(() => tenants.id),
+  ai_enabled: boolean("ai_enabled").notNull().default(true),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenant_id: uuid("tenant_id")
@@ -261,5 +319,8 @@ export const TENANT_SCOPED_TABLES = [
   "appeals",
   "recovery_baselines",
   "audit_logs",
+  "llm_calls",
+  "flag_explanations",
+  "tenant_ai_settings",
   "users",
 ] as const;
