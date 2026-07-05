@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  html, body { background: var(--bg); }
+  .tw-cta:hover { background: var(--accent-hover) !important; }
+  .tw-ghost2:hover { background: var(--surface-2) !important; }
+  .tw-beat:hover { background: var(--surface-2) !important; }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: var(--bg); color: var(--text);">
+
+  <!-- ============ NAV ============ -->
+  <header style="position: sticky; top: 0; z-index: 30; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-inline: clamp(20px, 5vw, 64px); background: color-mix(in oklch, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--hairline);">
+    <div style="display: flex; align-items: baseline; gap: 10px;">
+      <span style="font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; color: var(--text);">Taweed</span>
+      <span style="font-size: 12px; color: var(--text-faint); white-space: nowrap; unicode-bidi: plaintext;">{{ navSub }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="display: none; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted);" class="tw-resid"></span>
+      <button class="tw-ghost2" onClick="{{ toggleLang }}" style="height: 34px; min-width: 40px; padding-inline: 12px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-weight: 600; font-size: var(--fs-body); cursor: pointer;">{{ langToggle }}</button>
+      <button class="tw-cta" onClick="{{ scrollToAudit }}" style="height: 38px; padding-inline: 16px; background: var(--accent); border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ navFree }}</button>
+    </div>
+  </header>
+
+  <!-- ============ HERO (Attention) ============ -->
+  <section style="padding: clamp(48px, 8vw, 96px) clamp(20px, 5vw, 64px) clamp(40px, 6vw, 72px); max-width: 1180px; margin-inline: auto;">
+    <div style="display: grid; grid-template-columns: {{ heroCols }}; gap: clamp(32px, 5vw, 64px); align-items: center;">
+      <div style="min-width: 0;">
+        <span style="display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: var(--r-full); background: var(--accent-subtle); color: var(--accent); font-size: var(--fs-small); font-weight: 600; margin-bottom: 24px; unicode-bidi: plaintext;">
+          <span style="width: 6px; height: 6px; border-radius: var(--r-full); background: var(--accent);"></span>{{ heroKicker }}
+        </span>
+        <h1 style="margin: 0 0 22px; font-family: var(--font-display); font-weight: 500; font-size: clamp(34px, 4.6vw, 60px); line-height: 1.04; letter-spacing: -0.02em; color: var(--text); text-wrap: balance; unicode-bidi: plaintext;">
+          {{ heroLead }}
+          <span class="num--hero" style="display: block; font-weight: 700; color: var(--at-risk); letter-spacing: -0.03em; margin: 8px 0; white-space: nowrap;"><span style="font-size: 0.5em; font-weight: 500; color: var(--text-muted); margin-inline-end: 10px; letter-spacing: 0;">SAR</span>{{ heroNum }}</span>
+          {{ heroSuffix }}
+        </h1>
+        <p style="margin: 0 0 30px; font-size: clamp(15px, 1.4vw, 19px); line-height: 1.55; color: var(--text-muted); max-width: 520px; unicode-bidi: plaintext;">{{ heroSub }}</p>
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <button class="tw-cta" onClick="{{ scrollToAudit }}" style="height: 48px; padding-inline: 26px; background: var(--accent); border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-h3); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ heroCta }}</button>
+          <span style="display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">
+            <svg style="flex: none; color: var(--money-neutral);" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M7.5 1.5 2.5 3.3v3.8c0 3 2 5 5 6 3-1 5-3 5-6V3.3L7.5 1.5Z"/></svg>{{ heroTrust }}
+          </span>
+        </div>
+      </div>
+
+      <!-- product core moment: dual instrument (real UI, not a screenshot) -->
+      <div style="border: 1px solid var(--hairline); border-radius: var(--r-xl); background: var(--surface-1); overflow: hidden; box-shadow: var(--shadow-md);">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--hairline); background: var(--surface-2);">
+          <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); unicode-bidi: plaintext;">{{ instTitle }}</span>
+          <span style="font-size: 8.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--money-neutral); border: 1px solid var(--hairline-strong); border-radius: 3px; padding: 1px 4px;">{{ mock }}</span>
+        </div>
+        <div style="padding: 22px; display: flex; flex-direction: column; gap: 18px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="width: 8px; height: 8px; border-radius: var(--r-full); background: var(--at-risk);"></span><span style="font-size: var(--fs-small); font-weight: 600; color: var(--at-risk-text); unicode-bidi: plaintext;">{{ instAtRisk }}</span></div>
+            <span class="num--hero" style="font-size: clamp(30px, 3.4vw, 40px); font-weight: 700; color: var(--at-risk); line-height: 1; letter-spacing: -0.02em; white-space: nowrap;"><span style="font-size: 0.42em; font-weight: 500; color: var(--text-muted); margin-inline-end: 7px;">SAR</span>{{ instRiskNum }}</span>
+          </div>
+          <div style="height: 8px; border-radius: var(--r-full); background: var(--at-risk-bg); overflow: hidden; display: flex;">
+            <div style="width: 18%; height: 100%; background: var(--recovered);"></div>
+            <div style="flex: 1; height: 100%; background: var(--at-risk); opacity: 0.85;"></div>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="width: 8px; height: 8px; border-radius: var(--r-full); background: var(--recovered);"></span><span style="font-size: var(--fs-small); font-weight: 600; color: var(--recovered-text); unicode-bidi: plaintext;">{{ instRecovered }}</span></div>
+            <span class="num--hero" style="font-size: clamp(30px, 3.4vw, 40px); font-weight: 700; color: var(--recovered); line-height: 1; letter-spacing: -0.02em; white-space: nowrap;"><span style="font-size: 0.42em; font-weight: 500; color: var(--text-muted); margin-inline-end: 7px;">SAR</span>{{ instRecNum }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INTEREST ============ -->
+  <section style="padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 64px); border-top: 1px solid var(--hairline); background: var(--surface-2);">
+    <div style="max-width: 1180px; margin-inline: auto;">
+      <p style="margin: 0 0 clamp(28px, 4vw, 48px); font-family: var(--font-display); font-weight: 500; font-size: clamp(22px, 2.4vw, 32px); line-height: 1.25; letter-spacing: -0.01em; color: var(--text); max-width: 760px; text-wrap: balance; unicode-bidi: plaintext;">{{ interestClaim }}</p>
+      <div style="border-top: 1px solid var(--hairline);">
+        <sc-for list="{{ beats }}" as="b" hint-placeholder-count="3">
+          <div class="tw-beat" style="display: grid; grid-template-columns: {{ beatCols }}; gap: clamp(16px, 3vw, 40px); align-items: start; padding: clamp(22px, 3vw, 34px) 4px; border-bottom: 1px solid var(--hairline);">
+            <span class="num" style="font-family: var(--font-display); font-weight: 500; font-size: clamp(28px, 3vw, 40px); color: var(--hairline-strong); line-height: 1;">{{ b.k }}</span>
+            <div style="min-width: 0;">
+              <h3 style="margin: 0 0 8px; font-size: clamp(18px, 1.8vw, 24px); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ b.title }}</h3>
+              <p style="margin: 0; font-size: var(--fs-h3); line-height: 1.5; color: var(--text-muted); max-width: 560px; unicode-bidi: plaintext;">{{ b.body }}</p>
+            </div>
+            <span style="justify-self: {{ beatMoneyJustify }}; display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: var(--r-full); background: {{ b.moneyBg }}; white-space: nowrap;">
+              <span style="width: 7px; height: 7px; border-radius: var(--r-full); background: {{ b.moneyDot }};"></span>
+              <span class="num" style="font-size: var(--fs-body); font-weight: 600; color: {{ b.moneyColor }};">{{ b.money }}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DESIRE: recovery-share + trust ============ -->
+  <section style="padding: clamp(48px, 7vw, 88px) clamp(20px, 5vw, 64px);">
+    <div style="max-width: 1180px; margin-inline: auto;">
+      <div style="display: grid; grid-template-columns: {{ priceCols }}; gap: clamp(28px, 4vw, 56px); align-items: center; margin-bottom: clamp(40px, 5vw, 64px);">
+        <div>
+          <span style="display: block; font-size: var(--fs-small); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; unicode-bidi: plaintext;">{{ priceKicker }}</span>
+          <h2 style="margin: 0 0 14px; font-family: var(--font-display); font-weight: 500; font-size: clamp(26px, 3vw, 40px); line-height: 1.15; letter-spacing: -0.015em; color: var(--text); text-wrap: balance; unicode-bidi: plaintext;">{{ priceTitle }}</h2>
+          <p style="margin: 0; font-size: clamp(16px, 1.6vw, 20px); font-weight: 500; color: var(--recovered-text); unicode-bidi: plaintext;">{{ priceLine }}</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--r-lg); overflow: hidden;">
+          <sc-for list="{{ trust }}" as="tr" hint-placeholder-count="4">
+            <div style="background: var(--surface-1); padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+              <span style="color: var(--accent);">
+                <sc-if value="{{ tr.isResidency }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10 2 3.5 4.4v5c0 4 2.7 6.6 6.5 7.8 3.8-1.2 6.5-3.8 6.5-7.8v-5L10 2Z"/></svg></sc-if>
+                <sc-if value="{{ tr.isAudit }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5h8l4 4V16a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 4 16V3.5Z"/><path d="M12 3.5v4h4M7 11h6M7 13.5h4"/></svg></sc-if>
+                <sc-if value="{{ tr.isRbac }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="4" y="8.5" width="12" height="8" rx="1.2"/><path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5" stroke-linecap="round"/></svg></sc-if>
+                <sc-if value="{{ tr.isHitl }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6.5" r="2.8"/><path d="M4.5 16.5a5.5 5.5 0 0 1 11 0"/></svg></sc-if>
+              </span>
+              <span style="font-size: var(--fs-body); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ tr.t }}</span>
+              <span style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4; unicode-bidi: plaintext;">{{ tr.d }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ACTION: free audit ============ -->
+  <section data-anchor="audit" style="padding: clamp(20px, 4vw, 40px) clamp(20px, 5vw, 64px) clamp(56px, 7vw, 96px);">
+    <div style="max-width: 1180px; margin-inline: auto;">
+      <div style="border: 1px solid var(--hairline); border-radius: var(--r-xl); background: var(--surface-1); overflow: hidden; position: relative;">
+        <div style="padding: clamp(36px, 5vw, 64px); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; background: linear-gradient(180deg, var(--at-risk-bg) 0%, transparent 40%);">
+          <span style="display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: var(--r-full); background: var(--surface-1); border: 1px solid var(--hairline); color: var(--at-risk-text); font-size: var(--fs-small); font-weight: 600; unicode-bidi: plaintext;">{{ actionKicker }}</span>
+          <h2 style="margin: 0; font-family: var(--font-display); font-weight: 500; font-size: clamp(28px, 3.4vw, 46px); line-height: 1.1; letter-spacing: -0.02em; color: var(--text); max-width: 640px; text-wrap: balance; unicode-bidi: plaintext;">{{ actionTitle }}</h2>
+          <p style="margin: 0; font-size: clamp(15px, 1.5vw, 19px); color: var(--text-muted); max-width: 480px; unicode-bidi: plaintext;">{{ actionSub }}</p>
+          <button class="tw-cta" style="margin-top: 8px; height: 50px; padding-inline: 30px; background: var(--accent); border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-h3); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ actionCta }}</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="padding: 28px clamp(20px, 5vw, 64px); border-top: 1px solid var(--hairline); background: var(--surface-2);">
+    <div style="max-width: 1180px; margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ footer }}</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M6.5 1.5 2.5 3v3c0 2.4 1.7 4 4 4.8 2.3-.8 4-2.4 4-4.8V3l-4-1.5Z"/></svg>{{ residency }}
+      </span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:900}}">
+const L = {
+  en: {
+    navSub: "Denial recovery", navFree: "Get free audit", residency: "In-Kingdom, Riyadh. PDPL.", langToggle: "ع", mock: "MOCK",
+    heroKicker: "NPHIES-native denial recovery",
+    heroLead: "You are losing", heroSuffix: "a year to denied claims.",
+    heroSub: "See exactly which payers and codes are draining it, from your own NPHIES data. No new system.",
+    heroCta: "Get a free denial audit", heroTrust: "Your data stays in the Kingdom. Every access logged.",
+    instTitle: "Your money, live", instAtRisk: "At risk, denied", instRecovered: "Recovered",
+    interestClaim: "NPHIES-native denial recovery for mid-market clinic groups. No new system to run.",
+    beats: [
+      { k: "01", title: "See the leak", body: "Your denial map in under 10 minutes. Bupa Arabia, Tawuniya, MedGulf, ranked by the SAR they hold, not the count.", money: "SAR 1.84M at risk", tone: "risk" },
+      { k: "02", title: "Stop new leaks", body: "The scrubber flags claims likely to deny before you submit. Every flag traces to a named rule, never a black box.", money: "SAR 74,600 protected per batch", tone: "accent" },
+      { k: "03", title: "Recover the old ones", body: "Bilingual appeals drafted from the denial and payer. You review, you send. Recovered SAR tracked to the riyal.", money: "SAR 412,900 recovered", tone: "rec" }
+    ],
+    priceKicker: "Priced on proof",
+    priceTitle: "You pay a per-branch base plus 10 to 15% of what we actually recover.",
+    priceLine: "If you do not recover, that share is zero.",
+    trust: [
+      { t: "In-Kingdom residency", d: "Riyadh, Oracle Cloud. PDPL, AES-256 at rest.", kind: "residency" },
+      { t: "Audit trail", d: "Every PHI access logged and openable.", kind: "audit" },
+      { t: "RBAC", d: "Least privilege, server-enforced roles.", kind: "rbac" },
+      { t: "Human in the loop", d: "A person reviews every appeal. Not an SFDA device.", kind: "hitl" }
+    ],
+    actionKicker: "Free denial audit",
+    actionTitle: "Get a free denial audit on your own data.",
+    actionSub: "We quantify the leak in one report. No commitment.",
+    actionCta: "Start the free audit",
+    footer: "Taweed, تعويض. Denial recovery for KSA clinic groups."
+  },
+  ar: {
+    navSub: "استرداد المرفوضات", navFree: "احصل على تدقيق مجاني", residency: "داخل المملكة، الرياض. حماية البيانات.", langToggle: "EN", mock: "تجريبي",
+    heroKicker: "استرداد مرفوضات أصيل على نفيس",
+    heroLead: "أنت تخسر", heroSuffix: "سنوياً بسبب المطالبات المرفوضة.",
+    heroSub: "شاهد بدقة أي الدافعين والرموز تستنزف إيرادك، من بيانات نفيس الخاصة بك. دون نظام جديد.",
+    heroCta: "احصل على تدقيق مجاني", heroTrust: "بياناتك تبقى داخل المملكة. كل وصول مُسجّل.",
+    instTitle: "أموالك، مباشرة", instAtRisk: "معرّض للخطر، مرفوض", instRecovered: "مُسترد",
+    interestClaim: "استرداد مرفوضات أصيل على نفيس لمجموعات العيادات متوسطة الحجم. دون نظام جديد لتشغيله.",
+    beats: [
+      { k: "٠١", title: "شاهد التسريب", body: "خريطة الرفض خلال أقل من 10 دقائق. بوبا العربية والتعاونية وميدغلف، مرتّبة حسب الريال لا العدد.", money: "SAR 1.84M معرّض للخطر", tone: "risk" },
+      { k: "٠٢", title: "أوقف التسريبات الجديدة", body: "المدقّق يكشف المطالبات المرشّحة للرفض قبل الإرسال. كل إشارة تعود إلى قاعدة مسمّاة، لا صندوق مغلق.", money: "SAR 74,600 محمية لكل دفعة", tone: "accent" },
+      { k: "٠٣", title: "استرد المرفوضات السابقة", body: "اعتراضات ثنائية اللغة تُصاغ من الرفض والدافع. أنت تراجع وأنت ترسل. الريالات المُستردة تُتتبَّع للريال.", money: "SAR 412,900 مُستردة", tone: "rec" }
+    ],
+    priceKicker: "التسعير على الإثبات",
+    priceTitle: "تدفع رسماً أساسياً لكل فرع زائد 10 إلى 15% مما نسترده فعلاً.",
+    priceLine: "إذا لم تسترد، فحصتنا صفر.",
+    trust: [
+      { t: "إقامة داخل المملكة", d: "الرياض، أوراكل كلاود. حماية البيانات، تشفير AES-256.", kind: "residency" },
+      { t: "سجل التدقيق", d: "كل وصول لبيانات المرضى مُسجّل وقابل للفتح.", kind: "audit" },
+      { t: "صلاحيات الأدوار", d: "أقل امتياز، أدوار مفروضة من الخادم.", kind: "rbac" },
+      { t: "إشراف بشري", d: "شخص يراجع كل اعتراض. ليس جهازاً طبياً معتمداً.", kind: "hitl" }
+    ],
+    actionKicker: "تدقيق مجاني للرفض",
+    actionTitle: "احصل على تدقيق مجاني للرفض على بياناتك أنت.",
+    actionSub: "نحدّد حجم التسريب في تقرير واحد. دون التزام.",
+    actionCta: "ابدأ التدقيق المجاني",
+    footer: "Taweed، تعويض. استرداد المرفوضات لمجموعات العيادات في السعودية."
+  }
+};
+
+class Component extends DCLogic {
+  state = { lang: "en", heroVal: 0, riskVal: 0, recVal: 0, settled: false };
+  HERO = 3680000; RISK = 1840000; REC = 412900;
+
+  componentDidMount() {
+    this.applyDoc();
+    this.runCountUp();
+  }
+  componentWillUnmount() { if (this._t) clearTimeout(this._t); }
+
+  applyDoc() {
+    const el = document.documentElement;
+    el.setAttribute("lang", this.state.lang);
+    el.setAttribute("dir", this.state.lang === "ar" ? "rtl" : "ltr");
+    el.classList.remove("dark");
+  }
+  toggleLang() { this.setState((s) => ({ lang: s.lang === "ar" ? "en" : "ar" }), () => this.applyDoc()); }
+
+  runCountUp() {
+    const setFinal = () => { if (!this.state.settled) this.setState({ heroVal: this.HERO, riskVal: this.RISK, recVal: this.REC, settled: true }); };
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setFinal(); return; }
+    const ease = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+    const dur = 1100, start = performance.now();
+    const tick = (now) => {
+      if (this.state.settled) return;
+      const p = Math.min(1, (now - start) / dur), e = ease(p);
+      this.setState({ heroVal: Math.round(this.HERO * e), riskVal: Math.round(this.RISK * e), recVal: Math.round(this.REC * e) });
+      if (p < 1) requestAnimationFrame(tick); else setFinal();
+    };
+    requestAnimationFrame(tick);
+    this._t = setTimeout(setFinal, dur + 300);
+  }
+
+  scrollToAudit() {
+    const el = document.querySelector('[data-anchor="audit"]');
+    if (el) window.scrollTo({ top: el.offsetTop - 70, behavior: "smooth" });
+  }
+
+  grouped(n) { return Math.round(n).toLocaleString("en-US"); }
+  compactM(n) { return (n / 1e6).toFixed(2).replace(/\.?0+$/, "") + "M"; }
+
+  renderVals() {
+    const s = this.state, ar = s.lang === "ar", t = L[s.lang];
+    const toneMap = {
+      risk: { moneyBg: "var(--at-risk-bg)", moneyDot: "var(--at-risk)", moneyColor: "var(--at-risk-text)" },
+      accent: { moneyBg: "var(--accent-subtle)", moneyDot: "var(--accent)", moneyColor: "var(--accent)" },
+      rec: { moneyBg: "var(--recovered-bg)", moneyDot: "var(--recovered)", moneyColor: "var(--recovered-text)" }
+    };
+    const beats = t.beats.map((b) => ({ k: b.k, title: b.title, body: b.body, money: b.money, ...toneMap[b.tone] }));
+    const trust = t.trust.map((x) => ({ t: x.t, d: x.d, isResidency: x.kind === "residency", isAudit: x.kind === "audit", isRbac: x.kind === "rbac", isHitl: x.kind === "hitl" }));
+    return {
+      navSub: t.navSub, navFree: t.navFree, residency: t.residency, langToggle: t.langToggle, mock: t.mock,
+      toggleLang: () => this.toggleLang(), scrollToAudit: () => this.scrollToAudit(),
+      heroKicker: t.heroKicker, heroLead: t.heroLead, heroSuffix: t.heroSuffix, heroSub: t.heroSub, heroCta: t.heroCta, heroTrust: t.heroTrust,
+      heroNum: this.grouped(s.heroVal),
+      heroCols: "minmax(0, 1.15fr) minmax(0, 0.85fr)", beatCols: "auto minmax(0, 1fr) auto", beatMoneyJustify: ar ? "start" : "end", priceCols: "minmax(0, 1fr) minmax(0, 1fr)",
+      instTitle: t.instTitle, instAtRisk: t.instAtRisk, instRecovered: t.instRecovered,
+      instRiskNum: this.compactM(s.riskVal), instRecNum: this.grouped(s.recVal),
+      interestClaim: t.interestClaim, beats,
+      priceKicker: t.priceKicker, priceTitle: t.priceTitle, priceLine: t.priceLine, trust,
+      actionKicker: t.actionKicker, actionTitle: t.actionTitle, actionSub: t.actionSub, actionCta: t.actionCta, footer: t.footer
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -26,6 +26,7 @@ const ctxA: NormalizeContext = {
   providerId: newId(),
   payerId: newId(),
   patientId: newId(),
+  dataOrigin: "synthetic",
 };
 
 async function seedTenant(id: string, name: string): Promise<void> {

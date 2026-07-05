@@ -11,6 +11,7 @@ const CTX: NormalizeContext = {
   providerId: "33333333-3333-4333-8333-333333333333",
   payerId: "44444444-4444-4444-8444-444444444444",
   patientId: "55555555-5555-4555-8555-555555555555",
+  dataOrigin: "synthetic",
 };
 
 const SEED = 7;
@@ -92,6 +93,15 @@ describe("normalize — field mapping", () => {
     expect(Number(n.claim.total_amount)).toBeCloseTo(sum);
   });
 
+  it("stamps data_origin from the ingest context", () => {
+    const prod = normalize(
+      parseBundle(generateBundle("clean", SEED)).pairs[0]!,
+      { ...CTX, dataOrigin: "production" },
+    );
+    expect(prod.claim.data_origin).toBe("production");
+    expect(normalizeScenario("clean").claim.data_origin).toBe("synthetic");
+  });
+
   it("throws when a denial references a missing claim line", () => {
     const { pairs } = parseBundle(generateBundle("partialDenial", SEED));
     const pair = pairs[0]!;
@@ -114,5 +124,89 @@ describe("normalize — field mapping", () => {
       },
     } as unknown as ClaimPair;
     expect(() => normalize(broken, CTX)).toThrow(/line/i);
+  });
+});
+
+describe("normalize — EXECUTE B5 real signal columns", () => {
+  function claimPair(claim: Record<string, unknown>): ClaimPair {
+    return {
+      claim: { resourceType: "Claim", status: "active", ...claim },
+      claimResponse: { resourceType: "ClaimResponse", outcome: "complete" },
+    } as unknown as ClaimPair;
+  }
+
+  it("preauth_present is true when any insurance carries a preAuthRef", () => {
+    const n = normalize(
+      claimPair({ insurance: [{ sequence: 1, preAuthRef: ["PA-123"] }] }),
+      CTX,
+    );
+    expect(n.claim.preauth_present).toBe(true);
+  });
+
+  it("preauth_present is false when insurance is present but carries no preAuthRef", () => {
+    const n = normalize(claimPair({ insurance: [{ sequence: 1 }] }), CTX);
+    expect(n.claim.preauth_present).toBe(false);
+  });
+
+  it("preauth_present is null when the claim has no insurance signal at all", () => {
+    const n = normalize(claimPair({}), CTX);
+    expect(n.claim.preauth_present).toBeNull();
+  });
+
+  it("has_documentation reflects presence of supportingInfo, else null", () => {
+    expect(
+      normalize(claimPair({ supportingInfo: [{ sequence: 1 }] }), CTX).claim
+        .has_documentation,
+    ).toBe(true);
+    expect(normalize(claimPair({}), CTX).claim.has_documentation).toBeNull();
+  });
+
+  it("eligibility_verified and is_duplicate are null (not inferable at normalize time)", () => {
+    const n = normalize(claimPair({}), CTX);
+    expect(n.claim.eligibility_verified).toBeNull();
+    expect(n.claim.is_duplicate).toBeNull();
+  });
+
+  it("maps a line's diagnosis code from Claim.diagnosis via item.diagnosisSequence", () => {
+    const n = normalize(
+      claimPair({
+        diagnosis: [
+          {
+            sequence: 1,
+            diagnosisCodeableConcept: { coding: [{ code: "K02.1" }] },
+          },
+        ],
+        item: [
+          {
+            sequence: 1,
+            diagnosisSequence: [1],
+            productOrService: { coding: [{ code: "SBS-0001" }] },
+            quantity: { value: 1 },
+            unitPrice: { value: 100 },
+            net: { value: 100 },
+          },
+        ],
+      }),
+      CTX,
+    );
+    expect(n.lines[0]!.icd10am_code).toBe("K02.1");
+  });
+
+  it("leaves icd10am_code null when the line references no diagnosis", () => {
+    const n = normalize(
+      claimPair({
+        item: [
+          {
+            sequence: 1,
+            productOrService: { coding: [{ code: "SBS-0001" }] },
+            quantity: { value: 1 },
+            unitPrice: { value: 100 },
+            net: { value: 100 },
+          },
+        ],
+      }),
+      CTX,
+    );
+    expect(n.lines[0]!.icd10am_code).toBeNull();
   });
 });

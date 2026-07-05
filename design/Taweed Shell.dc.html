@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  html, body { height: 100%; }
+  ::selection { background: var(--accent-subtle); }
+  .tw-nav:hover { background: var(--surface-2) !important; }
+  .tw-chip:hover { background: var(--surface-3) !important; }
+  .tw-ghost:hover { background: var(--surface-2) !important; }
+  .tw-loop:hover { background: var(--surface-2) !important; }
+  .tw-primary:hover { background: var(--accent-hover) !important; }
+  .tw-branch:hover { background: var(--surface-2) !important; }
+  [data-collapsed="1"] .tw-hideclps { display: none !important; }
+  .tw-drop { transition: border-color 120ms, background 120ms; }
+  .tw-drop:hover { border-color: var(--accent) !important; background: var(--accent-subtle) !important; }
+  .tw-btn:hover { background: var(--accent-hover) !important; }
+  .tw-outline:hover { background: var(--surface-2) !important; }
+  .tw-choice:hover { border-color: var(--hairline-strong) !important; }
+  .tw-qrow:hover { background: var(--surface-2) !important; }
+  input.tw-search::placeholder { color: var(--text-faint); }
+  input.tw-search:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent-subtle); }
+</style>
+</helmet>
+
+<div data-collapsed="{{ collapsedAttr }}" style="height: 100vh; display: grid; grid-template-columns: {{ railWidth }} 1fr; background: var(--bg); overflow: hidden;">
+
+  <!-- ========================= RAIL (inline-start) ========================= -->
+  <aside style="grid-column: 1; display: flex; flex-direction: column; background: var(--surface-1); border-inline-end: 1px solid var(--hairline); min-width: 0;">
+
+    <!-- brand + collapse -->
+    <div style="height: 56px; display: flex; align-items: center; gap: 10px; padding-inline: 16px; border-bottom: 1px solid var(--hairline); flex: none;">
+      <button class="tw-ghost" onClick="{{ toggleRail }}" aria-label="Toggle navigation" style="flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: none; background: transparent; color: var(--text-muted); border-radius: var(--r-md); cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4.5h13M2.5 9h13M2.5 13.5h13"/></svg>
+      </button>
+      <div class="tw-hideclps" style="display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow: hidden;">
+        <span style="font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: -0.01em; color: var(--text); white-space: nowrap;">Taweed</span>
+        <span class="tw-hideclps" style="font-size: 11px; color: var(--text-faint); white-space: nowrap; unicode-bidi: plaintext;">{{ brandSub }}</span>
+      </div>
+    </div>
+
+    <!-- nav -->
+    <nav style="flex: 1 1 auto; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px;">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="7">
+        <a class="tw-nav" href="#" onClick="{{ item.onClick }}" title="{{ item.label }}" style="{{ item.style }}">
+          <span style="flex: none; width: 20px; height: 20px; display: grid; place-items: center; color: {{ item.iconColor }};">
+            <span class="mono" style="display: none;"></span>
+            <sc-if value="{{ item.isOverview }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1"/><rect x="10" y="2.5" width="5.5" height="5.5" rx="1"/><rect x="2.5" y="10" width="5.5" height="5.5" rx="1"/><rect x="10" y="10" width="5.5" height="5.5" rx="1"/></svg></sc-if>
+            <sc-if value="{{ item.isAnalytics }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 15.5V9M7 15.5V4M11.5 15.5v-4M16 15.5V6.5"/></svg></sc-if>
+            <sc-if value="{{ item.isIngest }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5v8m0 0 3-3m-3 3-3-3"/><path d="M3 12v2.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V12"/></svg></sc-if>
+            <sc-if value="{{ item.isScrubber }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M9 2 3 4.2v4.3c0 3.4 2.4 5.7 6 7 3.6-1.3 6-3.6 6-7V4.2L9 2Z"/><path d="M6.5 8.8 8.3 10.6 11.8 7" stroke-linecap="round"/></svg></sc-if>
+            <sc-if value="{{ item.isAppeals }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2.5h6l4 4v9a.5.5 0 0 1-.5.5h-9A.5.5 0 0 1 4 15.5v-13Z"/><path d="M10 2.5v4h4" stroke-linecap="round"/><path d="M6.5 10h5M6.5 12.5h3.5" stroke-linecap="round"/></svg></sc-if>
+            <sc-if value="{{ item.isRecovery }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="{{ dirFlip }}"><path d="M2.5 12 7 7.5l3 3 5.5-5.5"/><path d="M11.5 5h4v4"/></svg></sc-if>
+            <sc-if value="{{ item.isSettings }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 5.5h8M14 5.5h1M3 12.5h1M7 12.5h8"/><circle cx="12" cy="5.5" r="1.8"/><circle cx="6" cy="12.5" r="1.8"/></svg></sc-if>
+          </span>
+          <span class="tw-hideclps" style="flex: 1 1 auto; font-size: var(--fs-body); font-weight: {{ item.weight }}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ item.label }}</span>
+          <sc-if value="{{ item.showLevel }}" hint-placeholder-val="{{ false }}">
+            <span class="tw-hideclps" style="flex: none; font-size: 10px; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint); border: 1px solid var(--hairline); border-radius: var(--r-sm); padding: 1px 5px; unicode-bidi: plaintext;">{{ item.levelLabel }}</span>
+          </sc-if>
+        </a>
+      </sc-for>
+    </nav>
+
+    <!-- residency lockup (trust in chrome, brief §7) -->
+    <div style="flex: none; padding: 12px 14px; border-top: 1px solid var(--hairline); display: flex; align-items: flex-start; gap: 8px;">
+      <svg style="flex: none; margin-top: 1px; color: var(--money-neutral);" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M7.5 1.5 2.5 3.3v3.8c0 3 2 5 5 6 3-1 5-3 5-6V3.3L7.5 1.5Z"/></svg>
+      <span class="tw-hideclps" style="font-size: 11px; line-height: 1.45; color: var(--text-muted); unicode-bidi: plaintext;">{{ residency }}</span>
+    </div>
+  </aside>
+
+  <!-- ========================= MAIN (command bar + canvas) ========================= -->
+  <div style="grid-column: 2; display: flex; flex-direction: column; min-width: 0; min-height: 0;">
+
+    <!-- ---------- COMMAND BAR ---------- -->
+    <header style="height: 56px; flex: none; display: flex; align-items: center; gap: {{ headerGap }}; padding-inline: {{ headerPad }}; background: var(--surface-1); border-bottom: 1px solid var(--hairline); position: relative; z-index: 40;">
+
+      <!-- tenant / branch switcher -->
+      <div style="position: relative; flex: none;">
+        <button class="tw-chip" onClick="{{ toggleSwitcher }}" style="display: flex; align-items: center; gap: 10px; height: 36px; padding-inline: 12px; min-width: 0; max-width: {{ switcherMax }}; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md); cursor: pointer; color: var(--text);">
+          <span style="width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--accent); color: var(--accent-fg); font-family: var(--font-display); font-weight: 700; font-size: 12px;">ت</span>
+          <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; min-width: 0;">
+            <span style="font-size: var(--fs-body); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ tenantLabel }}</span>
+            <sc-if value="{{ switcherFull }}" hint-placeholder-val="{{ true }}"><span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; unicode-bidi: plaintext;">{{ branchSummary }}</span></sc-if>
+          </span>
+          <sc-if value="{{ switcherFull }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-faint)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5 7 8.5l3-3"/></svg></sc-if>
+        </button>
+
+        <sc-if value="{{ switcherOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; inset-inline-start: 0; top: calc(100% + 6px); width: 268px; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: 8px; z-index: 60;">
+            <div style="padding: 6px 8px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint);">{{ tenantWord }}</div>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--r-md); background: var(--accent-subtle);">
+              <span style="width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--accent); color: var(--accent-fg); font-family: var(--font-display); font-weight: 700; font-size: 11px;">ت</span>
+              <span style="font-size: var(--fs-body); font-weight: 600;">{{ tenantLabel }}</span>
+              <svg style="margin-inline-start: auto; color: var(--accent);" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.8 6.3 10.5 11.5 4.5"/></svg>
+            </div>
+            <div style="height: 1px; background: var(--hairline); margin: 8px 4px;"></div>
+            <div style="padding: 4px 8px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint);">{{ branchWord }}</div>
+            <sc-for list="{{ branchList }}" as="b" hint-placeholder-count="3">
+              <button class="tw-branch" onClick="{{ b.onToggle }}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border: none; background: transparent; border-radius: var(--r-md); cursor: pointer; color: var(--text); text-align: start;">
+                <span style="width: 16px; height: 16px; flex: none; border-radius: var(--r-sm); border: 1.5px solid {{ b.boxBorder }}; background: {{ b.boxBg }}; display: grid; place-items: center;">
+                  <sc-if value="{{ b.on }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="var(--accent-fg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 5.6 4.5 7.7 8.8 3"/></svg></sc-if>
+                </span>
+                <span style="font-size: var(--fs-body); unicode-bidi: plaintext;">{{ b.label }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- global search -->
+      <sc-if value="{{ showSearch }}" hint-placeholder-val="{{ true }}">
+      <div style="flex: 1 1 auto; max-width: 460px; position: relative; min-width: 0;">
+        <svg style="position: absolute; inset-inline-start: 11px; top: 50%; transform: translateY(-50%); color: var(--text-faint); pointer-events: none;" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4.5"/><path d="m10.5 10.5 3 3" stroke-linecap="round"/></svg>
+        <input class="tw-search num" type="text" placeholder="{{ searchPh }}" dir="auto" style="width: 100%; height: 36px; padding-inline: 34px 44px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); outline: none;" />
+        <span class="mono" style="position: absolute; inset-inline-end: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-faint); border: 1px solid var(--hairline); border-radius: var(--r-sm); padding: 1px 5px; pointer-events: none;">⌘K</span>
+      </div>
+      </sc-if>
+
+      <!-- ============ GLOBAL MONEY INDICATOR (the signature) ============ -->
+      <div style="position: relative; flex: none; margin-inline-start: auto;">
+        <button onClick="{{ toggleIndicator }}" class="tw-chip" style="display: flex; align-items: stretch; gap: 0; height: 40px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md); cursor: pointer; overflow: hidden;">
+          <!-- recovered -->
+          <span style="display: flex; align-items: center; gap: 8px; padding-inline: {{ indPad }};">
+            <span style="width: 7px; height: 7px; border-radius: var(--r-full); background: var(--recovered); flex: none;"></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1;">
+              <sc-if value="{{ indicatorFull }}" hint-placeholder-val="{{ true }}"><span style="font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: var(--text-muted); unicode-bidi: plaintext;">{{ recoveredWord }}</span></sc-if>
+              <span class="num" style="font-size: var(--fs-body); font-weight: 600; color: var(--recovered-text);"><span style="color: var(--text-muted); font-weight: 500; margin-inline-end: 3px;">SAR</span>{{ recoveredCompact }}</span>
+            </span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--recovered-text)"><path d="M6 2.5 10 8H2z"/></svg>
+          </span>
+          <span style="width: 1px; background: var(--hairline); flex: none; margin-block: 6px;"></span>
+          <!-- at risk -->
+          <span style="display: flex; align-items: center; gap: 8px; padding-inline: {{ indPad }};">
+            <span style="width: 7px; height: 7px; border-radius: var(--r-full); background: var(--at-risk); flex: none;"></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1;">
+              <sc-if value="{{ indicatorFull }}" hint-placeholder-val="{{ true }}"><span style="font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: var(--text-muted); unicode-bidi: plaintext;">{{ atRiskWord }}</span></sc-if>
+              <span class="num" style="font-size: var(--fs-body); font-weight: 600; color: var(--at-risk-text);"><span style="color: var(--text-muted); font-weight: 500; margin-inline-end: 3px;">SAR</span>{{ atRiskCompact }}</span>
+            </span>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--at-risk-text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="{{ dirFlip }}"><path d="M2.5 6.5h7M7 4l2.5 2.5L7 9"/></svg>
+          </span>
+          <span style="display: grid; place-items: center; padding-inline-end: 10px; padding-inline-start: 2px;">
+            <span style="font-size: 8.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--money-neutral); border: 1px solid var(--hairline-strong); border-radius: 3px; padding: 1px 3px;">{{ mockWord }}</span>
+          </span>
+        </button>
+
+        <!-- 3-row popover -->
+        <sc-if value="{{ indicatorOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; inset-inline-end: 0; top: calc(100% + 6px); width: 320px; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden; z-index: 60;">
+            <div style="padding: 12px 14px 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--hairline);">
+              <span style="font-size: var(--fs-small); font-weight: 600; color: var(--text-muted); unicode-bidi: plaintext;">{{ scopeLabel }}</span>
+              <span style="font-size: 8.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--money-neutral); border: 1px solid var(--hairline-strong); border-radius: 3px; padding: 1px 4px;">{{ mockWord }}</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px;">
+              <span style="font-size: var(--fs-body); color: var(--text); unicode-bidi: plaintext;">{{ popRecoveredMonth }}</span>
+              <span class="num" style="font-size: var(--fs-body); font-weight: 600; color: var(--recovered-text);">SAR 96,400</span>
+            </div>
+            <div style="height: 1px; background: var(--hairline); margin-inline: 14px;"></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px;">
+              <span style="font-size: var(--fs-body); color: var(--text); unicode-bidi: plaintext;">{{ popOpenAppeals }}</span>
+              <span class="num" style="font-size: var(--fs-body); font-weight: 600; color: var(--recovered-soft);">SAR 138,200</span>
+            </div>
+            <div style="height: 1px; background: var(--hairline); margin-inline: 14px;"></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px;">
+              <span style="font-size: var(--fs-body); color: var(--text); unicode-bidi: plaintext;">{{ popTopPayer }}</span>
+              <span class="num" style="font-size: var(--fs-body); font-weight: 600; color: var(--at-risk-text);">SAR 604,500</span>
+            </div>
+            <a href="#" class="tw-loop" style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-top: 1px solid var(--hairline); text-decoration: none; color: var(--accent); font-size: var(--fs-body); font-weight: 500;">
+              <span style="unicode-bidi: plaintext;">{{ popCta }}</span>
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="{{ dirFlip }}"><path d="M4 7.5h7M8 4.5l3 3-3 3"/></svg>
+            </a>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- locale toggle -->
+      <button class="tw-chip" onClick="{{ toggleLang }}" aria-label="Toggle language" style="flex: none; height: 36px; min-width: 42px; padding-inline: 12px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md); cursor: pointer; color: var(--text); font-weight: 600; font-size: var(--fs-body);">{{ langToggleLabel }}</button>
+
+      <!-- theme toggle -->
+      <button class="tw-chip" onClick="{{ toggleTheme }}" aria-label="Toggle theme" style="flex: none; width: 36px; height: 36px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md); cursor: pointer; color: var(--text-muted);">
+        <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="3.4"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1" stroke-linecap="round"/></svg></sc-if>
+        <sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M13.5 9.3A5.6 5.6 0 0 1 6.7 2.5 5.6 5.6 0 1 0 13.5 9.3Z"/></svg></sc-if>
+      </button>
+
+      <!-- role chip (RBAC visible, server-enforced) -->
+      <div style="flex: none; display: flex; align-items: center; gap: 8px; height: 36px; padding-inline: 10px 12px; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--r-md);">
+        <span style="width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: var(--r-full); background: var(--accent-subtle); color: var(--accent); font-weight: 600; font-size: 12px;">{{ roleInitials }}</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.15;">
+          <span style="font-size: 12.5px; font-weight: 600; white-space: nowrap; unicode-bidi: plaintext;">{{ roleLabel }}</span>
+          <span style="font-size: 10px; color: var(--text-faint); white-space: nowrap; unicode-bidi: plaintext;">{{ roleWord }}</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- ---------- CANVAS ---------- -->
+    <main style="flex: 1 1 auto; overflow: auto; min-height: 0;">
+      <div style="max-width: 1120px; margin-inline: auto; padding: 40px 40px 64px;">
+
+        <sc-if value="{{ showOverview }}" hint-placeholder-val="{{ true }}">
+        <div data-screen-label="Overview">
+        <!-- overview header -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 6px;">
+          <h1 style="margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h1); letter-spacing: -0.01em; color: var(--text); unicode-bidi: plaintext;">{{ overviewTitle }}</h1>
+          <button class="tw-outline" onClick="{{ launchFirstRun }}" style="flex: none; height: 36px; padding-inline: 15px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; unicode-bidi: plaintext;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="{{ dirFlip }}"><path d="M3 7h8M7.5 3.5 11 7l-3.5 3.5"/></svg>{{ ingLaunch }}</button>
+        </div>
+        <p style="margin: 0 0 32px; font-size: var(--fs-body); color: var(--text-muted); unicode-bidi: plaintext;">{{ heroKicker }}</p>
+
+        <!-- HERO MONEY BAND (dual counter, r-xl) -->
+        <section style="border: 1px solid var(--hairline); border-radius: var(--r-xl); background: var(--surface-1); overflow: hidden;">
+          <div style="display: grid; grid-template-columns: 1fr 1px 1fr;">
+
+            <!-- at risk (loss first, brief §10) -->
+            <div style="padding: 40px 36px; display: flex; flex-direction: column; gap: 14px; background: linear-gradient(180deg, var(--at-risk-bg) 0%, transparent 62%);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; border-radius: var(--r-full); background: var(--at-risk);"></span>
+                <span style="font-size: var(--fs-small); font-weight: 600; letter-spacing: 0.02em; color: var(--at-risk-text); unicode-bidi: plaintext;">{{ atRiskLong }}</span>
+              </div>
+              <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
+                <span class="num--hero" style="font-size: clamp(30px, 3.3vw, 48px); font-weight: 700; line-height: 1; color: var(--at-risk); letter-spacing: -0.02em; white-space: nowrap;"><span style="font-size: 0.44em; font-weight: 500; color: var(--text-muted); margin-inline-end: 8px; letter-spacing: 0;">SAR</span>{{ atRiskFull }}</span>
+                <sc-if value="{{ settled }}" hint-placeholder-val="{{ false }}">
+                  <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r-full); background: var(--at-risk-bg); border: 1px solid var(--hairline); margin-bottom: 8px;">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--at-risk-text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 4 3 10"/><path d="M3 4l6 6" opacity="0"/><path d="M9 4 3.5 9.5"/></svg>
+                    <span class="num" style="font-size: 12px; font-weight: 600; color: var(--at-risk-text);">31.8%</span>
+                    <span style="font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">{{ denialRateWord }}</span>
+                  </span>
+                </sc-if>
+              </div>
+              <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ benchmarkNote }}</span>
+            </div>
+
+            <div style="background: var(--hairline);"></div>
+
+            <!-- recovered (gain / goal gradient) -->
+            <div style="padding: 40px 36px; display: flex; flex-direction: column; gap: 14px; background: linear-gradient(180deg, var(--recovered-bg) 0%, transparent 62%);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 8px; height: 8px; border-radius: var(--r-full); background: var(--recovered);"></span>
+                <span style="font-size: var(--fs-small); font-weight: 600; letter-spacing: 0.02em; color: var(--recovered-text); unicode-bidi: plaintext;">{{ recoveredLong }}</span>
+              </div>
+              <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
+                <span class="num--hero" style="font-size: clamp(30px, 3.3vw, 48px); font-weight: 700; line-height: 1; color: var(--recovered); letter-spacing: -0.02em; white-space: nowrap;"><span style="font-size: 0.44em; font-weight: 500; color: var(--text-muted); margin-inline-end: 8px; letter-spacing: 0;">SAR</span>{{ recoveredFull }}</span>
+                <sc-if value="{{ settled }}" hint-placeholder-val="{{ false }}">
+                  <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r-full); background: var(--recovered-bg); border: 1px solid var(--hairline); margin-bottom: 8px;">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--recovered-text)"><path d="M6 2.5 10 8H2z"/></svg>
+                    <span class="num" style="font-size: 12px; font-weight: 600; color: var(--recovered-text);">12.4%</span>
+                    <span style="font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">{{ deltaVs }}</span>
+                  </span>
+                </sc-if>
+              </div>
+              <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ provenance }}</span>
+            </div>
+          </div>
+
+          <!-- reservoir strip: red draining into green -->
+          <div style="border-top: 1px solid var(--hairline); padding: 16px 36px; display: flex; align-items: center; gap: 14px; background: var(--surface-2);">
+            <div style="flex: 1 1 auto; height: 8px; border-radius: var(--r-full); background: var(--at-risk-bg); overflow: hidden; display: flex;">
+              <div style="width: 18.3%; height: 100%; background: var(--recovered);"></div>
+              <div style="flex: 1; height: 100%; background: var(--at-risk); opacity: 0.85;"></div>
+            </div>
+            <span style="font-size: var(--fs-small); color: var(--text-muted); white-space: nowrap; unicode-bidi: plaintext;">{{ reservoirNote }}</span>
+          </div>
+        </section>
+
+        <!-- RECOVERY LOOP (ranked hairline list, not equal cards) -->
+        <h2 style="margin: 40px 0 4px; font-size: var(--fs-h2); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ loopTitle }}</h2>
+        <p style="margin: 0 0 16px; font-size: var(--fs-body); color: var(--text-muted); unicode-bidi: plaintext;">{{ loopSub }}</p>
+        <div style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+          <sc-for list="{{ loopRows }}" as="row" hint-placeholder-count="3">
+            <a href="#" class="tw-loop" style="display: flex; align-items: center; gap: 18px; padding: 18px 24px; text-decoration: none; color: var(--text); border-top: {{ row.border }};">
+              <span class="num" style="flex: none; font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--text-faint); width: 20px;">{{ row.n }}</span>
+              <span style="flex: 1 1 auto; min-width: 0;">
+                <span style="display: block; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ row.title }}</span>
+                <span style="display: block; font-size: var(--fs-body); color: var(--text-muted); margin-top: 2px; unicode-bidi: plaintext;">{{ row.desc }}</span>
+              </span>
+              <span style="flex: none; font-size: var(--fs-small); font-weight: 500; color: var(--accent); white-space: nowrap; unicode-bidi: plaintext;">{{ row.module }}</span>
+              <svg style="flex: none; color: var(--text-faint);" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h8M8.5 4.5 12 8l-3.5 3.5" style="{{ dirFlip }}"/></svg>
+            </a>
+          </sc-for>
+        </div>
+        </div>
+        </sc-if>
+
+        <!-- ============================ DENIAL ANALYTICS ============================ -->
+        <sc-if value="{{ showAnalytics }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Denial Analytics">
+
+          <!-- header -->
+          <div style="margin-bottom: 22px;">
+            <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h1); letter-spacing: -0.01em; color: var(--text); unicode-bidi: plaintext;">{{ anaTitle }}</h1>
+            <p style="margin: 0; font-size: var(--fs-body); color: var(--text-muted); unicode-bidi: plaintext;">{{ anaKicker }}</p>
+          </div>
+
+          <!-- HERO STAT BAND (the largest number in the app) -->
+          <section style="border: 1px solid var(--hairline); border-radius: var(--r-xl); background: var(--surface-1); overflow: hidden; margin-bottom: 20px;">
+            <div style="padding: 38px 40px 30px; display: flex; align-items: flex-end; gap: 52px; flex-wrap: wrap; background: linear-gradient(180deg, var(--at-risk-bg) 0%, transparent 58%);">
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="width: 8px; height: 8px; border-radius: var(--r-full); background: var(--at-risk);"></span>
+                  <span style="font-size: var(--fs-small); font-weight: 600; letter-spacing: 0.02em; color: var(--at-risk-text); unicode-bidi: plaintext;">{{ anaAtRiskLabel }}</span>
+                </div>
+                <span class="num--hero" style="font-size: clamp(46px, 5.6vw, 78px); font-weight: 700; line-height: 0.95; color: var(--at-risk); letter-spacing: -0.025em; white-space: nowrap;"><span style="font-size: 0.4em; font-weight: 500; color: var(--text-muted); margin-inline-end: 10px; letter-spacing: 0;">SAR</span>{{ atRiskFull }}</span>
+                <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ benchmarkGap }}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 6px;">
+                <span style="font-size: var(--fs-small); font-weight: 600; letter-spacing: 0.02em; color: var(--text-muted); unicode-bidi: plaintext;">{{ denialRateLabel }}</span>
+                <span class="num--hero" style="font-size: clamp(30px, 3vw, 44px); font-weight: 700; line-height: 1; color: var(--text); letter-spacing: -0.02em;">31.8%</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 3px 8px; border-radius: var(--r-full); background: var(--surface-2); border: 1px solid var(--hairline);">
+                  <span class="num" style="font-size: 12px; font-weight: 600; color: var(--at-risk-text);">+16.8 pts</span>
+                  <span style="font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">{{ deltaVs }}</span>
+                </span>
+              </div>
+            </div>
+            <div style="border-top: 1px solid var(--hairline); padding: 11px 40px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface-2);">
+              <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ provenance }} · {{ anaScope }}</span>
+              <span style="font-size: 8.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--money-neutral); border: 1px solid var(--hairline-strong); border-radius: 3px; padding: 1px 4px;">{{ mockWord }}</span>
+            </div>
+          </section>
+
+          <!-- BENTO ROW: trend (wide) + ranked payers (narrow) -->
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 16px; align-items: stretch;">
+
+            <!-- trend card -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); padding: 20px 22px; display: flex; flex-direction: column; min-width: 0;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px;">
+                <h2 style="margin: 0; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ trendTitle }}</h2>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;"><span style="width: 14px; height: 2px; background: var(--at-risk); border-radius: 2px;"></span>{{ legendRate }}</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;"><span style="width: 9px; height: 9px; background: var(--hairline-strong); border-radius: 2px;"></span>{{ legendVol }}</span>
+                </div>
+              </div>
+              <svg viewBox="0 0 600 200" preserveAspectRatio="xMidYMid meet" style="width: 100%; aspect-ratio: 600 / 200; height: auto; display: block; margin-top: 8px;">
+                <g transform="{{ trendFlip }}">
+                  <sc-for list="{{ trendGrid }}" as="g" hint-placeholder-count="3">
+                    <line x1="34" x2="566" y1="{{ g.y }}" y2="{{ g.y }}" stroke="var(--hairline)" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                  </sc-for>
+                  <sc-for list="{{ trendGhost }}" as="b" hint-placeholder-count="6">
+                    <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="2" fill="var(--hairline-strong)" opacity="0.55"></rect>
+                  </sc-for>
+                  <path d="{{ trendArea }}" fill="var(--at-risk)" opacity="0.08"></path>
+                  <path d="{{ trendLine }}" fill="none" stroke="var(--at-risk)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+                  <sc-for list="{{ trendDots }}" as="d" hint-placeholder-count="6">
+                    <circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="{{ d.r }}" fill="{{ d.peakFill }}" stroke="var(--at-risk)" stroke-width="2" vector-effect="non-scaling-stroke"></circle>
+                  </sc-for>
+                </g>
+              </svg>
+              <div style="display: flex; justify-content: space-between; padding-inline: 26px; margin-top: 6px;">
+                <sc-for list="{{ trendCols }}" as="c" hint-placeholder-count="6">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                    <span class="num" style="font-size: 12px; font-weight: 600; color: var(--text);">{{ c.rate }}</span>
+                    <span style="font-size: 11px; color: var(--text-faint); unicode-bidi: plaintext;">{{ c.month }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hairline); display: flex; align-items: flex-start; gap: 8px;">
+                <span style="flex: none; width: 6px; height: 6px; margin-top: 5px; border-radius: var(--r-full); background: var(--at-risk);"></span>
+                <span style="font-size: var(--fs-small); color: var(--text-muted); line-height: 1.45; unicode-bidi: plaintext;">{{ annotation }}</span>
+              </div>
+            </section>
+
+            <!-- ranked payers card -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); padding: 20px 18px; min-width: 0;">
+              <div style="margin-bottom: 12px; padding-inline: 4px;">
+                <h2 style="margin: 0 0 2px; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ payersTitle }}</h2>
+                <span style="font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ payersSub }}</span>
+              </div>
+              <sc-for list="{{ payerRows }}" as="p" hint-placeholder-count="4">
+                <button class="tw-loop" onClick="{{ p.onClick }}" style="{{ p.rowStyle }}">
+                  <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <span style="display: inline-flex; align-items: center; gap: 7px; min-width: 0;">
+                      <span style="font-size: var(--fs-body); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ p.name }}</span>
+                      <span style="flex: none; font-size: 12px; line-height: 1; color: {{ p.trendColor }};">{{ p.trendGlyph }}</span>
+                    </span>
+                    <span class="num" style="flex: none; font-size: var(--fs-body); font-weight: 600; color: var(--at-risk-text);">{{ p.sarStr }}</span>
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 10px;">
+                    <span style="flex: 1 1 auto; height: 7px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden;">
+                      <span style="display: block; height: 100%; width: {{ p.barPct }}; background: {{ p.barColor }}; border-radius: var(--r-full);"></span>
+                    </span>
+                    <span class="num" style="flex: none; width: 46px; text-align: end; font-size: 12px; color: var(--text-muted);">{{ p.rateStr }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </section>
+          </div>
+
+          <!-- PARETO card: what drives the denials -->
+          <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+            <div style="padding: 20px 22px 4px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+              <div>
+                <h2 style="margin: 0 0 2px; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ paretoTitle }}</h2>
+                <span style="font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ paretoSub }}</span>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: var(--r-full); background: var(--accent-subtle); color: var(--accent); font-size: 12px; font-weight: 600; unicode-bidi: plaintext;">{{ paretoInsight }}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 0; align-items: stretch;">
+
+              <!-- chart -->
+              <div style="padding: 12px 22px 20px; min-width: 0;">
+                <svg viewBox="0 0 520 210" preserveAspectRatio="xMidYMid meet" style="width: 100%; aspect-ratio: 520 / 210; height: auto; display: block;">
+                  <g transform="{{ paretoFlip }}">
+                    <line x1="30" x2="490" y1="{{ grid80 }}" y2="{{ grid80 }}" stroke="var(--hairline-strong)" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
+                    <sc-for list="{{ paretoBars }}" as="b" hint-placeholder-count="5">
+                      <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="3" fill="var(--money-neutral)" opacity="0.9"></rect>
+                    </sc-for>
+                    <path d="{{ cumPath }}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+                    <sc-for list="{{ cumDots }}" as="d" hint-placeholder-count="5">
+                      <circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3.5" fill="var(--surface-1)" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"></circle>
+                    </sc-for>
+                  </g>
+                </svg>
+                <div style="display: flex; justify-content: space-between; padding-inline: 10px; margin-top: 4px;">
+                  <sc-for list="{{ paretoCols }}" as="c" hint-placeholder-count="5">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                      <span class="mono" style="font-size: 11px; color: var(--text-muted);">{{ c.code }}</span>
+                      <span class="num" style="font-size: 10.5px; color: var(--text-faint);">{{ c.count }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <!-- reason list -->
+              <div style="border-inline-start: 1px solid var(--hairline); background: var(--surface-1);">
+                <sc-for list="{{ reasonRows }}" as="r" hint-placeholder-count="5">
+                  <div class="tw-loop" style="padding: 12px 20px; border-top: {{ r.border }}; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                      <span style="display: inline-flex; align-items: baseline; gap: 8px; min-width: 0;">
+                        <span class="num" style="flex: none; font-size: 11px; font-weight: 600; color: var(--text-faint); width: 12px;">{{ r.n }}</span>
+                        <span style="font-size: var(--fs-body); font-weight: 500; color: var(--text); unicode-bidi: plaintext;">{{ r.name }}</span>
+                      </span>
+                      <span class="num" style="flex: none; font-size: var(--fs-body); font-weight: 600; color: var(--at-risk-text);">{{ r.sar }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; padding-inline-start: 20px;">
+                      <span class="mono" style="font-size: 11px; color: var(--text-muted); background: var(--surface-3); border-radius: var(--r-sm); padding: 1px 6px;">{{ r.code }}</span>
+                      <span class="num" style="font-size: 11.5px; color: var(--text-faint);">{{ r.count }}</span>
+                      <a href="#" style="margin-inline-start: auto; font-size: 11.5px; font-weight: 500; color: var(--accent); text-decoration: none; white-space: nowrap; unicode-bidi: plaintext;">{{ howToFix }}</a>
+                    </div>
+                  </div>
+                </sc-for>
+                <div style="padding: 11px 20px; border-top: 1px solid var(--hairline); background: var(--surface-2);">
+                  <span style="font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;">{{ otherReasons }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+        </sc-if>
+
+        <!-- ============================ INGEST ============================ -->
+        <sc-if value="{{ showIngest }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Ingest">
+
+          <!-- header -->
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px;">
+            <div style="min-width: 0;">
+              <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h1); letter-spacing: -0.01em; color: var(--text); unicode-bidi: plaintext;">{{ ingTitle }}</h1>
+              <p style="margin: 0; font-size: var(--fs-body); color: var(--text-muted); max-width: 560px; unicode-bidi: plaintext;">{{ ingKicker }}</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex: none;">
+              <button class="tw-outline" onClick="{{ launchFirstRun }}" style="height: 38px; padding-inline: 16px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ ingLaunch }}</button>
+              <button class="tw-btn" onClick="{{ startIngest }}" style="height: 38px; padding-inline: 16px; background: var(--accent); border: 1px solid var(--accent); border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ ingUseSample }}</button>
+            </div>
+          </div>
+
+          <!-- SPLIT VIEW -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch;">
+
+            <!-- dropzone -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); padding: 20px; display: flex; flex-direction: column; gap: 18px; min-width: 0;">
+              <div class="tw-drop" style="flex: none; border: 1.5px dashed var(--hairline-strong); border-radius: var(--r-md); background: var(--surface-2); padding: 30px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;">
+                <span style="width: 46px; height: 46px; display: grid; place-items: center; border-radius: var(--r-md); background: var(--surface-1); border: 1px solid var(--hairline); color: var(--accent);">
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3v10m0-10 4 4m-4-4-4 4"/><path d="M4 14v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/></svg>
+                </span>
+                <span style="font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ ingDropTitle }}</span>
+                <span style="font-size: var(--fs-body); color: var(--text-muted); max-width: 360px; line-height: 1.5; unicode-bidi: plaintext;">{{ ingDropBody }}</span>
+
+                <sc-if value="{{ ingIdle }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; justify-content: center;">
+                    <button class="tw-btn" onClick="{{ startIngest }}" style="height: 36px; padding-inline: 15px; background: var(--accent); border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ ingUseSample }}</button>
+                    <button class="tw-outline" style="height: 36px; padding-inline: 15px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ ingWhiteGlove }}</button>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ ingRunning }}" hint-placeholder-val="{{ false }}">
+                  <div style="width: 100%; max-width: 320px; margin-top: 4px; height: 6px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden;">
+                    <div style="height: 100%; width: 60%; background: var(--accent); border-radius: var(--r-full);"></div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ ingDone }}" hint-placeholder-val="{{ false }}">
+                  <button class="tw-outline" onClick="{{ resetIngest }}" style="margin-top: 4px; height: 34px; padding-inline: 14px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text-muted); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ ingClearRun }}</button>
+                </sc-if>
+              </div>
+
+              <!-- file-type legend -->
+              <div style="flex: 1 1 auto;">
+                <span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; unicode-bidi: plaintext;">{{ ingLegendTitle }}</span>
+                <sc-for list="{{ ingLegend }}" as="l" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-top: 1px solid var(--hairline);">
+                    <span class="mono" style="flex: none; width: 76px; font-size: 11px; font-weight: 500; color: var(--accent); background: var(--accent-subtle); border-radius: var(--r-sm); padding: 3px 6px; text-align: center;">{{ l.t }}</span>
+                    <span style="flex: 1 1 auto; font-size: var(--fs-small); color: var(--text); min-width: 0; unicode-bidi: plaintext;">{{ l.d }}</span>
+                    <span style="flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--text-faint)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="{{ dirFlip }}"><path d="M2.5 6.5h6M6 4l2.5 2.5L6 9"/></svg>
+                      {{ l.map }}
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+
+            <!-- run ledger -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); padding: 20px 22px; min-width: 0; display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 16px;">
+                <h2 style="margin: 0; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ ingLedgerTitle }}</h2>
+                <sc-if value="{{ ingIdle }}" hint-placeholder-val="{{ true }}"><span style="font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ ingLedgerIdle }}</span></sc-if>
+              </div>
+
+              <!-- timeline -->
+              <div style="display: flex; flex-direction: column; margin-bottom: 6px;">
+                <sc-for list="{{ ingTimeline }}" as="s" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 12px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; flex: none;">
+                      <span style="width: 15px; height: 15px; border-radius: var(--r-full); background: {{ s.dotBg }}; border: 2px solid {{ s.dotBorder }}; display: grid; place-items: center;">
+                        <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}"><svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="var(--accent-fg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.6 3.7 6.3 7 2.6"/></svg></sc-if>
+                      </span>
+                      <sc-if value="{{ s.showLine }}" hint-placeholder-val="{{ true }}"><span style="width: 2px; flex: 1 1 auto; min-height: 22px; background: {{ s.lineBg }};"></span></sc-if>
+                    </div>
+                    <span style="font-size: var(--fs-body); font-weight: {{ s.weight }}; color: {{ s.textColor }}; padding-bottom: 16px; unicode-bidi: plaintext;">{{ s.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <!-- counters 2x2 -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--r-md); overflow: hidden; margin-bottom: 16px;">
+                <sc-for list="{{ ingCounters }}" as="c" hint-placeholder-count="4">
+                  <div style="background: var(--surface-1); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+                    <span class="num--hero" style="font-size: 28px; font-weight: 700; line-height: 1; color: var(--text);">{{ c.value }}</span>
+                    <span style="font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;">{{ c.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <!-- at-risk hero line -->
+              <div style="margin-top: auto; padding: 16px; border-radius: var(--r-md); background: linear-gradient(180deg, var(--at-risk-bg), transparent); border: 1px solid var(--hairline);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <span style="width: 7px; height: 7px; border-radius: var(--r-full); background: var(--at-risk);"></span>
+                  <span style="font-size: var(--fs-small); font-weight: 600; color: var(--at-risk-text); unicode-bidi: plaintext;">{{ ingAtRiskLabel }}</span>
+                </div>
+                <span class="num--hero" style="font-size: 34px; font-weight: 700; line-height: 1; color: var(--at-risk); letter-spacing: -0.02em; white-space: nowrap;"><span style="font-size: 0.42em; font-weight: 500; color: var(--text-muted); margin-inline-end: 7px;">SAR</span>{{ ingAtRiskValue }}</span>
+                <span style="display: block; margin-top: 6px; font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;">{{ ingAtRiskNote }}</span>
+              </div>
+            </section>
+          </div>
+
+          <!-- POST-PARSE: mapping + quarantine -->
+          <sc-if value="{{ ingDone }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+
+            <!-- column mapping -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+              <div style="padding: 16px 20px 12px;">
+                <h2 style="margin: 0 0 2px; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ ingMappingTitle }}</h2>
+                <span style="font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ ingMappingSub }}</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px 14px; padding: 8px 20px; border-top: 1px solid var(--hairline); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint);">
+                <span style="unicode-bidi: plaintext;">{{ ingMapCols.col }}</span><span style="unicode-bidi: plaintext;">{{ ingMapCols.field }}</span><span style="text-align: end; unicode-bidi: plaintext;">{{ ingMapCols.conf }}</span>
+              </div>
+              <sc-for list="{{ ingMapping }}" as="m" hint-placeholder-count="7">
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px 14px; align-items: center; padding: 10px 20px; border-top: 1px solid var(--hairline);">
+                  <span style="font-size: var(--fs-small); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ m.col }}</span>
+                  <span class="mono" style="font-size: 12px; color: var(--text-muted);">{{ m.field }}</span>
+                  <span class="num" style="font-size: 12px; font-weight: 600; text-align: end; color: {{ m.confColor }};">{{ m.conf }}</span>
+                </div>
+              </sc-for>
+            </section>
+
+            <!-- quarantine -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+              <div style="padding: 16px 20px 12px; display: flex; align-items: flex-start; gap: 10px;">
+                <span style="flex: none; margin-top: 2px; width: 8px; height: 8px; border-radius: var(--r-full); background: var(--at-risk-soft);"></span>
+                <div style="min-width: 0;">
+                  <h2 style="margin: 0 0 2px; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ ingQTitle }}</h2>
+                  <span style="font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;">{{ ingQSub }}</span>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 52px 1fr auto; gap: 6px 12px; padding: 8px 20px; border-top: 1px solid var(--hairline); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint);">
+                <span style="unicode-bidi: plaintext;">{{ ingQCols.row }}</span><span style="unicode-bidi: plaintext;">{{ ingQCols.issue }}</span><span style="text-align: end; unicode-bidi: plaintext;">{{ ingQCols.value }}</span>
+              </div>
+              <sc-for list="{{ ingQuarantine }}" as="q" hint-placeholder-count="4">
+                <div class="tw-qrow" style="display: grid; grid-template-columns: 52px 1fr auto; gap: 6px 12px; align-items: center; padding: 11px 20px; border-top: 1px solid var(--hairline);">
+                  <span class="num" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">{{ q.row }}</span>
+                  <span style="min-width: 0;">
+                    <span style="display: block; font-size: var(--fs-small); color: var(--text); unicode-bidi: plaintext;">{{ q.issue }}</span>
+                    <span class="mono" style="font-size: 11px; color: var(--text-faint);">{{ q.field }}</span>
+                  </span>
+                  <span style="display: inline-flex; align-items: center; gap: 10px;">
+                    <span class="mono" style="font-size: 11px; color: var(--at-risk-text); background: var(--at-risk-bg); border-radius: var(--r-sm); padding: 2px 7px;">{{ q.value }}</span>
+                    <a href="#" style="font-size: 11.5px; font-weight: 500; color: var(--accent); text-decoration: none; white-space: nowrap; unicode-bidi: plaintext;">{{ ingRevalidate }}</a>
+                  </span>
+                </div>
+              </sc-for>
+            </section>
+          </div>
+          </sc-if>
+
+        </div>
+        </sc-if>
+
+        <!-- ============================ SCRUBBER ============================ -->
+        <sc-if value="{{ showScrubber }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Scrubber">
+
+          <!-- header -->
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px;">
+            <div style="min-width: 0;">
+              <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h1); letter-spacing: -0.01em; color: var(--text); unicode-bidi: plaintext;">{{ scTitle }}</h1>
+              <p style="margin: 0; font-size: var(--fs-body); color: var(--text-muted); max-width: 560px; unicode-bidi: plaintext;">{{ scKicker }}</p>
+            </div>
+            <button class="tw-outline" style="flex: none; height: 38px; padding-inline: 16px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ scRerun }}</button>
+          </div>
+
+          <!-- hero moment: prevention in money units -->
+          <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 18px 24px; border: 1px solid var(--hairline); border-radius: var(--r-lg); background: linear-gradient(90deg, var(--at-risk-bg), transparent 70%); margin-bottom: 18px;">
+            <div style="display: flex; align-items: baseline; gap: 10px;">
+              <span class="num--hero" style="font-size: 30px; font-weight: 700; color: var(--at-risk); line-height: 1;">{{ scFlagsCount }}</span>
+              <span style="font-size: var(--fs-small); color: var(--at-risk-text); unicode-bidi: plaintext;">{{ scFlagsLabel }}</span>
+            </div>
+            <span style="width: 1px; height: 34px; background: var(--hairline);"></span>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span class="num--hero" style="font-size: 30px; font-weight: 700; color: var(--at-risk); line-height: 1; white-space: nowrap;"><span style="font-size: 0.44em; font-weight: 500; color: var(--text-muted); margin-inline-end: 6px;">SAR</span>{{ scProtectValue }}</span>
+              <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ scProtectLabel }}</span>
+            </div>
+          </div>
+
+          <!-- toolbar: tabs + density -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+            <div style="display: inline-flex; padding: 3px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md);">
+              <button onClick="{{ scSetBatch }}" style="height: 30px; padding-inline: 14px; border: none; border-radius: var(--r-sm); background: {{ scBatchTabBg }}; color: {{ scBatchTabColor }}; font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ scViewBatch }}</button>
+              <button onClick="{{ scSetRules }}" style="height: 30px; padding-inline: 14px; border: none; border-radius: var(--r-sm); background: {{ scRulesTabBg }}; color: {{ scRulesTabColor }}; font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ scViewRules }}</button>
+            </div>
+            <sc-if value="{{ scIsBatch }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ scToggleDense }}" style="height: 32px; padding-inline: 12px; display: inline-flex; align-items: center; gap: 7px; background: {{ scDenseBg }}; border: 1px solid var(--hairline); border-radius: var(--r-md); color: {{ scDenseColor }}; font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 3.5h10M2 7h10M2 10.5h10"/></svg>{{ scDensity }}
+              </button>
+            </sc-if>
+          </div>
+
+          <!-- BATCH: master-detail -->
+          <sc-if value="{{ scIsBatch }}" hint-placeholder-val="{{ true }}">
+
+            <!-- bulk action bar -->
+            <sc-if value="{{ scHasChecked }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 16px; margin-bottom: 10px; background: var(--accent-subtle); border: 1px solid var(--accent); border-radius: var(--r-md);">
+                <span style="font-size: var(--fs-small); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ scCheckedLabel }}</span>
+                <span class="num" style="font-size: var(--fs-small); font-weight: 600; color: var(--at-risk-text);">{{ scCheckedSar }}</span>
+                <span style="width: 1px; height: 18px; background: var(--hairline-strong);"></span>
+                <button class="tw-outline" style="height: 30px; padding-inline: 12px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-sm); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ scBulkReviewed }}</button>
+                <button class="tw-outline" style="height: 30px; padding-inline: 12px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-sm); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ scBulkSendBack }}</button>
+                <button class="tw-outline" style="height: 30px; padding-inline: 12px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-sm); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ scBulkClear }}</button>
+                <span style="margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--money-neutral)" stroke-width="1.3"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.6v2.6l1.6 1" stroke-linecap="round"/></svg>{{ scAudited }}
+                </span>
+                <button onClick="{{ scClearChecks }}" style="width: 24px; height: 24px; display: grid; place-items: center; border: none; background: transparent; color: var(--text-muted); border-radius: var(--r-sm); cursor: pointer;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+              </div>
+            </sc-if>
+
+            <div style="display: grid; grid-template-columns: {{ scGridCols }}; gap: 16px; align-items: start;">
+
+              <!-- table -->
+              <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden; min-width: 0;">
+                <div style="overflow-x: auto;">
+                  <div style="min-width: 700px;">
+                    <!-- header -->
+                    <div style="position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 36px 104px 88px 1fr 100px 104px 172px 100px; align-items: center; gap: 10px; padding: 0 16px; height: 40px; background: var(--surface-2); border-bottom: 1px solid var(--hairline); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint);">
+                      <span></span>
+                      <span style="unicode-bidi: plaintext;">{{ scCols.claim }}</span>
+                      <span style="unicode-bidi: plaintext;">{{ scCols.patient }}</span>
+                      <span style="unicode-bidi: plaintext;">{{ scCols.payer }}</span>
+                      <span style="unicode-bidi: plaintext;">{{ scCols.codes }}</span>
+                      <span style="text-align: end; unicode-bidi: plaintext;">{{ scCols.amount }}</span>
+                      <span style="unicode-bidi: plaintext;">{{ scCols.risk }}</span>
+                      <span style="text-align: end; unicode-bidi: plaintext;">{{ scCols.status }}</span>
+                    </div>
+                    <!-- rows -->
+                    <sc-for list="{{ scRows }}" as="r" hint-placeholder-count="8">
+                      <div class="tw-qrow" onClick="{{ r.onSelect }}" style="display: grid; grid-template-columns: 36px 104px 88px 1fr 100px 104px 172px 100px; align-items: center; gap: 10px; padding: 0 16px; min-height: {{ scRowH }}; border-bottom: 1px solid var(--hairline); background: {{ r.rowBg }}; cursor: pointer;">
+                        <span onClick="{{ r.onCheck }}" style="width: 16px; height: 16px; border-radius: var(--r-sm); border: 1.5px solid {{ r.checkBorder }}; background: {{ r.checkBg }}; display: grid; place-items: center;">
+                          <sc-if value="{{ r.checked }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="var(--accent-fg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 5.6 4.5 7.7 8.8 3"/></svg></sc-if>
+                        </span>
+                        <span class="mono" style="font-size: 12px; color: var(--text); white-space: nowrap;">{{ r.id }}</span>
+                        <span class="mono" style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">{{ r.patient }}</span>
+                        <span style="font-size: var(--fs-small); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ r.payer }}</span>
+                        <span class="mono" style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">{{ r.codes }}</span>
+                        <span class="num" style="font-size: 13px; font-weight: 600; text-align: end; color: var(--at-risk-text);">{{ r.amount }}</span>
+                        <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                          <span style="display: inline-flex; align-items: baseline; gap: 6px;">
+                            <span class="num" style="font-size: 13px; font-weight: 700; color: {{ r.riskColor }};">{{ r.risk }}</span>
+                            <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ r.top }}</span>
+                          </span>
+                          <span style="display: flex; gap: 2px; height: 5px;">
+                            <sc-for list="{{ r.segs }}" as="g" hint-placeholder-count="10"><span style="flex: 1; border-radius: 1px; background: {{ g.color }};"></span></sc-for>
+                          </span>
+                        </span>
+                        <span style="display: flex; justify-content: flex-end;">
+                          <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: var(--r-full); background: {{ r.statusBg }}; color: {{ r.statusFg }}; font-size: 11px; font-weight: 600; white-space: nowrap;">
+                            <sc-if value="{{ r.isFlagged }}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 1.5v7M2.5 2h5l-1 1.5 1 1.5h-5"/></svg></sc-if>
+                            <sc-if value="{{ r.isNeeds }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3.6 3.8a1.4 1.4 0 1 1 2 1.3c-.5.3-.6.5-.6 1M5 8v.02"/></svg></sc-if>
+                            <sc-if value="{{ r.isClear }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.2 4 7.2 8 2.8"/></svg></sc-if>
+                            <span style="unicode-bidi: plaintext;">{{ r.statusLabel }}</span>
+                          </span>
+                        </span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </section>
+
+              <!-- detail drawer -->
+              <aside style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden; position: {{ scDrawerPos }}; top: 0;">
+                <div style="padding: 16px 18px; border-bottom: 1px solid var(--hairline); background: var(--surface-2);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
+                    <span class="mono" style="font-size: 13px; font-weight: 500; color: var(--text);">{{ scSelId }}</span>
+                    <span style="display: inline-flex; align-items: baseline; gap: 5px;"><span class="num" style="font-size: 15px; font-weight: 700; color: {{ scSelRiskColor }};">{{ scSelRisk }}</span><span style="font-size: 10.5px; color: var(--text-faint);">/100</span></span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11.5px; color: var(--text-muted);">
+                    <span style="unicode-bidi: plaintext;">{{ scSelPayer }}</span>
+                    <span class="mono">{{ scSelCodes }}</span>
+                    <span class="mono">{{ scSelPatient }}</span>
+                    <span class="num" style="color: var(--at-risk-text); font-weight: 600;">SAR {{ scSelAmount }}</span>
+                  </div>
+                </div>
+                <div style="padding: 14px 18px 6px;">
+                  <span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; unicode-bidi: plaintext;">{{ scDrawerReasons }}</span>
+                </div>
+                <sc-if value="{{ scHasRules }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ scDrawerRules }}" as="d" hint-placeholder-count="3">
+                    <div style="padding: 12px 18px; border-top: 1px solid var(--hairline);">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px;">
+                        <span style="font-size: var(--fs-body); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ d.title }}</span>
+                        <span style="flex: none; padding: 1px 8px; border-radius: var(--r-full); background: {{ d.sevBg }}; color: {{ d.sevFg }}; font-size: 10px; font-weight: 600; unicode-bidi: plaintext;">{{ d.sevLabel }}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                        <span style="font-size: 10.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ scDrawerField }}</span>
+                        <span class="mono" style="font-size: 11px; color: var(--at-risk-text); background: var(--at-risk-bg); border-radius: var(--r-sm); padding: 1px 6px;">{{ d.field }}</span>
+                      </div>
+                      <p style="margin: 0 0 6px; font-size: 12px; color: var(--text-muted); line-height: 1.45; unicode-bidi: plaintext;">{{ d.cite }}</p>
+                      <div style="display: flex; align-items: flex-start; gap: 7px; padding: 8px 10px; background: var(--surface-2); border-radius: var(--r-sm);">
+                        <svg style="flex: none; margin-top: 1px; color: var(--accent);" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 1.5a4 4 0 0 1 2.4 7.2c-.5.4-.7.6-.7 1.1M4.6 8.7c0-.5-.2-.7-.7-1.1a4 4 0 0 1 .3-6.4M4.8 11.5h3.4"/></svg>
+                        <span style="font-size: 12px; color: var(--text); line-height: 1.45; unicode-bidi: plaintext;">{{ d.fix }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+                <sc-if value="{{ scHasRulesEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 20px 18px; text-align: center;"><span style="font-size: 12px; color: var(--text-muted); unicode-bidi: plaintext;">{{ scSelTop }}</span></div>
+                </sc-if>
+              </aside>
+            </div>
+          </sc-if>
+
+          <!-- RULES LIBRARY (transparent) -->
+          <sc-if value="{{ scIsRules }}" hint-placeholder-val="{{ false }}">
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+              <div style="display: grid; grid-template-columns: 1.4fr 1.6fr 1fr 100px 110px; gap: 12px; padding: 10px 20px; background: var(--surface-2); border-bottom: 1px solid var(--hairline); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint);">
+                <span style="unicode-bidi: plaintext;">{{ scRulesCols.rule }}</span><span style="unicode-bidi: plaintext;">{{ scRulesCols.cond }}</span><span style="unicode-bidi: plaintext;">{{ scRulesCols.source }}</span><span style="unicode-bidi: plaintext;">{{ scRulesCols.sev }}</span><span style="text-align: end; unicode-bidi: plaintext;">{{ scRulesCols.edited }}</span>
+              </div>
+              <sc-for list="{{ scRulesLib }}" as="r" hint-placeholder-count="6">
+                <div class="tw-qrow" style="display: grid; grid-template-columns: 1.4fr 1.6fr 1fr 100px 110px; gap: 12px; align-items: center; padding: 13px 20px; border-top: {{ r.border }};">
+                  <span style="font-size: var(--fs-small); font-weight: 500; color: var(--text); unicode-bidi: plaintext;">{{ r.name }}</span>
+                  <span class="mono" style="font-size: 11.5px; color: var(--text-muted);">{{ r.cond }}</span>
+                  <span style="font-size: 12px; color: var(--text-muted); unicode-bidi: plaintext;">{{ r.source }}</span>
+                  <span><span style="padding: 2px 9px; border-radius: var(--r-full); background: {{ r.sevBg }}; color: {{ r.sevFg }}; font-size: 11px; font-weight: 600; unicode-bidi: plaintext;">{{ r.sevLabel }}</span></span>
+                  <span class="num" style="font-size: 12px; color: var(--text-faint); text-align: end;">{{ r.edited }}</span>
+                </div>
+              </sc-for>
+              <div style="padding: 11px 20px; border-top: 1px solid var(--hairline); background: var(--surface-2); display: flex; align-items: center; gap: 8px;">
+                <svg style="flex: none; color: var(--money-neutral);" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M7 1.5 2 3.3v3.5c0 2.8 2 4.6 5 5.7 3-1.1 5-2.9 5-5.7V3.3L7 1.5Z"/></svg>
+                <span style="font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;">{{ scRulesNote }}</span>
+              </div>
+            </section>
+          </sc-if>
+
+        </div>
+        </sc-if>
+
+        <!-- ============================ APPEAL GENERATOR ============================ -->
+        <sc-if value="{{ showAppeals }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Appeal Generator">
+
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div style="min-width: 0;">
+              <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h1); letter-spacing: -0.01em; color: var(--text); unicode-bidi: plaintext;">{{ apTitle }}</h1>
+              <p style="margin: 0; font-size: var(--fs-body); color: var(--text-muted); max-width: 560px; unicode-bidi: plaintext;">{{ apKicker }}</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: {{ apOuterCols }}; gap: 16px; align-items: start;">
+
+            <!-- appealable queue -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+              <div style="padding: 16px 16px 12px; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;">
+                <div><h2 style="margin: 0 0 2px; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ apQueueTitle }}</h2><span style="font-size: 11px; color: var(--text-faint); unicode-bidi: plaintext;">{{ apQueueSub }}</span></div>
+              </div>
+              <sc-for list="{{ apRows }}" as="a" hint-placeholder-count="5">
+                <button onClick="{{ a.onSelect }}" style="width: 100%; text-align: start; display: flex; flex-direction: column; gap: 6px; padding: 13px 16px; border: none; border-top: 1px solid var(--hairline); border-inline-start: 2px solid {{ a.rowBorder }}; background: {{ a.rowBg }}; cursor: pointer; color: var(--text);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span class="mono" style="font-size: 12px; color: var(--text); white-space: nowrap;">{{ a.id }}</span>
+                    <span class="num" style="font-size: var(--fs-body); font-weight: 700; color: var(--recovered-text);">{{ a.sarStr }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ a.payerName }}</span>
+                    <span style="font-size: 11px; font-weight: {{ a.dayWeight }}; color: {{ a.dayColor }}; white-space: nowrap; unicode-bidi: plaintext;">{{ a.daysLabel }}</span>
+                  </div>
+                  <span style="font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ a.reason }}</span>
+                </button>
+              </sc-for>
+              <div style="padding: 12px 16px; border-top: 1px solid var(--hairline);">
+                <button class="tw-outline" style="width: 100%; height: 34px; background: var(--surface-2); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ apGenerate }}</button>
+              </div>
+            </section>
+
+            <!-- composer -->
+            <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+              <!-- appealing SAR + HITL -->
+              <div style="padding: 18px 22px; border-bottom: 1px solid var(--hairline); background: linear-gradient(180deg, var(--recovered-bg), transparent 80%); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                <div>
+                  <span style="display: block; font-size: var(--fs-small); font-weight: 600; color: var(--recovered-text); margin-bottom: 4px; unicode-bidi: plaintext;">{{ apAppealing }}</span>
+                  <span class="num--hero" style="font-size: 38px; font-weight: 700; line-height: 1; color: var(--recovered); letter-spacing: -0.02em; white-space: nowrap;"><span style="font-size: 0.4em; font-weight: 500; color: var(--text-muted); margin-inline-end: 7px;">SAR</span>{{ apSelSarNum }}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-md); background: var(--surface-1); border: 1px solid var(--hairline); max-width: 300px;">
+                  <svg style="flex: none; color: var(--money-neutral);" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1.5 2.5 3.3v3.8c0 3 2 5 5 6 3-1 5-3 5-6V3.3L7.5 1.5Z"/><path d="M5.5 7.3 6.9 8.7 9.6 5.8"/></svg>
+                  <span style="font-size: 11px; color: var(--text-muted); line-height: 1.4; unicode-bidi: plaintext;">{{ apHitl }}</span>
+                </div>
+              </div>
+
+              <!-- fallback banner -->
+              <sc-if value="{{ apShowFallback }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; gap: 8px; padding: 10px 22px; background: var(--at-risk-bg); border-bottom: 1px solid var(--hairline);">
+                  <svg style="flex: none; color: var(--at-risk-text);" width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 2 1.5 12.5h12L7.5 2Z"/><path d="M7.5 6.5v3M7.5 11v.02"/></svg>
+                  <span style="font-size: 12px; color: var(--at-risk-text); unicode-bidi: plaintext;">{{ apFallback }}</span>
+                </div>
+              </sc-if>
+
+              <!-- context + letter -->
+              <div style="display: grid; grid-template-columns: {{ apInnerCols }}; gap: 0;">
+                <!-- context (fixed reference) -->
+                <div style="padding: 18px 22px; border-inline-end: 1px solid var(--hairline); background: var(--surface-2);">
+                  <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 14px;">
+                    <svg style="color: var(--text-faint);" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5.5" width="7" height="6" rx="1"/><path d="M4.5 5.5V4a2 2 0 0 1 4 0v1.5" stroke-linecap="round"/></svg>
+                    <span style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); unicode-bidi: plaintext;">{{ apLockedNote }}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div><span style="display: block; font-size: 10.5px; color: var(--text-faint); margin-bottom: 2px; unicode-bidi: plaintext;">{{ apCtx.claim }}</span><span class="mono" style="font-size: 12px; color: var(--text);">{{ apSelId }}</span></div>
+                    <div><span style="display: block; font-size: 10.5px; color: var(--text-faint); margin-bottom: 2px; unicode-bidi: plaintext;">{{ apCtx.member }}</span><span class="mono" style="font-size: 12px; color: var(--text);">{{ apSelMember }}</span></div>
+                    <div><span style="display: block; font-size: 10.5px; color: var(--text-faint); margin-bottom: 2px; unicode-bidi: plaintext;">{{ apCtx.payer }}</span><span style="font-size: 12.5px; color: var(--text); unicode-bidi: plaintext;">{{ apSelPayer }}</span></div>
+                    <div><span style="display: block; font-size: 10.5px; color: var(--text-faint); margin-bottom: 2px; unicode-bidi: plaintext;">{{ apCtx.provider }}</span><span style="font-size: 12.5px; color: var(--text); unicode-bidi: plaintext;">{{ apSelProvider }}</span></div>
+                    <div><span style="display: block; font-size: 10.5px; color: var(--text-faint); margin-bottom: 2px; unicode-bidi: plaintext;">{{ apCtx.sbs }}</span><span class="mono" style="font-size: 12px; color: var(--text);">{{ apSelSbs }}</span></div>
+                    <div><span style="display: block; font-size: 10.5px; color: var(--text-faint); margin-bottom: 2px; unicode-bidi: plaintext;">{{ apCtx.reason }}</span><span style="font-size: 12.5px; color: var(--at-risk-text); unicode-bidi: plaintext;">{{ apSelReason }}</span> <span class="mono" style="font-size: 11px; color: var(--text-faint);">{{ apSelCarc }}</span></div>
+                  </div>
+                </div>
+
+                <!-- editable letter -->
+                <div style="padding: 18px 22px; min-width: 0;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <h3 style="margin: 0; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ apLetterTitle }}</h3>
+                    <div style="display: inline-flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 11px; color: var(--text-faint); unicode-bidi: plaintext;">{{ apLetterLangLabel }}</span>
+                      <div style="display: inline-flex; padding: 2px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-md);">
+                        <button onClick="{{ apSetEn }}" style="height: 26px; padding-inline: 12px; border: none; border-radius: var(--r-sm); background: {{ apEnBg }}; color: {{ apEnColor }}; font-family: var(--font-ui); font-size: 12px; font-weight: 600; cursor: pointer;">EN</button>
+                        <button onClick="{{ apSetAr }}" style="height: 26px; padding-inline: 12px; border: none; border-radius: var(--r-sm); background: {{ apArBg }}; color: {{ apArColor }}; font-family: var(--font-ui); font-size: 13px; font-weight: 600; cursor: pointer;">ع</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div contenteditable="true" dir="{{ apLetterDir }}" style="border: 1px solid var(--hairline); border-radius: var(--r-md); background: var(--bg); padding: 20px; min-height: 210px; outline: none; font-family: {{ apLetterFont }}; font-size: var(--fs-body); line-height: 1.7; color: var(--text); text-align: {{ apLetterAlign }};">
+                    <p style="margin: 0 0 10px; font-weight: 600; unicode-bidi: plaintext;">{{ apLetterToWord }} {{ apLetterPayer }}</p>
+                    <p style="margin: 0; unicode-bidi: plaintext;">{{ apLetterBody }}</p>
+                  </div>
+                  <span style="display: block; margin-top: 8px; font-size: 11px; color: var(--text-faint); unicode-bidi: plaintext;">{{ apRegen }}</span>
+                </div>
+              </div>
+
+              <!-- supporting docs -->
+              <div style="padding: 16px 22px; border-top: 1px solid var(--hairline);">
+                <span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; unicode-bidi: plaintext;">{{ apDocsTitle }}</span>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <sc-for list="{{ apDocs }}" as="d" hint-placeholder-count="3">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <span style="width: 16px; height: 16px; flex: none; border-radius: var(--r-sm); border: 1.5px solid var(--hairline-strong); display: grid; place-items: center;"></span>
+                      <span style="font-size: var(--fs-body); color: var(--text); unicode-bidi: plaintext;">{{ d.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <!-- review gate + export (separated) -->
+              <div style="padding: 16px 22px; border-top: 1px solid var(--hairline); background: var(--surface-2);">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+                  <button onClick="{{ apToggleReviewed }}" style="display: inline-flex; align-items: center; gap: 9px; border: none; background: transparent; cursor: pointer; padding: 0;">
+                    <span style="width: 18px; height: 18px; flex: none; border-radius: var(--r-sm); border: 1.5px solid {{ apReviewBorder }}; background: {{ apReviewBg }}; display: grid; place-items: center;">
+                      <sc-if value="{{ apReviewed }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 6.1 5 8.5 9.4 3.3"/></svg></sc-if>
+                    </span>
+                    <span style="font-size: var(--fs-body); font-weight: 500; color: var(--text); unicode-bidi: plaintext;">{{ apReviewConfirm }}</span>
+                  </button>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-inline-start: auto;">
+                    <span style="font-size: 12px; color: var(--text-faint); unicode-bidi: plaintext;">{{ apReviewLabel }}</span>
+                    <input type="text" placeholder="{{ apReviewPlaceholder }}" dir="auto" style="height: 32px; width: 150px; padding-inline: 10px; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: 12.5px; outline: none;" />
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <button style="height: 40px; padding-inline: 18px; background: {{ apExportBg }}; color: {{ apExportColor }}; border: none; border-radius: var(--r-md); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 600; cursor: {{ apExportCursor }}; display: inline-flex; align-items: center; gap: 8px; unicode-bidi: plaintext;">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1.5v8m0 0 3-3m-3 3-3-3"/><path d="M2.5 11v1.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V11"/></svg>{{ apExportPdf }}
+                  </button>
+                  <button class="tw-outline" style="height: 40px; padding-inline: 16px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ apCopyBlock }}</button>
+                  <sc-if value="{{ apGateShow }}" hint-placeholder-val="{{ true }}"><span style="font-size: 11.5px; color: var(--text-muted); unicode-bidi: plaintext;">{{ apGateNote }}</span></sc-if>
+                </div>
+              </div>
+            </section>
+          </div>
+
+        </div>
+        </sc-if>
+
+        <!-- ============================ RECOVERY TRACKING ============================ -->
+        <sc-if value="{{ showRecovery }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Recovery Tracking">
+
+          <div style="margin-bottom: 20px;">
+            <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h1); letter-spacing: -0.01em; color: var(--text); unicode-bidi: plaintext;">{{ recTitle }}</h1>
+            <p style="margin: 0; font-size: var(--fs-body); color: var(--text-muted); max-width: 620px; unicode-bidi: plaintext;">{{ recKicker }}</p>
+          </div>
+
+          <!-- ROI BAND -->
+          <section style="border: 1px solid var(--hairline); border-radius: var(--r-xl); background: var(--surface-1); overflow: hidden; margin-bottom: 22px;">
+            <div style="display: flex; flex-wrap: wrap; align-items: stretch;">
+              <div style="flex: 2 1 260px; padding: 30px 32px; background: linear-gradient(180deg, var(--recovered-bg), transparent 62%); display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="width: 8px; height: 8px; border-radius: var(--r-full); background: var(--recovered);"></span>
+                  <span style="font-size: var(--fs-small); font-weight: 600; color: var(--recovered-text); unicode-bidi: plaintext;">{{ recRoiRecoveredLabel }}</span>
+                </div>
+                <span class="num--hero" style="font-size: clamp(38px, 4.4vw, 60px); font-weight: 700; line-height: 1; color: var(--recovered); letter-spacing: -0.025em; white-space: nowrap;"><span style="font-size: 0.4em; font-weight: 500; color: var(--text-muted); margin-inline-end: 8px;">SAR</span>{{ recRecoveredVal }}</span>
+                <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ recProvenance }}</span>
+              </div>
+              <div style="flex: 3 1 360px; display: grid; grid-template-columns: 1fr 1fr 1fr; border-inline-start: 1px solid var(--hairline);">
+                <div style="padding: 26px 22px; border-inline-end: 1px solid var(--hairline); display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+                  <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ recWinLabel }}</span>
+                  <span class="num--hero" style="font-size: 32px; font-weight: 700; color: var(--text); line-height: 1;">{{ recWinVal }}</span>
+                </div>
+                <div style="padding: 26px 22px; border-inline-end: 1px solid var(--hairline); display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+                  <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ recMedianLabel }}</span>
+                  <span style="display: inline-flex; align-items: baseline; gap: 5px;"><span class="num--hero" style="font-size: 32px; font-weight: 700; color: var(--text); line-height: 1;">{{ recMedianVal }}</span><span style="font-size: 13px; color: var(--text-muted); unicode-bidi: plaintext;">{{ recDaysUnit }}</span></span>
+                </div>
+                <div style="padding: 26px 22px; display: flex; flex-direction: column; gap: 8px; justify-content: center; background: var(--accent-subtle);">
+                  <span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ recShareLabel }}</span>
+                  <span class="num--hero" style="font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1; white-space: nowrap;"><span style="font-size: 0.44em; font-weight: 500; color: var(--text-muted); margin-inline-end: 6px;">SAR</span>{{ recShareVal }}</span>
+                  <span style="font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">{{ recShareNote }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- PIPELINE grouped by stage -->
+          <h2 style="margin: 0 0 12px; font-size: var(--fs-h2); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ recPipelineTitle }}</h2>
+          <section style="border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--surface-1); overflow: hidden;">
+            <div style="overflow-x: auto;">
+              <div style="min-width: 820px;">
+                <!-- column header -->
+                <div style="position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 110px 1fr 120px 120px 92px 116px 96px; align-items: center; gap: 10px; padding: 0 18px; height: 40px; background: var(--surface-2); border-bottom: 1px solid var(--hairline); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint);">
+                  <span style="unicode-bidi: plaintext;">{{ recCols.claim }}</span>
+                  <span style="unicode-bidi: plaintext;">{{ recCols.payer }}</span>
+                  <span style="text-align: end; unicode-bidi: plaintext;">{{ recCols.appealed }}</span>
+                  <span style="text-align: end; unicode-bidi: plaintext;">{{ recCols.recovered }}</span>
+                  <span style="text-align: end; unicode-bidi: plaintext;">{{ recCols.days }}</span>
+                  <span style="unicode-bidi: plaintext;">{{ recCols.owner }}</span>
+                  <span></span>
+                </div>
+
+                <sc-for list="{{ recStages }}" as="st" hint-placeholder-count="5">
+                  <!-- stage group header -->
+                  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 18px; background: var(--surface-2); border-bottom: 1px solid var(--hairline); border-top: 1px solid var(--hairline);">
+                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-full); background: {{ st.bg }}; color: {{ st.color }}; font-size: 12px; font-weight: 600; unicode-bidi: plaintext;">
+                      <sc-if value="{{ st.isWon }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.3 5.6 4.4 7.7 8.7 3"/></svg></sc-if>
+                      <sc-if value="{{ st.isLost }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 3l5 5M8 3l-5 5"/></svg></sc-if>
+                      <sc-if value="{{ st.isReview }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="5.5" cy="5.5" r="4"/><path d="M5.5 3.4v2.3l1.5.9" stroke-linecap="round"/></svg></sc-if>
+                      <sc-if value="{{ st.isSubmitted }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="{{ dirFlip }}"><path d="M1.5 5.5 9.5 2 6.5 9.5 5 6.5z"/></svg></sc-if>
+                      <sc-if value="{{ st.isPartial }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="5.5" cy="5.5" r="4"/><path d="M5.5 1.5a4 4 0 0 1 0 8z" fill="currentColor" stroke="none"/></svg></sc-if>
+                      {{ st.label }}
+                    </span>
+                    <span class="num" style="font-size: 11.5px; color: var(--text-muted);">{{ st.count }}</span>
+                    <span style="margin-inline-start: auto; display: inline-flex; align-items: center; gap: 12px;">
+                      <span class="num" style="font-size: 12px; color: var(--text-muted);"><span style="color: var(--text-faint); margin-inline-end: 4px;">SAR</span>{{ st.appealedStr }}</span>
+                      <sc-if value="{{ st.showRecovered }}" hint-placeholder-val="{{ false }}"><span class="num" style="font-size: 12px; font-weight: 600; color: var(--recovered-text);"><span style="color: var(--text-faint); margin-inline-end: 4px; font-weight: 500;">SAR</span>{{ st.recoveredStr }}</span></sc-if>
+                    </span>
+                  </div>
+                  <!-- rows -->
+                  <sc-for list="{{ st.rows }}" as="r" hint-placeholder-count="3">
+                    <div class="tw-qrow" style="display: grid; grid-template-columns: 110px 1fr 120px 120px 92px 116px 96px; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--hairline);">
+                      <span class="mono" style="font-size: 12px; color: var(--text); white-space: nowrap;">{{ r.id }}</span>
+                      <span style="min-width: 0;">
+                        <span style="display: block; font-size: var(--fs-small); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ r.payerName }}</span>
+                        <sc-if value="{{ r.hasReason }}" hint-placeholder-val="{{ false }}"><span style="display: block; font-size: 11px; color: var(--text-faint); unicode-bidi: plaintext;">{{ r.reason }}</span></sc-if>
+                      </span>
+                      <span class="num" style="font-size: 13px; text-align: end; color: var(--text-muted);">{{ r.appealedStr }}</span>
+                      <span class="num" style="font-size: 13px; font-weight: 600; text-align: end; color: {{ r.recoveredColor }};">{{ r.recoveredStr }}</span>
+                      <span class="num" style="font-size: 12px; text-align: end; color: var(--text-muted);">{{ r.days }}</span>
+                      <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext;">{{ r.owner }}</span>
+                      <a href="#" style="font-size: 11.5px; font-weight: 500; color: var(--accent); text-decoration: none; white-space: nowrap; unicode-bidi: plaintext;">{{ recLogOutcome }}</a>
+                    </div>
+                  </sc-for>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+
+        </div>
+        </sc-if>
+
+        <!-- ============================ PLACEHOLDER (other modules) ============================ -->
+        <sc-if value="{{ showPlaceholder }}" hint-placeholder-val="{{ false }}">
+        <div style="min-height: 55vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px;">
+          <span style="width: 46px; height: 46px; display: grid; place-items: center; border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--hairline); color: var(--text-faint);">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 6v6M11 15.5v.5"/><circle cx="11" cy="11" r="8.5"/></svg>
+          </span>
+          <h2 style="margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-h2); color: var(--text); unicode-bidi: plaintext;">{{ activeLabel }}</h2>
+          <p style="margin: 0; font-size: var(--fs-body); color: var(--text-muted); max-width: 340px; unicode-bidi: plaintext;">{{ placeholderNote }}</p>
+        </div>
+        </sc-if>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================ FIRST-RUN CORRIDOR (§9) ============================ -->
+<sc-if value="{{ firstRun }}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column;">
+
+  <!-- top bar -->
+  <header style="height: 58px; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-inline: 24px; border-bottom: 1px solid var(--hairline); background: var(--surface-1);">
+    <span style="font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--text);">Taweed</span>
+    <span style="font-size: var(--fs-small); color: var(--text-muted); text-align: center; unicode-bidi: plaintext;">{{ cGoal }}</span>
+    <button class="tw-ghost" onClick="{{ exitCorridor }}" style="height: 32px; padding-inline: 12px; background: transparent; border: 1px solid var(--hairline); border-radius: var(--r-md); color: var(--text-muted); font-family: var(--font-ui); font-size: var(--fs-small); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ cExit }}</button>
+  </header>
+
+  <!-- progress ledger -->
+  <div style="flex: none; padding: 16px 24px; display: flex; align-items: center; justify-content: center; gap: 0; border-bottom: 1px solid var(--hairline);">
+    <sc-for list="{{ cProgress }}" as="p" hint-placeholder-count="3">
+      <div style="display: flex; align-items: center;">
+        <span style="display: inline-flex; align-items: center; gap: 8px;">
+          <span class="num" style="width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: var(--r-full); background: {{ p.circleBg }}; border: 1.5px solid {{ p.circleBorder }}; color: {{ p.circleColor }}; font-size: 12px; font-weight: 600;">{{ p.n }}</span>
+          <span style="font-size: var(--fs-small); font-weight: {{ p.labelWeight }}; color: {{ p.labelColor }}; white-space: nowrap; unicode-bidi: plaintext;">{{ p.label }}</span>
+        </span>
+        <sc-if value="{{ p.showBar }}" hint-placeholder-val="{{ true }}"><span style="width: 48px; height: 2px; margin-inline: 14px; background: {{ p.barBg }};"></span></sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- body -->
+  <main style="flex: 1 1 auto; overflow: auto; display: flex; justify-content: center; padding: 44px 24px;">
+    <div style="width: 100%; max-width: 660px;">
+
+      <!-- STEP 1: language + theme -->
+      <sc-if value="{{ cStep1 }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-display); letter-spacing: -0.015em; color: var(--text); unicode-bidi: plaintext;">{{ c1Title }}</h1>
+        <p style="margin: 0 0 28px; font-size: var(--fs-h3); color: var(--text-muted); unicode-bidi: plaintext;">{{ c1Sub }}</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <button class="tw-choice" onClick="{{ selArabic }}" style="text-align: start; padding: 18px; border-radius: var(--r-lg); background: {{ arCardBg }}; border: 1.5px solid {{ arCardBorder }}; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <span style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: var(--fs-h2); font-weight: 600; color: var(--text);">العربية</span><span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ cArabicNote }}</span></span>
+            <span style="width: 20px; height: 20px; flex: none; border-radius: var(--r-full); border: 1.5px solid {{ arDotBorder }}; background: {{ arDotBg }}; display: grid; place-items: center;"><sc-if value="{{ cIsAr }}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.2 5 8.7 9.5 3.5"/></svg></sc-if></span>
+          </button>
+          <button class="tw-choice" onClick="{{ selEnglish }}" style="text-align: start; padding: 18px; border-radius: var(--r-lg); background: {{ enCardBg }}; border: 1.5px solid {{ enCardBorder }}; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <span style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: var(--fs-h2); font-weight: 600; color: var(--text);">English</span><span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">EN</span></span>
+            <span style="width: 20px; height: 20px; flex: none; border-radius: var(--r-full); border: 1.5px solid {{ enDotBorder }}; background: {{ enDotBg }}; display: grid; place-items: center;"><sc-if value="{{ cIsEn }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.2 5 8.7 9.5 3.5"/></svg></sc-if></span>
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <button class="tw-choice" onClick="{{ selLight }}" style="padding: 16px 18px; border-radius: var(--r-lg); background: {{ ltCardBg }}; border: 1.5px solid {{ ltCardBorder }}; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+            <span style="width: 34px; height: 34px; flex: none; border-radius: var(--r-md); background: #FBFBFC; border: 1px solid #E4E4E9; display: grid; place-items: center; color: #C2410C;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5" stroke-linecap="round"/></svg></span>
+            <span style="font-size: var(--fs-body); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ cLight }}</span>
+          </button>
+          <button class="tw-choice" onClick="{{ selDark }}" style="padding: 16px 18px; border-radius: var(--r-lg); background: {{ dkCardBg }}; border: 1.5px solid {{ dkCardBorder }}; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+            <span style="width: 34px; height: 34px; flex: none; border-radius: var(--r-md); background: #131316; border: 1px solid #2A2A30; display: grid; place-items: center; color: #F0A277;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M13.2 9.1A5.4 5.4 0 0 1 6.9 2.8 5.4 5.4 0 1 0 13.2 9.1Z"/></svg></span>
+            <span style="font-size: var(--fs-body); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ cDark }}</span>
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- STEP 2: scope confirm -->
+      <sc-if value="{{ cStep2 }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-display); letter-spacing: -0.015em; color: var(--text); unicode-bidi: plaintext;">{{ c2Title }}</h1>
+        <p style="margin: 0 0 28px; font-size: var(--fs-h3); color: var(--text-muted); unicode-bidi: plaintext;">{{ c2Sub }}</p>
+
+        <div style="display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: var(--r-lg); background: var(--accent-subtle); border: 1px solid var(--hairline); margin-bottom: 20px;">
+          <span style="width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: var(--r-md); background: var(--accent); color: var(--accent-fg); font-family: var(--font-display); font-weight: 700; font-size: 18px;">ت</span>
+          <div><span style="display: block; font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ tenantLabel }}</span><span style="font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ tenantWord }}</span></div>
+          <span style="margin-inline-start: auto; color: var(--accent);"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.2 7.4 12.5 14 5"/></svg></span>
+        </div>
+
+        <span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; unicode-bidi: plaintext;">{{ branchWord }}</span>
+        <div style="border: 1px solid var(--hairline); border-radius: var(--r-lg); overflow: hidden;">
+          <sc-for list="{{ cBranchList }}" as="b" hint-placeholder-count="3">
+            <button class="tw-branch" onClick="{{ b.onToggle }}" style="width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: none; border-top: 1px solid var(--hairline); background: transparent; cursor: pointer; text-align: start; color: var(--text);">
+              <span style="width: 18px; height: 18px; flex: none; border-radius: var(--r-sm); border: 1.5px solid {{ b.boxBorder }}; background: {{ b.boxBg }}; display: grid; place-items: center;"><sc-if value="{{ b.on }}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="var(--accent-fg)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 6.1 5 8.5 9.4 3.3"/></svg></sc-if></span>
+              <span style="font-size: var(--fs-body); unicode-bidi: plaintext;">{{ b.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- STEP 3: upload + activation -->
+      <sc-if value="{{ cStep3 }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <sc-if value="{{ ingDone }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align: center;">
+            <span style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: var(--r-full); background: var(--recovered-bg); color: var(--recovered-text); font-size: var(--fs-small); font-weight: 600; margin-bottom: 18px; unicode-bidi: plaintext;"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7 5.3 9.8 10.5 3.5"/></svg>{{ doneTitleShort }}</span>
+            <h1 style="margin: 0 0 8px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-display); letter-spacing: -0.015em; color: var(--text); unicode-bidi: plaintext;">{{ c4Title }}</h1>
+            <div style="margin: 20px 0; padding: 28px; border-radius: var(--r-xl); background: linear-gradient(180deg, var(--at-risk-bg), transparent 70%); border: 1px solid var(--hairline);">
+              <span style="display: block; font-size: var(--fs-small); font-weight: 600; color: var(--at-risk-text); margin-bottom: 10px; unicode-bidi: plaintext;">{{ ingAtRiskLabel }}</span>
+              <span class="num--hero" style="font-size: clamp(40px, 6vw, 64px); font-weight: 700; line-height: 1; color: var(--at-risk); letter-spacing: -0.025em; white-space: nowrap;"><span style="font-size: 0.4em; font-weight: 500; color: var(--text-muted); margin-inline-end: 8px;">SAR</span>{{ ingAtRiskValue }}</span>
+            </div>
+            <button class="tw-btn" onClick="{{ finishCorridor }}" style="height: 46px; padding-inline: 26px; background: var(--accent); border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-h3); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ cSeeMap }}</button>
+            <p style="margin: 16px 0 0; font-size: var(--fs-small); color: var(--text-muted); unicode-bidi: plaintext;">{{ cForwardLoop }}</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ ingNotDone }}" hint-placeholder-val="{{ true }}">
+          <h1 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-display); letter-spacing: -0.015em; color: var(--text); unicode-bidi: plaintext;">{{ c3Title }}</h1>
+          <p style="margin: 0 0 24px; font-size: var(--fs-h3); color: var(--text-muted); unicode-bidi: plaintext;">{{ c3Sub }}</p>
+
+          <div class="tw-drop" style="border: 1.5px dashed var(--hairline-strong); border-radius: var(--r-lg); background: var(--surface-1); padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;">
+            <span style="width: 54px; height: 54px; display: grid; place-items: center; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--hairline); color: var(--accent);"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v11m0-11 4.5 4.5M13 4 8.5 8.5"/><path d="M5 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></span>
+
+            <sc-if value="{{ ingRunning }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ ingDropTitle }}</span>
+              <div style="display: flex; gap: 24px; margin-top: 8px;">
+                <sc-for list="{{ ingCounters }}" as="c" hint-placeholder-count="4">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;"><span class="num--hero" style="font-size: 26px; font-weight: 700; color: var(--text);">{{ c.value }}</span><span style="font-size: 11px; color: var(--text-muted); unicode-bidi: plaintext;">{{ c.label }}</span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ ingIdle }}" hint-placeholder-val="{{ true }}">
+              <span style="font-size: var(--fs-h3); font-weight: 600; color: var(--text); unicode-bidi: plaintext;">{{ ingDropHint }}</span>
+              <div style="display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; justify-content: center;">
+                <button class="tw-btn" onClick="{{ startIngest }}" style="height: 40px; padding-inline: 18px; background: var(--accent); border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 600; cursor: pointer; unicode-bidi: plaintext;">{{ ingUseSample }}</button>
+                <button class="tw-outline" style="height: 40px; padding-inline: 18px; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; unicode-bidi: plaintext;"><span style="width: 7px; height: 7px; border-radius: var(--r-full); background: var(--recovered);"></span>{{ cDoWithMe }}</button>
+              </div>
+              <span style="font-size: 11.5px; color: var(--text-faint); unicode-bidi: plaintext;">{{ cDoWithMeNote }}</span>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+    </div>
+  </main>
+
+  <!-- footer nav -->
+  <footer style="flex: none; height: 72px; display: flex; align-items: center; justify-content: space-between; padding-inline: 24px; border-top: 1px solid var(--hairline); background: var(--surface-1);">
+    <sc-if value="{{ cShowBack }}" hint-placeholder-val="{{ false }}">
+      <button class="tw-ghost" onClick="{{ corridorBack }}" style="height: 42px; padding-inline: 18px; background: transparent; border: 1px solid var(--hairline-strong); border-radius: var(--r-md); color: var(--text); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 500; cursor: pointer; unicode-bidi: plaintext;">{{ cBack }}</button>
+    </sc-if>
+    <sc-if value="{{ cHideBack }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+    <sc-if value="{{ cShowContinue }}" hint-placeholder-val="{{ true }}">
+      <button class="tw-btn" onClick="{{ corridorNext }}" style="height: 42px; padding-inline: 24px; background: {{ cNextBg }}; border: none; border-radius: var(--r-md); color: var(--accent-fg); font-family: var(--font-ui); font-size: var(--fs-body); font-weight: 600; cursor: {{ cNextCursor }}; opacity: {{ cNextOpacity }}; unicode-bidi: plaintext;">{{ cNext }}</button>
+    </sc-if>
+    <sc-if value="{{ cStep3 }}" hint-placeholder-val="{{ false }}"><span></span></sc-if>
+  </footer>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:760},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;owner&quot;,&quot;finance&quot;,&quot;rcm&quot;,&quot;clinician&quot;,&quot;admin&quot;],&quot;default&quot;:&quot;owner&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;RBAC&quot;,&quot;unit&quot;:&quot;&quot;}}">
+const STRINGS = {
+  en: {
+    brandSub: "Denial recovery",
+    nav: { overview: "Overview", analytics: "Denial Analytics", ingest: "Ingest", scrubber: "Scrubber", appeals: "Appeal Generator", recovery: "Recovery Tracking", settings: "Settings" },
+    levels: { read: "read", upload: "upload", approve: "approve", review: "review", evidence: "evidence", "flag-only": "flag", limited: "limited", rules: "rules" },
+    residency: "In-Kingdom data, Riyadh (Oracle Cloud). PDPL.",
+    tenantLabel: "Al Salama Dental",
+    tenantWord: "Tenant",
+    branchWord: "Branches",
+    allBranches: "All branches",
+    branchCount: (n) => n + " branches",
+    searchPh: "Search claims, payers, appeals by ID",
+    recoveredWord: "Recovered",
+    atRiskWord: "At risk",
+    mockWord: "MOCK",
+    scopeLabel: "Al Salama Dental, all branches, last 90 days",
+    popRecoveredMonth: "Recovered this month",
+    popOpenAppeals: "Open appeals value",
+    popTopPayer: "At risk, top payer (Bupa Arabia)",
+    popCta: "Open Recovery Tracking",
+    langToggleLabel: "ع",
+    roleWord: "Role",
+    roles: { owner: "Owner", finance: "Finance", rcm: "RCM Manager", clinician: "Clinician", admin: "Admin" },
+    roleInitials: { owner: "OW", finance: "FN", rcm: "RC", clinician: "CL", admin: "AD" },
+    overviewTitle: "Overview",
+    heroKicker: "Al Salama Dental, all branches. Last 6 months.",
+    atRiskLong: "Denied, not yet recovered. Last 6 months.",
+    recoveredLong: "Recovered to date",
+    denialRateWord: "denial rate",
+    benchmarkNote: "Industry first-pass benchmark near 15 percent. The gap is the payload.",
+    deltaVs: "vs prior 90 days",
+    provenance: "from your NPHIES data",
+    reservoirNote: "18 percent of the leak recovered. The red pool drains into the green.",
+    loopTitle: "The recovery loop",
+    loopSub: "Analytics reveals the leak, the scrubber stops new ones, appeals and tracking recover the old.",
+    loop: [
+      { title: "See the leak", desc: "SAR 1.84M at risk across Bupa Arabia, Tawuniya, MedGulf.", module: "Denial Analytics" },
+      { title: "Stop new leaks", desc: "Flag claims likely to deny before you submit.", module: "Scrubber" },
+      { title: "Recover the old ones", desc: "SAR 412,900 recovered so far. You review, you send.", module: "Recovery Tracking" }
+    ],
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    placeholderNote: "This surface is next in the build sequence.",
+    ana: {
+      title: "Denial Analytics",
+      kicker: "The leak in your own numbers. Bupa Arabia, Tawuniya, MedGulf. Last 6 months.",
+      atRiskLabel: "Denied, not yet recovered",
+      scope: "Al Salama Dental, all branches, last 6 months",
+      benchmarkGap: "Industry first-pass benchmark near 15 percent. The gap is the payload.",
+      denialRateLabel: "Denial rate",
+      trendTitle: "Denial rate over time",
+      legendRate: "Denial rate",
+      legendVol: "Submission volume",
+      annotation: "Peak 34.2 percent in May. Tawuniya tightened pre-authorization.",
+      payersTitle: "At risk by payer",
+      payersSub: "Sorted by SAR, not count",
+      rateWord: "denial rate",
+      paretoTitle: "What drives the denials",
+      paretoSub: "Top 5 reasons, cumulative share of denied SAR",
+      paretoInsight: "5 reasons drive 84% of the leak",
+      otherReasons: "Other reasons make up the remaining 16 percent.",
+      howToFix: "How to fix",
+      claimsWord: "claims",
+      cumWord: "cumulative",
+      payers: [
+        { name: "Bupa Arabia", rate: 34.6, sar: 604500, trend: "up" },
+        { name: "Tawuniya", rate: 31.2, sar: 528200, trend: "up" },
+        { name: "MedGulf", rate: 27.5, sar: 402900, trend: "down" },
+        { name: "Other payers", rate: 22.1, sar: 304400, trend: "flat" }
+      ],
+      reasons: [
+        { name: "Missing pre-authorization", code: "CARC 197", count: 132, sar: 486300 },
+        { name: "Eligibility gap on service date", code: "CARC 27", count: 89, sar: 372800 },
+        { name: "Bundling edit, not separately billable", code: "CARC 97", count: 71, sar: 298500 },
+        { name: "Age or gender conflicts with code", code: "CARC 6", count: 44, sar: 214600 },
+        { name: "Timely filing, missing documentation", code: "CARC 29", count: 29, sar: 167900 }
+      ]
+    },
+    ingest: {
+      title: "Ingest",
+      kicker: "Turn NPHIES exports, remittances, and EOBs into claims, denials, and recovered SAR.",
+      useSample: "Use sample file",
+      whiteGlove: "Book white-glove import",
+      launch: "Start guided setup",
+      dropIdleTitle: "No data yet",
+      dropIdleBody: "Drop your NPHIES ClaimResponse files, remittance CSV, or EOB PDFs. We do your first import with you.",
+      dropHint: "Drag files here",
+      legendTitle: "What we read",
+      legend: [
+        { t: "FHIR JSON", d: "NPHIES Claim + ClaimResponse", map: "Claim, ClaimLine, Denial" },
+        { t: "XLSX", d: "Payer remittance", map: "Claim, ClaimLine" },
+        { t: "CSV", d: "Remittance export", map: "Claim, ClaimLine" },
+        { t: "PDF EOB", d: "Scanned EOB, routed to OCR", map: "Review fields" }
+      ],
+      runningTitle: "Parsing sample_remittance.xlsx",
+      runningBody: "Reading rows, creating claims, detecting denials.",
+      doneTitle: "Parsed sample_remittance.xlsx",
+      doneBody: "1,214 claims created. 386 denials detected. 18 rows quarantined.",
+      clearRun: "Clear and start over",
+      fileName: "sample_remittance.xlsx",
+      ledgerTitle: "Run ledger",
+      ledgerIdle: "Drop a file or use the sample to begin.",
+      steps: ["Received", "Parsing", "Validating", "Ready"],
+      counters: [
+        { key: "rowsParsed", label: "Rows parsed" },
+        { key: "claims", label: "Claims created" },
+        { key: "denials", label: "Denials detected" },
+        { key: "quarantined", label: "Quarantined" }
+      ],
+      atRiskLabel: "At risk detected",
+      atRiskNote: "Flowing into your money indicator.",
+      mappingTitle: "Column mapping",
+      mappingSub: "Detected from the file. Override any field.",
+      mapCols: { col: "Detected column", field: "Maps to", conf: "Confidence" },
+      mapping: [
+        { col: "Claim No", field: "Claim.claimId", conf: 99 },
+        { col: "Member ID", field: "Patient.memberId", conf: 98 },
+        { col: "Payer", field: "Payer.name", conf: 97 },
+        { col: "SBS Code", field: "ClaimLine.sbsCode", conf: 96 },
+        { col: "Service Date", field: "ClaimLine.serviceDate", conf: 95 },
+        { col: "Billed (SAR)", field: "ClaimLine.amount", conf: 99 },
+        { col: "Denial Reason", field: "Denial.carc", conf: 92 }
+      ],
+      quarantineTitle: "Quarantine",
+      quarantineSub: "18 rows set aside. 1,414 imported. Review anytime.",
+      qCols: { row: "Row", issue: "Issue", value: "Value" },
+      quarantine: [
+        { row: 88, issue: "Service date after claim date", field: "serviceDate", value: "2025-13-04" },
+        { row: 142, issue: "Unknown payer code", field: "payer", value: "TPA-XX" },
+        { row: 209, issue: "Missing SBS code", field: "sbsCode", value: "(empty)" },
+        { row: 377, issue: "Amount is not a number", field: "amount", value: "n/a" }
+      ],
+      revalidate: "Re-validate"
+    },
+    corridor: {
+      goal: "See your first denial map in under 10 minutes.",
+      of: "of 3",
+      step: "Step",
+      exit: "Exit setup",
+      back: "Back",
+      next: "Continue",
+      s1Title: "Choose your language and theme",
+      s1Sub: "You can change these anytime.",
+      arabic: "العربية", arabicNote: "Arabic first", english: "English", englishNote: "EN",
+      light: "Light", dark: "Dark",
+      s2Title: "Confirm your clinic and branches",
+      s2Sub: "Pre-filled from your contract. One branch is enough to start.",
+      s3Title: "Upload your remittances",
+      s3Sub: "Drag 3 to 6 months. NPHIES ClaimResponse export, XLSX, or EOB PDF.",
+      doWithMe: "Do this with me",
+      doWithMeNote: "We run your first import on a call.",
+      s4Title: "Your denial map is ready",
+      s4Sub: "SAR 1.84M denied across the last 6 months, from your own data.",
+      seeMap: "See your denial map",
+      forwardLoop: "Next: run the scrubber on your next batch."
+    },
+    scrubber: {
+      title: "Scrubber",
+      kicker: "Flag claims likely to deny before submission. Every flag traces to a named rule.",
+      flagsLabel: "flagged claims in this batch",
+      protectLabel: "Protected if you fix them before resubmission",
+      viewBatch: "Flagged claims",
+      viewRules: "Rules library",
+      density: "Compact",
+      rerun: "Re-run scrubber",
+      cols: { claim: "Claim", patient: "Patient", payer: "Payer", codes: "SBS", amount: "Amount (SAR)", risk: "Risk", status: "Status" },
+      status: { flagged: "Flagged", needsData: "Needs data", clear: "Clear" },
+      reasonsWord: "reasons",
+      reasonWord: "reason",
+      drawerReasons: "Why this may deny",
+      drawerField: "Failed field",
+      drawerFix: "Fix",
+      drawerRule: "Rule",
+      sev: { high: "High", med: "Medium", low: "Low", info: "Info" },
+      bulkReviewed: "Mark reviewed",
+      bulkSendBack: "Send back to branch",
+      bulkClear: "Clear flag",
+      selected: "selected",
+      audited: "Writes to audit log",
+      openDrawer: "Select a claim to see why it may deny.",
+      rulesCols: { rule: "Rule", cond: "Condition", source: "Source", sev: "Severity", edited: "Last edited" },
+      rulesNote: "Rules are data you can read. No black box.",
+      amountAtRisk: "at risk"
+    },
+    appeals: {
+      title: "Appeal Generator",
+      kicker: "Auto-draft a reconsideration letter matched to the denial and payer. You review, you send.",
+      queueTitle: "Appeal-ready denials",
+      queueSub: "Sorted by SAR",
+      generate: "Generate drafts",
+      daysLeft: "days left", dayLeft: "day left",
+      appealing: "Appealing",
+      ctx: { claim: "Claim", member: "Member ID", payer: "Payer", provider: "Provider", sbs: "SBS code", reason: "Denial reason" },
+      lockedNote: "Locked from the claim",
+      letterTitle: "Reconsideration letter",
+      letterLang: "Letter",
+      regen: "Written natively, not machine-translated.",
+      docsTitle: "Supporting documents",
+      reviewLabel: "Reviewed by",
+      reviewPlaceholder: "Name, role",
+      reviewConfirm: "I reviewed this draft",
+      exportPdf: "Export PDF",
+      copyBlock: "Copy for portal",
+      markSubmitted: "Mark submitted",
+      hitl: "Draft, not sent. A person reviews every appeal. Taweed never submits on its own.",
+      fallback: "Template not payer-specific. Review the wording before you send.",
+      gateNote: "Confirm review to enable export.",
+      to: "To"
+    },
+    recovery: {
+      title: "Recovery Tracking",
+      kicker: "Every appeal from submitted to won. Real recovered SAR, the proof that funds the model.",
+      roiRecovered: "Recovered to date",
+      roiWin: "Win rate",
+      roiMedian: "Median days to recovery",
+      roiShare: "Your share of recovered",
+      roiShareNote: "12% of recovered, recovery-share model",
+      daysUnit: "days",
+      provenance: "from your NPHIES data",
+      stages: { submitted: "Submitted", review: "Under review", won: "Won", partial: "Partially paid", lost: "Lost" },
+      cols: { claim: "Claim", payer: "Payer", appealed: "Appealed", recovered: "Recovered", days: "Days open", owner: "Owner" },
+      logOutcome: "Log outcome",
+      rolled: "rolled up",
+      pipelineTitle: "Pipeline by stage"
+    }
+  },
+  ar: {
+    brandSub: "استرداد المرفوضات",
+    nav: { overview: "نظرة عامة", analytics: "تحليلات الرفض", ingest: "الاستيراد", scrubber: "المدقّق", appeals: "منشئ الاعتراضات", recovery: "تتبّع الاسترداد", settings: "الإعدادات" },
+    levels: { read: "قراءة", upload: "رفع", approve: "اعتماد", review: "مراجعة", evidence: "إسناد", "flag-only": "إشارة", limited: "محدود", rules: "قواعد" },
+    residency: "بيانات داخل المملكة، الرياض (أوراكل كلاود). حماية البيانات.",
+    tenantLabel: "أسنان السلامة",
+    tenantWord: "المنشأة",
+    branchWord: "الفروع",
+    allBranches: "جميع الفروع",
+    branchCount: (n) => n + " فروع",
+    searchPh: "ابحث في المطالبات والدافعين والاعتراضات بالمعرّف",
+    recoveredWord: "المُسترد",
+    atRiskWord: "المعرّض للخطر",
+    mockWord: "تجريبي",
+    scopeLabel: "أسنان السلامة، جميع الفروع، آخر 90 يوماً",
+    popRecoveredMonth: "المُسترد هذا الشهر",
+    popOpenAppeals: "قيمة الاعتراضات المفتوحة",
+    popTopPayer: "المعرّض للخطر، أكبر دافع (بوبا العربية)",
+    popCta: "فتح تتبّع الاسترداد",
+    langToggleLabel: "EN",
+    roleWord: "الدور",
+    roles: { owner: "المالك", finance: "المالية", rcm: "مدير الدورة الإيرادية", clinician: "طبيب", admin: "مسؤول" },
+    roleInitials: { owner: "ما", finance: "مل", rcm: "دو", clinician: "طب", admin: "مس" },
+    overviewTitle: "نظرة عامة",
+    heroKicker: "أسنان السلامة، جميع الفروع. آخر 6 أشهر.",
+    atRiskLong: "مرفوضة ولم تُسترد. آخر 6 أشهر.",
+    recoveredLong: "المُسترد حتى الآن",
+    denialRateWord: "نسبة الرفض",
+    benchmarkNote: "المعيار المرجعي لأول محاولة قرابة 15 بالمئة. الفجوة هي المبلغ.",
+    deltaVs: "مقارنة بالفترة السابقة",
+    provenance: "من بيانات نفيس الخاصة بك",
+    reservoirNote: "18 بالمئة من التسريب تم استرداده. الحوض الأحمر يصبّ في الأخضر.",
+    loopTitle: "حلقة الاسترداد",
+    loopSub: "التحليلات تكشف التسريب، والمدقّق يوقف الجديد، والاعتراضات والتتبّع تسترد القديم.",
+    loop: [
+      { title: "شاهد التسريب", desc: "SAR 1.84M معرّضة للخطر لدى بوبا العربية والتعاونية وميدغلف.", module: "تحليلات الرفض" },
+      { title: "أوقف التسريبات الجديدة", desc: "اكشف المطالبات المرشّحة للرفض قبل إرسالها.", module: "المدقّق" },
+      { title: "استرد المرفوضات السابقة", desc: "تم استرداد SAR 412,900 حتى الآن. أنت تراجع وأنت ترسل.", module: "تتبّع الاسترداد" }
+    ],
+    months: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو"],
+    placeholderNote: "هذه الواجهة هي التالية في تسلسل البناء.",
+    ana: {
+      title: "تحليلات الرفض",
+      kicker: "التسريب في أرقامك أنت. بوبا العربية، التعاونية، ميدغلف. آخر 6 أشهر.",
+      atRiskLabel: "مرفوضة ولم تُسترد",
+      scope: "أسنان السلامة، جميع الفروع، آخر 6 أشهر",
+      benchmarkGap: "المعيار المرجعي لأول محاولة قرابة 15 بالمئة. الفجوة هي المبلغ.",
+      denialRateLabel: "نسبة الرفض",
+      trendTitle: "نسبة الرفض عبر الزمن",
+      legendRate: "نسبة الرفض",
+      legendVol: "حجم التقديم",
+      annotation: "الذروة 34.2 بالمئة في مايو. شددت التعاونية الموافقة المسبقة.",
+      payersTitle: "المعرّض للخطر حسب الدافع",
+      payersSub: "مرتّب حسب الريال، لا حسب العدد",
+      rateWord: "نسبة الرفض",
+      paretoTitle: "ما الذي يقود الرفض",
+      paretoSub: "أعلى 5 أسباب، الحصة التراكمية من المبلغ المرفوض",
+      paretoInsight: "5 أسباب تقود 84% من التسريب",
+      otherReasons: "الأسباب الأخرى تشكّل الـ16 بالمئة المتبقية.",
+      howToFix: "طريقة الإصلاح",
+      claimsWord: "مطالبة",
+      cumWord: "تراكمي",
+      payers: [
+        { name: "بوبا العربية", rate: 34.6, sar: 604500, trend: "up" },
+        { name: "التعاونية", rate: 31.2, sar: 528200, trend: "up" },
+        { name: "ميدغلف", rate: 27.5, sar: 402900, trend: "down" },
+        { name: "دافعون آخرون", rate: 22.1, sar: 304400, trend: "flat" }
+      ],
+      reasons: [
+        { name: "غياب الموافقة المسبقة", code: "CARC 197", count: 132, sar: 486300 },
+        { name: "انقطاع الأهلية بتاريخ الخدمة", code: "CARC 27", count: 89, sar: 372800 },
+        { name: "تعديل التجميع، غير قابل للفوترة منفصلاً", code: "CARC 97", count: 71, sar: 298500 },
+        { name: "تعارض العمر أو الجنس مع الرمز", code: "CARC 6", count: 44, sar: 214600 },
+        { name: "تجاوز مهلة التقديم، نقص المستندات", code: "CARC 29", count: 29, sar: 167900 }
+      ]
+    },
+    ingest: {
+      title: "الاستيراد",
+      kicker: "حوّل مخرجات نفيس وكشوف الحوالة وملفات EOB إلى مطالبات ورفوضات وريالات مُستردة.",
+      useSample: "استخدم ملفاً تجريبياً",
+      whiteGlove: "احجز استيراداً بمرافقة كاملة",
+      launch: "ابدأ الإعداد الموجّه",
+      dropIdleTitle: "لا توجد بيانات بعد",
+      dropIdleBody: "أضف ملفات نفيس ClaimResponse أو كشف الحوالة CSV أو ملفات EOB. نقوم بأول استيراد معك.",
+      dropHint: "اسحب الملفات إلى هنا",
+      legendTitle: "ما الذي نقرأه",
+      legend: [
+        { t: "FHIR JSON", d: "نفيس Claim + ClaimResponse", map: "Claim, ClaimLine, Denial" },
+        { t: "XLSX", d: "كشف حوالة الدافع", map: "Claim, ClaimLine" },
+        { t: "CSV", d: "تصدير كشف الحوالة", map: "Claim, ClaimLine" },
+        { t: "PDF EOB", d: "EOB ممسوح، يمرّ عبر OCR", map: "مراجعة الحقول" }
+      ],
+      runningTitle: "جارٍ تحليل sample_remittance.xlsx",
+      runningBody: "قراءة الصفوف، إنشاء المطالبات، كشف الرفوضات.",
+      doneTitle: "تم تحليل sample_remittance.xlsx",
+      doneBody: "أُنشئت 1,214 مطالبة. كُشف 386 رفضاً. عُزل 18 صفاً.",
+      clearRun: "مسح والبدء من جديد",
+      fileName: "sample_remittance.xlsx",
+      ledgerTitle: "سجل التشغيل",
+      ledgerIdle: "أضف ملفاً أو استخدم التجريبي للبدء.",
+      steps: ["مُستلَم", "جارٍ التحليل", "جارٍ التحقق", "جاهز"],
+      counters: [
+        { key: "rowsParsed", label: "الصفوف المحلَّلة" },
+        { key: "claims", label: "المطالبات المُنشأة" },
+        { key: "denials", label: "الرفوضات المكشوفة" },
+        { key: "quarantined", label: "المعزولة" }
+      ],
+      atRiskLabel: "المعرّض للخطر المكشوف",
+      atRiskNote: "ينساب إلى مؤشر المال لديك.",
+      mappingTitle: "ربط الأعمدة",
+      mappingSub: "مكتشف من الملف. عدّل أي حقل.",
+      mapCols: { col: "العمود المكتشف", field: "يُربط بـ", conf: "الثقة" },
+      mapping: [
+        { col: "Claim No", field: "Claim.claimId", conf: 99 },
+        { col: "Member ID", field: "Patient.memberId", conf: 98 },
+        { col: "Payer", field: "Payer.name", conf: 97 },
+        { col: "SBS Code", field: "ClaimLine.sbsCode", conf: 96 },
+        { col: "Service Date", field: "ClaimLine.serviceDate", conf: 95 },
+        { col: "Billed (SAR)", field: "ClaimLine.amount", conf: 99 },
+        { col: "Denial Reason", field: "Denial.carc", conf: 92 }
+      ],
+      quarantineTitle: "العزل",
+      quarantineSub: "عُزل 18 صفاً. استُورد 1,414. راجعها متى شئت.",
+      qCols: { row: "الصف", issue: "المشكلة", value: "القيمة" },
+      quarantine: [
+        { row: 88, issue: "تاريخ الخدمة بعد تاريخ المطالبة", field: "serviceDate", value: "2025-13-04" },
+        { row: 142, issue: "رمز دافع غير معروف", field: "payer", value: "TPA-XX" },
+        { row: 209, issue: "رمز SBS مفقود", field: "sbsCode", value: "(فارغ)" },
+        { row: 377, issue: "المبلغ ليس رقماً", field: "amount", value: "n/a" }
+      ],
+      revalidate: "أعد التحقق"
+    },
+    corridor: {
+      goal: "شاهد أول خريطة رفض خلال أقل من 10 دقائق.",
+      of: "من 3",
+      step: "الخطوة",
+      exit: "الخروج من الإعداد",
+      back: "رجوع",
+      next: "متابعة",
+      s1Title: "اختر لغتك ومظهرك",
+      s1Sub: "يمكنك تغييرها في أي وقت.",
+      arabic: "العربية", arabicNote: "العربية أولاً", english: "English", englishNote: "EN",
+      light: "فاتح", dark: "داكن",
+      s2Title: "أكّد منشأتك وفروعك",
+      s2Sub: "مُعبّأة من عقدك. فرع واحد يكفي للبدء.",
+      s3Title: "ارفع كشوف الحوالة",
+      s3Sub: "اسحب 3 إلى 6 أشهر. تصدير نفيس ClaimResponse أو XLSX أو EOB PDF.",
+      doWithMe: "افعلها معي",
+      doWithMeNote: "نجري أول استيراد معك عبر مكالمة.",
+      s4Title: "خريطة الرفض جاهزة",
+      s4Sub: "SAR 1.84M مرفوضة خلال آخر 6 أشهر، من بياناتك أنت.",
+      seeMap: "شاهد خريطة الرفض",
+      forwardLoop: "التالي: شغّل المدقّق على دفعتك القادمة."
+    },
+    scrubber: {
+      title: "المدقّق",
+      kicker: "اكشف المطالبات المرشّحة للرفض قبل الإرسال. كل إشارة تعود إلى قاعدة مسمّاة.",
+      flagsLabel: "مطالبة مُشار إليها في هذه الدفعة",
+      protectLabel: "محمية إذا صحّحتها قبل إعادة الإرسال",
+      viewBatch: "المطالبات المُشار إليها",
+      viewRules: "مكتبة القواعد",
+      density: "مضغوط",
+      rerun: "أعد تشغيل المدقّق",
+      cols: { claim: "المطالبة", patient: "المريض", payer: "الدافع", codes: "SBS", amount: "المبلغ (ريال)", risk: "الخطورة", status: "الحالة" },
+      status: { flagged: "مُشار إليها", needsData: "يحتاج بيانات", clear: "سليمة" },
+      reasonsWord: "أسباب",
+      reasonWord: "سبب",
+      drawerReasons: "لماذا قد تُرفض",
+      drawerField: "الحقل المُخفق",
+      drawerFix: "الإصلاح",
+      drawerRule: "القاعدة",
+      sev: { high: "مرتفعة", med: "متوسطة", low: "منخفضة", info: "معلومة" },
+      bulkReviewed: "وضع علامة مُراجَعة",
+      bulkSendBack: "إعادة إلى الفرع",
+      bulkClear: "إزالة الإشارة",
+      selected: "محدّدة",
+      audited: "يُسجّل في سجل التدقيق",
+      openDrawer: "اختر مطالبة لمعرفة سبب احتمال رفضها.",
+      rulesCols: { rule: "القاعدة", cond: "الشرط", source: "المصدر", sev: "الخطورة", edited: "آخر تعديل" },
+      rulesNote: "القواعد بيانات يمكنك قراءتها. لا صندوق مغلق.",
+      amountAtRisk: "معرّض للخطر"
+    },
+    appeals: {
+      title: "منشئ الاعتراضات",
+      kicker: "صياغة تلقائية لرسالة إعادة نظر مطابقة للرفض والدافع. أنت تراجع وأنت ترسل.",
+      queueTitle: "رفوضات جاهزة للاعتراض",
+      queueSub: "مرتّبة حسب الريال",
+      generate: "إنشاء المسودات",
+      daysLeft: "أيام متبقية", dayLeft: "يوم متبقٍ",
+      appealing: "مبلغ الاعتراض",
+      ctx: { claim: "المطالبة", member: "معرّف العضو", payer: "الدافع", provider: "مقدّم الخدمة", sbs: "رمز SBS", reason: "سبب الرفض" },
+      lockedNote: "مقفلة من المطالبة",
+      letterTitle: "رسالة إعادة النظر",
+      letterLang: "لغة الرسالة",
+      regen: "مكتوبة أصلاً، وليست ترجمة آلية.",
+      docsTitle: "المستندات الداعمة",
+      reviewLabel: "روجعت بواسطة",
+      reviewPlaceholder: "الاسم، الدور",
+      reviewConfirm: "راجعت هذه المسودة",
+      exportPdf: "تصدير PDF",
+      copyBlock: "نسخ للبوابة",
+      markSubmitted: "وضع علامة مُرسلة",
+      hitl: "مسودة، لم تُرسل. شخص يراجع كل اعتراض. Taweed لا يرسل من تلقاء نفسه.",
+      fallback: "القالب غير مخصّص للدافع. راجع الصياغة قبل الإرسال.",
+      gateNote: "أكّد المراجعة لتفعيل التصدير.",
+      to: "إلى"
+    },
+    recovery: {
+      title: "تتبّع الاسترداد",
+      kicker: "كل اعتراض من الإرسال إلى القبول. ريالات مُستردة حقيقية، الإثبات الذي يموّل النموذج.",
+      roiRecovered: "المُسترد حتى الآن",
+      roiWin: "نسبة القبول",
+      roiMedian: "وسيط أيام الاسترداد",
+      roiShare: "حصتك من المُسترد",
+      roiShareNote: "12% من المُسترد، نموذج مشاركة الاسترداد",
+      daysUnit: "يوماً",
+      provenance: "من بيانات نفيس الخاصة بك",
+      stages: { submitted: "مُرسلة", review: "قيد المراجعة", won: "مقبولة", partial: "مدفوعة جزئياً", lost: "مرفوضة" },
+      cols: { claim: "المطالبة", payer: "الدافع", appealed: "مبلغ الاعتراض", recovered: "المُسترد", days: "أيام مفتوحة", owner: "المسؤول" },
+      logOutcome: "سجّل النتيجة",
+      rolled: "مجمّعة",
+      pipelineTitle: "خط الأنابيب حسب المرحلة"
+    }
+  }
+};
+
+// RBAC access matrix (brief §7). "hidden" removes the module from the rail.
+const ACCESS = {
+  overview:  { owner: "full", finance: "full",    rcm: "full",  clinician: "read",      admin: "read" },
+  analytics: { owner: "full", finance: "full",    rcm: "full",  clinician: "read",      admin: "read" },
+  ingest:    { owner: "hidden", finance: "upload", rcm: "full",  clinician: "hidden",    admin: "full" },
+  scrubber:  { owner: "read", finance: "read",    rcm: "full",  clinician: "flag-only", admin: "read" },
+  appeals:   { owner: "approve", finance: "review", rcm: "full", clinician: "evidence", admin: "read" },
+  recovery:  { owner: "full", finance: "full",    rcm: "full",  clinician: "hidden",    admin: "read" },
+  settings:  { owner: "full", finance: "limited", rcm: "rules", clinician: "hidden",    admin: "full" }
+};
+const NAV_ORDER = ["overview", "analytics", "ingest", "scrubber", "appeals", "recovery", "settings"];
+const FLAG = { overview: "isOverview", analytics: "isAnalytics", ingest: "isIngest", scrubber: "isScrubber", appeals: "isAppeals", recovery: "isRecovery", settings: "isSettings" };
+
+const PAYERS = {
+  bupa: { en: "Bupa Arabia", ar: "بوبا العربية" },
+  tawuniya: { en: "Tawuniya", ar: "التعاونية" },
+  medgulf: { en: "MedGulf", ar: "ميدغلف" }
+};
+
+const SCRUB = {
+  claims: [
+    { id: "CLM-24870", patient: "L.M. ·1198", payer: "bupa", codes: "29881", amount: 5600, risk: 91, reasons: 4, status: "flagged",
+      top: { en: "Pre-auth missing, documentation", ar: "غياب الموافقة، نقص المستندات" },
+      rules: [
+        { t: { en: "Prior authorization required", ar: "الموافقة المسبقة مطلوبة" }, field: "authNumber", cite: { en: "Bupa Arabia requires prior authorization for SBS 29881.", ar: "تشترط بوبا العربية موافقة مسبقة لرمز SBS 29881." }, fix: { en: "Attach the pre-authorization number before submission.", ar: "أرفق رقم الموافقة المسبقة قبل الإرسال." }, sev: "high" },
+        { t: { en: "Operative note attached", ar: "إرفاق التقرير الجراحي" }, field: "attachments", cite: { en: "Arthroscopy claims need an operative note.", ar: "مطالبات التنظير تتطلب تقريراً جراحياً." }, fix: { en: "Attach the operative note.", ar: "أرفق التقرير الجراحي." }, sev: "high" },
+        { t: { en: "Eligibility active on service date", ar: "الأهلية فعّالة بتاريخ الخدمة" }, field: "eligibility", cite: { en: "Policy must be active on the date of service.", ar: "يجب أن تكون الوثيقة فعّالة بتاريخ الخدمة." }, fix: { en: "Confirm eligibility for the service date.", ar: "تأكد من الأهلية بتاريخ الخدمة." }, sev: "med" },
+        { t: { en: "Diagnosis supports procedure", ar: "التشخيص يدعم الإجراء" }, field: "icd", cite: { en: "The ICD code must justify SBS 29881.", ar: "يجب أن يبرر رمز ICD إجراء SBS 29881." }, fix: { en: "Add a supporting diagnosis code.", ar: "أضف رمز تشخيص داعم." }, sev: "low" }
+      ] },
+    { id: "CLM-24855", patient: "R.S. ·2210", payer: "tawuniya", codes: "17000", amount: 4100, risk: 88, reasons: 3, status: "flagged",
+      top: { en: "Pre-auth missing", ar: "غياب الموافقة المسبقة" },
+      rules: [
+        { t: { en: "Prior authorization required", ar: "الموافقة المسبقة مطلوبة" }, field: "authNumber", cite: { en: "Tawuniya requires prior authorization for SBS 17000 over 6 units.", ar: "تشترط التعاونية موافقة مسبقة لرمز SBS 17000 فوق 6 وحدات." }, fix: { en: "Attach the pre-authorization number.", ar: "أرفق رقم الموافقة المسبقة." }, sev: "high" },
+        { t: { en: "Units within policy limit", ar: "الوحدات ضمن حد الوثيقة" }, field: "units", cite: { en: "More than 6 units needs justification.", ar: "أكثر من 6 وحدات يتطلب تبريراً." }, fix: { en: "Justify the unit count or reduce it.", ar: "برّر عدد الوحدات أو خفّضه." }, sev: "med" },
+        { t: { en: "Eligibility active on service date", ar: "الأهلية فعّالة بتاريخ الخدمة" }, field: "eligibility", cite: { en: "Policy must be active on the date of service.", ar: "يجب أن تكون الوثيقة فعّالة بتاريخ الخدمة." }, fix: { en: "Confirm eligibility for the service date.", ar: "تأكد من الأهلية بتاريخ الخدمة." }, sev: "low" }
+      ] },
+    { id: "CLM-24815", patient: "A.M. ·4471", payer: "bupa", codes: "97110", amount: 3200, risk: 82, reasons: 3, status: "flagged",
+      top: { en: "Pre-auth missing", ar: "غياب الموافقة المسبقة" },
+      rules: [
+        { t: { en: "Prior authorization required", ar: "الموافقة المسبقة مطلوبة" }, field: "authNumber", cite: { en: "Bupa Arabia requires prior authorization for SBS 97110 over 6 units.", ar: "تشترط بوبا العربية موافقة مسبقة لرمز SBS 97110 فوق 6 وحدات." }, fix: { en: "Attach the pre-authorization number before submission.", ar: "أرفق رقم الموافقة المسبقة قبل الإرسال." }, sev: "high" },
+        { t: { en: "Referral on file", ar: "وجود إحالة" }, field: "referral", cite: { en: "Physiotherapy needs a referral.", ar: "العلاج الطبيعي يتطلب إحالة." }, fix: { en: "Attach the referral.", ar: "أرفق الإحالة." }, sev: "med" },
+        { t: { en: "Eligibility active on service date", ar: "الأهلية فعّالة بتاريخ الخدمة" }, field: "eligibility", cite: { en: "Policy must be active on the date of service.", ar: "يجب أن تكون الوثيقة فعّالة بتاريخ الخدمة." }, fix: { en: "Confirm eligibility for the service date.", ar: "تأكد من الأهلية بتاريخ الخدمة." }, sev: "low" }
+      ] },
+    { id: "CLM-24822", patient: "S.K. ·9102", payer: "tawuniya", codes: "23070", amount: 2750, risk: 76, reasons: 2, status: "flagged",
+      top: { en: "Eligibility gap", ar: "انقطاع الأهلية" },
+      rules: [
+        { t: { en: "Eligibility active on service date", ar: "الأهلية فعّالة بتاريخ الخدمة" }, field: "eligibility", cite: { en: "Policy inactive on the service date.", ar: "الوثيقة غير فعّالة بتاريخ الخدمة." }, fix: { en: "Verify the coverage window with the payer.", ar: "تحقق من فترة التغطية مع الدافع." }, sev: "high" },
+        { t: { en: "Member ID valid", ar: "معرّف العضو صحيح" }, field: "memberId", cite: { en: "Member ID format check.", ar: "فحص صيغة معرّف العضو." }, fix: { en: "Confirm the member ID.", ar: "تأكد من معرّف العضو." }, sev: "low" }
+      ] },
+    { id: "CLM-24830", patient: "M.A. ·3388", payer: "medgulf", codes: "99213 + 20610", amount: 1480, risk: 68, reasons: 2, status: "flagged",
+      top: { en: "Bundling edit", ar: "تعديل التجميع" },
+      rules: [
+        { t: { en: "Bundling edit", ar: "تعديل التجميع" }, field: "lineItems", cite: { en: "99213 is not billable with 20610 on the same visit.", ar: "لا يمكن فوترة 99213 مع 20610 في نفس الزيارة." }, fix: { en: "Remove 99213, or add modifier 25 with a note.", ar: "أزل 99213، أو أضف المُعدِّل 25 مع ملاحظة." }, sev: "high" },
+        { t: { en: "Modifier justified", ar: "تبرير المُعدِّل" }, field: "modifier", cite: { en: "Modifier 25 needs a separate service note.", ar: "المُعدِّل 25 يتطلب ملاحظة خدمة منفصلة." }, fix: { en: "Attach a separate service note.", ar: "أرفق ملاحظة خدمة منفصلة." }, sev: "med" }
+      ] },
+    { id: "CLM-24841", patient: "N.H. ·5567", payer: "bupa", codes: "41010", amount: 980, risk: 61, reasons: 1, status: "flagged",
+      top: { en: "Age conflicts with code", ar: "العمر يتعارض مع الرمز" },
+      rules: [
+        { t: { en: "Age matches procedure code", ar: "العمر يطابق رمز الإجراء" }, field: "patientAge", cite: { en: "Patient age does not match SBS 41010.", ar: "عمر المريض لا يطابق رمز SBS 41010." }, fix: { en: "Correct the age or the procedure code.", ar: "صحّح العمر أو رمز الإجراء." }, sev: "med" }
+      ] },
+    { id: "CLM-24863", patient: "F.A. ·7734", payer: "medgulf", codes: "88304", amount: 640, risk: 44, reasons: 1, status: "needsData",
+      top: { en: "Needs data to evaluate", ar: "يحتاج بيانات للتقييم" },
+      rules: [
+        { t: { en: "Eligibility record found", ar: "وجود سجل الأهلية" }, field: "eligibility", cite: { en: "No eligibility record returned for this member.", ar: "لا يوجد سجل أهلية لهذا العضو." }, fix: { en: "Re-pull eligibility, then re-run the rule.", ar: "أعد سحب الأهلية ثم أعد تشغيل القاعدة." }, sev: "info" }
+      ] },
+    { id: "CLM-24884", patient: "K.D. ·6640", payer: "tawuniya", codes: "45378", amount: 2050, risk: 22, reasons: 0, status: "clear",
+      top: { en: "No flags", ar: "لا توجد إشارات" }, rules: [] }
+  ],
+  rulesLibrary: [
+    { name: { en: "Prior authorization required", ar: "الموافقة المسبقة مطلوبة" }, cond: { en: "payer in (Bupa, Tawuniya) and SBS in pre-auth list", ar: "الدافع ضمن (بوبا، التعاونية) والرمز في قائمة الموافقة" }, source: { en: "Payer policy", ar: "سياسة الدافع" }, sev: "high", edited: "2026-06-14" },
+    { name: { en: "Eligibility active on service date", ar: "الأهلية فعّالة بتاريخ الخدمة" }, cond: { en: "eligibility.end < serviceDate", ar: "نهاية الأهلية < تاريخ الخدمة" }, source: { en: "NPHIES / CHI", ar: "نفيس / المجلس" }, sev: "high", edited: "2026-05-30" },
+    { name: { en: "Bundling edit", ar: "تعديل التجميع" }, cond: { en: "lines contain a mutually exclusive SBS pair", ar: "الأسطر تحوي زوج SBS متعارض" }, source: { en: "SBS bundling table", ar: "جدول تجميع SBS" }, sev: "med", edited: "2026-06-02" },
+    { name: { en: "Age matches procedure code", ar: "العمر يطابق رمز الإجراء" }, cond: { en: "patient.age outside code age range", ar: "عمر المريض خارج نطاق الرمز" }, source: { en: "SBS code rules", ar: "قواعد رموز SBS" }, sev: "med", edited: "2026-04-21" },
+    { name: { en: "Gender matches procedure code", ar: "الجنس يطابق رمز الإجراء" }, cond: { en: "patient.gender conflicts with code", ar: "جنس المريض يتعارض مع الرمز" }, source: { en: "SBS code rules", ar: "قواعد رموز SBS" }, sev: "med", edited: "2026-04-21" },
+    { name: { en: "Timely filing window", ar: "مهلة التقديم" }, cond: { en: "submitDate - serviceDate > payer limit", ar: "تاريخ التقديم - تاريخ الخدمة > حد الدافع" }, source: { en: "Payer policy", ar: "سياسة الدافع" }, sev: "low", edited: "2026-03-11" }
+  ]
+};
+
+const APPEALS = [
+  { id: "CLM-24710", payer: "bupa", carc: "CARC 197", reason: { en: "Missing pre-authorization", ar: "غياب الموافقة المسبقة" }, sar: 18200, days: 12, sbs: "29881", member: "BUPA·4471·0093", provider: "Dr. H. Al Otaibi", payerSpecific: true,
+    docs: [{ en: "Pre-authorization number", ar: "رقم الموافقة المسبقة" }, { en: "Operative note", ar: "التقرير الجراحي" }, { en: "Eligibility screenshot", ar: "لقطة إثبات الأهلية" }],
+    body: { en: "We request reconsideration of claim CLM-24710, denied for missing pre-authorization on SBS 29881. Authorization AUTH-88231 was obtained on the service date and is attached. The procedure was medically necessary and documented in the operative note.", ar: "نطلب إعادة النظر في المطالبة CLM-24710 المرفوضة بسبب غياب الموافقة المسبقة على رمز SBS 29881. تم الحصول على الموافقة AUTH-88231 بتاريخ الخدمة وهي مرفقة. الإجراء ضروري طبياً وموثّق في التقرير الجراحي." } },
+  { id: "CLM-24688", payer: "tawuniya", carc: "CARC 27", reason: { en: "Eligibility gap on service date", ar: "انقطاع الأهلية بتاريخ الخدمة" }, sar: 12750, days: 8, sbs: "23070", member: "TAW·9102·0271", provider: "Dr. S. Al Qahtani", payerSpecific: true,
+    docs: [{ en: "Eligibility screenshot", ar: "لقطة إثبات الأهلية" }, { en: "Policy confirmation", ar: "تأكيد الوثيقة" }],
+    body: { en: "We request reconsideration of claim CLM-24688, denied for an eligibility gap. The member's policy was active on the service date per the attached eligibility record. Please reprocess under the correct coverage window.", ar: "نطلب إعادة النظر في المطالبة CLM-24688 المرفوضة بسبب انقطاع الأهلية. كانت وثيقة العضو فعّالة بتاريخ الخدمة وفق سجل الأهلية المرفق. يُرجى إعادة المعالجة ضمن فترة التغطية الصحيحة." } },
+  { id: "CLM-24655", payer: "medgulf", carc: "CARC 97", reason: { en: "Bundling edit", ar: "تعديل التجميع" }, sar: 9400, days: 20, sbs: "99213 + 20610", member: "MG·3388·0148", provider: "Dr. A. Al Harbi", payerSpecific: false,
+    docs: [{ en: "Separate service note", ar: "ملاحظة خدمة منفصلة" }, { en: "Modifier justification", ar: "تبرير المُعدِّل" }],
+    body: { en: "We request reconsideration of claim CLM-24655. The office visit (99213) was a distinct, separately identifiable service from the injection (20610) and is documented with modifier 25. Both services should be reimbursed.", ar: "نطلب إعادة النظر في المطالبة CLM-24655. زيارة العيادة (99213) خدمة مستقلة ومميّزة عن الحقن (20610) وموثّقة بالمُعدِّل 25. يجب تعويض كلتا الخدمتين." } },
+  { id: "CLM-24631", payer: "bupa", carc: "CARC 6", reason: { en: "Age conflicts with code", ar: "العمر يتعارض مع الرمز" }, sar: 6100, days: 5, sbs: "41010", member: "BUPA·5567·0210", provider: "Dr. M. Al Dossary", payerSpecific: true,
+    docs: [{ en: "Corrected claim", ar: "مطالبة مصحّحة" }, { en: "Patient record", ar: "سجل المريض" }],
+    body: { en: "We request reconsideration of claim CLM-24631. The patient's date of birth was transcribed incorrectly; the corrected age matches SBS 41010 as shown in the attached record. Please reprocess the corrected claim.", ar: "نطلب إعادة النظر في المطالبة CLM-24631. تاريخ ميلاد المريض أُدخل خطأً؛ العمر المصحّح يطابق رمز SBS 41010 كما في السجل المرفق. يُرجى إعادة معالجة المطالبة المصحّحة." } },
+  { id: "CLM-24599", payer: "tawuniya", carc: "CARC 29", reason: { en: "Timely filing", ar: "مهلة التقديم" }, sar: 3850, days: 3, sbs: "45378", member: "TAW·6640·0355", provider: "Dr. F. Al Shehri", payerSpecific: false,
+    docs: [{ en: "Proof of timely submission", ar: "إثبات التقديم في الوقت" }],
+    body: { en: "We request reconsideration of claim CLM-24599, denied for timely filing. The original submission was transmitted within the filing window; the NPHIES acknowledgement is attached as proof.", ar: "نطلب إعادة النظر في المطالبة CLM-24599 المرفوضة بسبب مهلة التقديم. أُرسلت المطالبة الأصلية ضمن المهلة؛ وإشعار نفيس مرفق كإثبات." } }
+];
+
+const RECOVERY = [
+  { id: "CLM-24390", payer: "tawuniya", appealed: 142400, recovered: 142400, stage: "won", days: 18, owner: "L. Nasser" },
+  { id: "CLM-24421", payer: "bupa", appealed: 108400, recovered: 108400, stage: "won", days: 27, owner: "S. Faisal" },
+  { id: "CLM-24455", payer: "medgulf", appealed: 61300, recovered: 61300, stage: "won", days: 31, owner: "R. Al Amri" },
+  { id: "CLM-24498", payer: "tawuniya", appealed: 42600, recovered: 42600, stage: "won", days: 24, owner: "L. Nasser" },
+  { id: "CLM-24512", payer: "bupa", appealed: 18200, recovered: 18200, stage: "won", days: 19, owner: "R. Al Amri" },
+  { id: "CLM-24534", payer: "bupa", appealed: 72000, recovered: 40000, stage: "partial", days: 22, owner: "S. Faisal" },
+  { id: "CLM-24602", payer: "bupa", appealed: 51300, recovered: 0, stage: "review", days: 6, owner: "L. Nasser" },
+  { id: "CLM-24571", payer: "tawuniya", appealed: 46550, recovered: 0, stage: "review", days: 9, owner: "R. Al Amri" },
+  { id: "CLM-24710", payer: "bupa", appealed: 18200, recovered: 0, stage: "review", days: 12, owner: "S. Faisal" },
+  { id: "CLM-24688", payer: "tawuniya", appealed: 12750, recovered: 0, stage: "review", days: 8, owner: "L. Nasser" },
+  { id: "CLM-24655", payer: "medgulf", appealed: 9400, recovered: 0, stage: "review", days: 20, owner: "R. Al Amri" },
+  { id: "CLM-24560", payer: "medgulf", appealed: 54350, recovered: 0, stage: "submitted", days: 2, owner: "S. Faisal" },
+  { id: "CLM-24631", payer: "bupa", appealed: 6100, recovered: 0, stage: "submitted", days: 5, owner: "L. Nasser" },
+  { id: "CLM-24599", payer: "tawuniya", appealed: 3850, recovered: 0, stage: "submitted", days: 3, owner: "R. Al Amri" },
+  { id: "CLM-24333", payer: "medgulf", appealed: 28700, recovered: 0, stage: "lost", days: 40, owner: "S. Faisal", reason: { en: "Outside filing window", ar: "خارج مهلة التقديم" } },
+  { id: "CLM-24301", payer: "tawuniya", appealed: 15200, recovered: 0, stage: "lost", days: 45, owner: "L. Nasser", reason: { en: "No supporting documentation", ar: "لا مستندات داعمة" } }
+];
+const REC_STAGE_ORDER = ["submitted", "review", "won", "partial", "lost"];
+
+class Component extends DCLogic {
+  state = {
+    lang: "en",
+    theme: "light",
+    railExpanded: true,
+    activeModule: "overview",
+    anaPayer: 0,
+    indicatorOpen: false,
+    switcherOpen: false,
+    branches: [
+      { id: "olaya", en: "Riyadh, Olaya", ar: "الرياض، العليا", on: true },
+      { id: "rawdah", en: "Jeddah, Al Rawdah", ar: "جدة، الروضة", on: true },
+      { id: "faisaliyah", en: "Dammam, Al Faisaliyah", ar: "الدمام، الفيصلية", on: true }
+    ],
+    recovered: 0,
+    atRisk: 0,
+    settled: false,
+    vw: (typeof window !== "undefined" ? window.innerWidth : 1280),
+    ingest: { status: "idle", step: -1, rowsParsed: 0, claims: 0, denials: 0, quarantined: 0, atRisk: 0 },
+    firstRun: false,
+    corridorStep: 1,
+    scrubSelected: 0,
+    scrubView: "batch",
+    scrubDense: false,
+    scrubChecked: [],
+    apSelected: 0,
+    apLang: null,
+    apReviewed: false,
+    recSelected: null
+  };
+
+  INGEST_TARGETS = { rowsParsed: 1432, claims: 1214, denials: 386, quarantined: 18, atRisk: 1840000 };
+
+  RECOVERED = 412900;
+  ATRISK = 1840000;
+
+  componentDidMount() {
+    this.applyDoc();
+    this.runCountUp();
+    this._onResize = () => { const v = window.innerWidth; if (Math.abs(v - this.state.vw) > 6) this.setState({ vw: v }); };
+    window.addEventListener("resize", this._onResize);
+  }
+
+  applyDoc() {
+    const el = document.documentElement;
+    el.setAttribute("lang", this.state.lang);
+    el.setAttribute("dir", this.state.lang === "ar" ? "rtl" : "ltr");
+    el.classList.toggle("dark", this.state.theme === "dark");
+  }
+
+  runCountUp() {
+    const setFinal = () => { if (!this.state.settled) this.setState({ recovered: this.RECOVERED, atRisk: this.ATRISK, settled: true }); };
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setFinal(); return; }
+    // easing cubic-bezier(0.16, 1, 0.3, 1) approximated by expo-out
+    const ease = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+    const durR = 1000, durA = 900, total = Math.max(durR, durA);
+    const start = performance.now();
+    const tick = (now) => {
+      if (this.state.settled) return;
+      const e = now - start;
+      const tr = Math.min(1, e / durR), ta = Math.min(1, e / durA);
+      this.setState({
+        recovered: Math.round(this.RECOVERED * ease(tr)),
+        atRisk: Math.round(this.ATRISK * ease(ta))
+      });
+      if (e < total) requestAnimationFrame(tick);
+      else setFinal();
+    };
+    requestAnimationFrame(tick);
+    // safety net: rAF is throttled while the iframe is backgrounded, which would
+    // otherwise leave the money figure stuck at 0. Guarantee the final value.
+    this._settleTimer = setTimeout(setFinal, total + 300);
+  }
+  componentWillUnmount() { if (this._settleTimer) clearTimeout(this._settleTimer); if (this._onResize) window.removeEventListener("resize", this._onResize); }
+
+  toggleLang() { this.setState((s) => ({ lang: s.lang === "ar" ? "en" : "ar" }), () => this.applyDoc()); }
+  toggleTheme() { this.setState((s) => ({ theme: s.theme === "dark" ? "light" : "dark" }), () => this.applyDoc()); }
+  toggleRail() { this.setState((s) => ({ railExpanded: !s.railExpanded })); }
+  selectModule(k) { this.setState({ activeModule: k, indicatorOpen: false, switcherOpen: false }); }
+  toggleIndicator() { this.setState((s) => ({ indicatorOpen: !s.indicatorOpen, switcherOpen: false })); }
+  toggleSwitcher() { this.setState((s) => ({ switcherOpen: !s.switcherOpen, indicatorOpen: false })); }
+  toggleBranch(id) {
+    this.setState((s) => ({ branches: s.branches.map((b) => (b.id === id ? { ...b, on: !b.on } : b)) }));
+  }
+  selectPayer(i) { this.setState({ anaPayer: i }); }
+
+  startIngest() {
+    if (this.state.ingest.status === "running") return;
+    const T = this.INGEST_TARGETS;
+    const done = () => this.setState({ ingest: { status: "done", step: 3, rowsParsed: T.rowsParsed, claims: T.claims, denials: T.denials, quarantined: T.quarantined, atRisk: T.atRisk } });
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    this.setState({ ingest: { status: "running", step: 0, rowsParsed: 0, claims: 0, denials: 0, quarantined: 0, atRisk: 0 } });
+    if (reduce) { done(); return; }
+    const ease = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+    const dur = 2000, start = performance.now();
+    const tick = (now) => {
+      if (this.state.ingest.status !== "running") return;
+      const p = Math.min(1, (now - start) / dur), e = ease(p);
+      const step = p < 0.18 ? 0 : p < 0.55 ? 1 : p < 0.92 ? 2 : 3;
+      this.setState({ ingest: {
+        status: "running", step,
+        rowsParsed: Math.round(T.rowsParsed * e),
+        claims: Math.round(T.claims * e),
+        denials: Math.round(T.denials * e),
+        quarantined: Math.round(T.quarantined * e),
+        atRisk: Math.round(T.atRisk * e)
+      } });
+      if (p < 1) requestAnimationFrame(tick); else done();
+    };
+    requestAnimationFrame(tick);
+    this._ingestTimer = setTimeout(() => { if (this.state.ingest.status === "running") done(); }, dur + 400);
+  }
+  resetIngest() { this.setState({ ingest: { status: "idle", step: -1, rowsParsed: 0, claims: 0, denials: 0, quarantined: 0, atRisk: 0 } }); }
+
+  launchFirstRun() { this.setState({ firstRun: true, corridorStep: 1, ingest: { status: "idle", step: -1, rowsParsed: 0, claims: 0, denials: 0, quarantined: 0, atRisk: 0 } }); }
+  exitCorridor() { this.setState({ firstRun: false }); }
+  corridorNext() { this.setState((s) => { if (s.corridorStep === 2 && s.branches.filter((b) => b.on).length < 1) return {}; return { corridorStep: Math.min(3, s.corridorStep + 1) }; }); }
+  corridorBack() { this.setState((s) => ({ corridorStep: Math.max(1, s.corridorStep - 1) })); }
+  finishCorridor() { this.setState({ firstRun: false, activeModule: "analytics" }); }
+
+  selectScrub(i) { this.setState({ scrubSelected: i }); }
+  setScrubView(v) { this.setState({ scrubView: v }); }
+  toggleScrubDense() { this.setState((s) => ({ scrubDense: !s.scrubDense })); }
+  toggleScrubCheck(i) { this.setState((s) => ({ scrubChecked: s.scrubChecked.indexOf(i) >= 0 ? s.scrubChecked.filter((x) => x !== i) : s.scrubChecked.concat([i]) })); }
+  clearScrubChecks() { this.setState({ scrubChecked: [] }); }
+
+  selectAppeal(i) { this.setState({ apSelected: i, apReviewed: false }); }
+  setAppealLang(l) { this.setState({ apLang: l }); }
+  toggleReviewed() { this.setState((s) => ({ apReviewed: !s.apReviewed })); }
+
+  grouped(n) { return Math.round(n).toLocaleString("en-US"); }
+  compact(n) {
+    if (n >= 1e6) {
+      let v = (n / 1e6);
+      return (v >= 100 ? v.toFixed(0) : v.toFixed(2)).replace(/\.?0+$/, "") + "M";
+    }
+    if (n >= 1e4) return (n / 1e3).toFixed(0) + "K";
+    return Math.round(n).toLocaleString("en-US");
+  }
+
+  buildAnalytics(s, t, ar) {
+    const a = t.ana;
+    const active = s.activeModule;
+    const showOverview = active === "overview";
+    const showAnalytics = active === "analytics";
+    const showIngest = active === "ingest";
+    const showScrubber = active === "scrubber";
+    const showAppeals = active === "appeals";
+    const showRecovery = active === "recovery";
+    const showPlaceholder = !showOverview && !showAnalytics && !showIngest && !showScrubber && !showAppeals && !showRecovery;
+
+    // ---- trend chart geometry (denial rate line + submission-volume ghost bars) ----
+    const rates = [28.4, 30.1, 33.6, 31.9, 34.2, 31.8];
+    const vols = [1180, 1240, 1310, 1290, 1360, 1214];
+    const TW = 600, TH = 200, tPadT = 18, tPadB = 20, tInset = 34;
+    const tBottom = TH - tPadB, tTop = tPadT, tPlotH = tBottom - tTop, tPlotW = TW - tInset * 2;
+    const n = rates.length, rMin = 26, rMax = 36;
+    const tx = (i) => tInset + (i / (n - 1)) * tPlotW;
+    const ty = (r) => tTop + (1 - (r - rMin) / (rMax - rMin)) * tPlotH;
+    const vMax = 1500, barW = (tPlotW / (n - 1)) * 0.34;
+    const trendGhost = vols.map((v, i) => {
+      const h = (v / vMax) * tPlotH * 0.62;
+      return { x: (tx(i) - barW / 2).toFixed(1), y: (tBottom - h).toFixed(1), w: barW.toFixed(1), h: h.toFixed(1) };
+    });
+    const pts = rates.map((r, i) => ({ x: tx(i), y: ty(r) }));
+    const seg = pts.map((p) => p.x.toFixed(1) + " " + p.y.toFixed(1)).join(" L ");
+    const trendLine = "M " + seg;
+    const trendArea = "M " + pts[0].x.toFixed(1) + " " + tBottom + " L " + seg + " L " + pts[n - 1].x.toFixed(1) + " " + tBottom + " Z";
+    const trendDots = pts.map((p, i) => ({ cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: rates[i] === 34.2 ? "4.5" : "3", peakFill: rates[i] === 34.2 ? "var(--at-risk)" : "var(--surface-1)" }));
+    const trendGrid = [0.25, 0.5, 0.75].map((f) => ({ y: (tTop + f * tPlotH).toFixed(1) }));
+    const trendCols = t.months.map((m, i) => ({ month: m, rate: rates[i].toFixed(1) + "%" }));
+
+    // ---- pareto geometry (bars + cumulative line) ----
+    const PW = 520, PH = 210, pPadT = 14, pPadB = 12, pInset = 30;
+    const pBottom = PH - pPadB, pTop = pPadT, pPlotH = pBottom - pTop;
+    const pN = a.reasons.length, colW = (PW - pInset * 2) / pN;
+    const sarMax = Math.max.apply(null, a.reasons.map((r) => r.sar));
+    const total = 1840000;
+    const pcx = (i) => pInset + colW * (i + 0.5);
+    const pBarW = colW * 0.5;
+    const paretoBars = a.reasons.map((r, i) => {
+      const h = (r.sar / sarMax) * pPlotH * 0.92;
+      return { x: (pcx(i) - pBarW / 2).toFixed(1), y: (pBottom - h).toFixed(1), w: pBarW.toFixed(1), h: h.toFixed(1) };
+    });
+    let cum = 0;
+    const cumPts = a.reasons.map((r) => { cum += r.sar; return { x: pcx(a.reasons.indexOf(r)).toFixed(1), y: (pTop + (1 - cum / total) * pPlotH).toFixed(1) }; });
+    const cumPath = "M " + cumPts.map((p) => p.x + " " + p.y).join(" L ");
+    const cumDots = cumPts.map((p) => ({ cx: p.x, cy: p.y }));
+    const grid80 = (pTop + (1 - 0.8) * pPlotH).toFixed(1);
+    const paretoCols = a.reasons.map((r) => ({ code: r.code, count: r.count }));
+
+    // ---- ranked payer rows ----
+    const pMax = Math.max.apply(null, a.payers.map((p) => p.sar));
+    const trendMeta = {
+      up: { glyph: "▲", color: "var(--at-risk-text)" },
+      down: { glyph: "▼", color: "var(--recovered-text)" },
+      flat: { glyph: "—", color: "var(--money-neutral)" }
+    };
+    const payerRows = a.payers.map((p, i) => {
+      const sel = s.anaPayer === i;
+      const tm = trendMeta[p.trend];
+      return {
+        name: p.name,
+        rateStr: p.rate.toFixed(1) + "%",
+        sarStr: "SAR " + p.sar.toLocaleString("en-US"),
+        barPct: ((p.sar / pMax) * 100).toFixed(1) + "%",
+        barColor: sel ? "var(--accent)" : "var(--at-risk)",
+        rowStyle: "display:flex;flex-direction:column;gap:7px;padding:11px 10px;border:none;background:" + (sel ? "var(--accent-subtle)" : "transparent") + ";border-radius:var(--r-md);cursor:pointer;text-align:start;width:100%;",
+        trendGlyph: tm.glyph,
+        trendColor: tm.color,
+        onClick: () => this.selectPayer(i)
+      };
+    });
+
+    const reasonRows = a.reasons.map((r, i) => ({
+      n: String(i + 1),
+      name: r.name,
+      code: r.code,
+      count: r.count + " " + a.claimsWord,
+      sar: "SAR " + r.sar.toLocaleString("en-US"),
+      border: i === 0 ? "none" : "1px solid var(--hairline)"
+    }));
+
+    return {
+      showOverview, showAnalytics, showIngest, showScrubber, showAppeals, showRecovery, showPlaceholder,
+      activeLabel: t.nav[active],
+      placeholderNote: t.placeholderNote,
+      anaTitle: a.title, anaKicker: a.kicker, anaAtRiskLabel: a.atRiskLabel, anaScope: a.scope,
+      benchmarkGap: a.benchmarkGap, denialRateLabel: a.denialRateLabel,
+      trendTitle: a.trendTitle, legendRate: a.legendRate, legendVol: a.legendVol, annotation: a.annotation,
+      trendGhost, trendLine, trendArea, trendDots, trendGrid, trendCols,
+      trendFlip: ar ? "translate(600,0) scale(-1,1)" : "",
+      payersTitle: a.payersTitle, payersSub: a.payersSub, rateWord: a.rateWord, payerRows,
+      paretoTitle: a.paretoTitle, paretoSub: a.paretoSub, paretoInsight: a.paretoInsight, otherReasons: a.otherReasons,
+      paretoBars, cumPath, cumDots, paretoCols, grid80,
+      paretoFlip: ar ? "translate(520,0) scale(-1,1)" : "",
+      reasonRows, howToFix: a.howToFix, cumWord: a.cumWord
+    };
+  }
+
+  buildIngest(s, t, ar) {
+    const g = t.ingest;
+    const ig = s.ingest;
+    const grouped = (n) => Math.round(n).toLocaleString("en-US");
+    const isIdle = ig.status === "idle", isRunning = ig.status === "running", isDone = ig.status === "done";
+
+    const timeline = g.steps.map((label, i) => {
+      const st = isDone ? "done" : (ig.step > i ? "done" : ig.step === i ? "active" : "pending");
+      return {
+        label,
+        dotBg: st === "pending" ? "var(--surface-3)" : "var(--accent)",
+        dotBorder: st === "pending" ? "var(--hairline-strong)" : "var(--accent)",
+        lineBg: st === "done" ? "var(--accent)" : "var(--hairline)",
+        textColor: st === "pending" ? "var(--text-faint)" : "var(--text)",
+        weight: st === "active" ? 600 : 500,
+        active: st === "active",
+        done: st === "done",
+        showLine: i !== g.steps.length - 1
+      };
+    });
+
+    const counters = g.counters.map((c) => ({
+      label: c.label,
+      value: grouped(ig[c.key]),
+      accent: c.key === "denials",
+      warn: c.key === "quarantined"
+    }));
+
+    const mapping = g.mapping.map((m) => ({
+      col: m.col, field: m.field, conf: m.conf + "%", confPct: m.conf + "%",
+      confColor: m.conf >= 95 ? "var(--recovered)" : m.conf >= 90 ? "var(--at-risk-soft)" : "var(--money-neutral)"
+    }));
+
+    const quarantine = g.quarantine.map((q) => ({ row: "#" + q.row, issue: q.issue, field: q.field, value: q.value }));
+
+    // corridor
+    const c = t.corridor;
+    const onBranches = s.branches.filter((b) => b.on).length;
+    const branchList = s.branches.map((b) => ({
+      label: ar ? b.ar : b.en, on: b.on,
+      boxBorder: b.on ? "var(--accent)" : "var(--hairline-strong)",
+      boxBg: b.on ? "var(--accent)" : "transparent",
+      onToggle: () => this.toggleBranch(b.id)
+    }));
+    const applyTheme = (th) => this.setState({ theme: th }, () => this.applyDoc());
+    const applyLang = (l) => this.setState({ lang: l }, () => this.applyDoc());
+    const cLabels = ar ? ["اللغة", "النطاق", "الرفع"] : ["Language", "Scope", "Upload"];
+    const cProgress = [1, 2, 3].map((i) => {
+      const done = i < s.corridorStep, active = i === s.corridorStep;
+      return {
+        n: String(i), label: cLabels[i - 1], done, active,
+        circleBg: done || active ? "var(--accent)" : "var(--surface-2)",
+        circleBorder: done || active ? "var(--accent)" : "var(--hairline-strong)",
+        circleColor: done || active ? "var(--accent-fg)" : "var(--text-faint)",
+        labelColor: active ? "var(--text)" : "var(--text-muted)",
+        labelWeight: active ? 600 : 500,
+        showBar: i < 3,
+        barBg: done ? "var(--accent)" : "var(--hairline)"
+      };
+    });
+
+    return {
+      // ingest surface
+      ingTitle: g.title, ingKicker: g.kicker,
+      ingUseSample: g.useSample, ingWhiteGlove: g.whiteGlove, ingLaunch: g.launch,
+      ingIdle: isIdle, ingRunning: isRunning, ingDone: isDone,
+      ingDropTitle: isDone ? g.doneTitle : isRunning ? g.runningTitle : g.dropIdleTitle,
+      ingDropBody: isDone ? g.doneBody : isRunning ? g.runningBody : g.dropIdleBody,
+      ingDropHint: g.dropHint,
+      ingLegendTitle: g.legendTitle, ingLegend: g.legend,
+      ingClearRun: g.clearRun,
+      ingLedgerTitle: g.ledgerTitle, ingLedgerIdle: g.ledgerIdle,
+      ingTimeline: timeline, ingCounters: counters,
+      ingAtRiskLabel: g.atRiskLabel, ingAtRiskNote: g.atRiskNote, ingAtRiskValue: grouped(ig.atRisk),
+      ingMappingTitle: g.mappingTitle, ingMappingSub: g.mappingSub, ingMapCols: g.mapCols, ingMapping: mapping,
+      ingQTitle: g.quarantineTitle, ingQSub: g.quarantineSub, ingQCols: g.qCols, ingQuarantine: quarantine, ingRevalidate: g.revalidate,
+      startIngest: () => this.startIngest(),
+      resetIngest: () => this.resetIngest(),
+      launchFirstRun: () => this.launchFirstRun(),
+      // corridor
+      firstRun: s.firstRun,
+      cStep1: s.corridorStep === 1, cStep2: s.corridorStep === 2, cStep3: s.corridorStep === 3,
+      cStepNum: s.corridorStep, cStepWord: c.step, cOf: c.of, cGoal: c.goal,
+      cExit: c.exit, cBack: c.back, cNext: c.next,
+      cShowBack: s.corridorStep > 1,
+      cShowContinue: s.corridorStep < 3,
+      cNextDisabled: s.corridorStep === 2 && onBranches < 1,
+      cProgress,
+      c1Title: c.s1Title, c1Sub: c.s1Sub, cArabic: c.arabic, cArabicNote: c.arabicNote, cEnglish: c.english, cEnglishNote: c.englishNote, cLight: c.light, cDark: c.dark,
+      c2Title: c.s2Title, c2Sub: c.s2Sub,
+      c3Title: c.s3Title, c3Sub: c.s3Sub, cDoWithMe: c.doWithMe, cDoWithMeNote: c.doWithMeNote,
+      c4Title: c.s4Title, c4Sub: c.s4Sub, cSeeMap: c.seeMap, cForwardLoop: c.forwardLoop,
+      cCanFinish: isDone,
+      ingNotDone: !isDone,
+      doneTitleShort: ar ? "تم" : "Done",
+      cHideBack: !(s.corridorStep > 1),
+      cNextBg: (s.corridorStep === 2 && onBranches < 1) ? "var(--hairline-strong)" : "var(--accent)",
+      cNextCursor: (s.corridorStep === 2 && onBranches < 1) ? "not-allowed" : "pointer",
+      cNextOpacity: (s.corridorStep === 2 && onBranches < 1) ? "0.55" : "1",
+      arCardBg: ar ? "var(--accent-subtle)" : "var(--surface-1)",
+      arCardBorder: ar ? "var(--accent)" : "var(--hairline)",
+      arDotBg: ar ? "var(--accent)" : "transparent",
+      arDotBorder: ar ? "var(--accent)" : "var(--hairline-strong)",
+      enCardBg: !ar ? "var(--accent-subtle)" : "var(--surface-1)",
+      enCardBorder: !ar ? "var(--accent)" : "var(--hairline)",
+      enDotBg: !ar ? "var(--accent)" : "transparent",
+      enDotBorder: !ar ? "var(--accent)" : "var(--hairline-strong)",
+      ltCardBg: s.theme !== "dark" ? "var(--accent-subtle)" : "var(--surface-1)",
+      ltCardBorder: s.theme !== "dark" ? "var(--accent)" : "var(--hairline)",
+      dkCardBg: s.theme === "dark" ? "var(--accent-subtle)" : "var(--surface-1)",
+      dkCardBorder: s.theme === "dark" ? "var(--accent)" : "var(--hairline)",
+      cBranchList: branchList,
+      cIsAr: ar, cIsEn: !ar, cIsLight: s.theme !== "dark", cIsDark: s.theme === "dark",
+      selArabic: () => applyLang("ar"), selEnglish: () => applyLang("en"),
+      selLight: () => applyTheme("light"), selDark: () => applyTheme("dark"),
+      corridorNext: () => this.corridorNext(),
+      corridorBack: () => this.corridorBack(),
+      exitCorridor: () => this.exitCorridor(),
+      finishCorridor: () => this.finishCorridor()
+    };
+  }
+
+  buildScrubber(s, t, ar) {
+    const sc = t.scrubber;
+    const pick = (o) => (ar ? o.ar : o.en);
+    const grouped = (n) => Math.round(n).toLocaleString("en-US");
+    const tier = (r) => r >= 80 ? { bar: "var(--at-risk)", txt: "var(--at-risk-text)" } : r >= 60 ? { bar: "var(--at-risk-soft)", txt: "var(--at-risk-text)" } : { bar: "var(--money-neutral)", txt: "var(--money-neutral)" };
+    const statusMeta = { flagged: { bg: "var(--at-risk-bg)", fg: "var(--at-risk-text)" }, needsData: { bg: "var(--surface-3)", fg: "var(--money-neutral)" }, clear: { bg: "var(--recovered-bg)", fg: "var(--recovered-text)" } };
+    const sevMeta = { high: { bg: "var(--at-risk-bg)", fg: "var(--at-risk-text)" }, med: { bg: "var(--surface-3)", fg: "var(--at-risk-text)" }, low: { bg: "var(--surface-3)", fg: "var(--money-neutral)" }, info: { bg: "var(--surface-3)", fg: "var(--money-neutral)" } };
+
+    const rows = SCRUB.claims.map((c, i) => {
+      const tr = tier(c.risk);
+      const filled = Math.round(c.risk / 10);
+      const segs = [];
+      for (let k = 0; k < 10; k++) segs.push({ color: k < filled ? tr.bar : "var(--surface-3)" });
+      const sm = statusMeta[c.status];
+      const isChecked = s.scrubChecked.indexOf(i) >= 0;
+      return {
+        id: c.id, patient: c.patient, payer: pick(PAYERS[c.payer]), codes: c.codes,
+        amount: grouped(c.amount), risk: c.risk, riskColor: tr.txt, segs, top: pick(c.top),
+        reasons: c.reasons + " " + (c.reasons === 1 ? sc.reasonWord : sc.reasonsWord),
+        statusLabel: sc.status[c.status], statusBg: sm.bg, statusFg: sm.fg,
+        isFlagged: c.status === "flagged", isNeeds: c.status === "needsData", isClear: c.status === "clear",
+        rowBg: s.scrubSelected === i ? "var(--accent-subtle)" : "transparent",
+        checked: isChecked, checkBorder: isChecked ? "var(--accent)" : "var(--hairline-strong)", checkBg: isChecked ? "var(--accent)" : "transparent",
+        onSelect: () => this.selectScrub(i),
+        onCheck: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.toggleScrubCheck(i); }
+      };
+    });
+
+    const sel = SCRUB.claims[s.scrubSelected] || SCRUB.claims[0];
+    const drawerRules = sel.rules.map((r) => ({
+      title: pick(r.t), field: r.field, cite: pick(r.cite), fix: pick(r.fix),
+      sevLabel: sc.sev[r.sev], sevBg: sevMeta[r.sev].bg, sevFg: sevMeta[r.sev].fg
+    }));
+    const rulesLib = SCRUB.rulesLibrary.map((r, i) => ({
+      name: pick(r.name), cond: pick(r.cond), source: pick(r.source),
+      sevLabel: sc.sev[r.sev], sevBg: sevMeta[r.sev].bg, sevFg: sevMeta[r.sev].fg,
+      edited: r.edited, border: i === 0 ? "none" : "1px solid var(--hairline)"
+    }));
+    const checkedSar = s.scrubChecked.reduce((a, i) => a + SCRUB.claims[i].amount, 0);
+
+    return {
+      scTitle: sc.title, scKicker: sc.kicker,
+      scFlagsCount: "41", scFlagsLabel: sc.flagsLabel, scProtectLabel: sc.protectLabel, scProtectValue: "74,600",
+      scViewBatch: sc.viewBatch, scViewRules: sc.viewRules, scDensity: sc.density, scRerun: sc.rerun,
+      scIsBatch: s.scrubView === "batch", scIsRules: s.scrubView === "rules",
+      scSetBatch: () => this.setScrubView("batch"), scSetRules: () => this.setScrubView("rules"),
+      scToggleDense: () => this.toggleScrubDense(), scDenseOn: s.scrubDense,
+      scRowH: s.scrubDense ? "36px" : "46px", scCols: sc.cols, scRows: rows,
+      scGridCols: s.vw < 1200 ? "1fr" : "minmax(0, 1fr) 340px",
+      scDrawerPos: s.vw < 1200 ? "static" : "sticky",
+      scBatchTabBg: s.scrubView === "batch" ? "var(--surface-1)" : "transparent",
+      scBatchTabColor: s.scrubView === "batch" ? "var(--text)" : "var(--text-muted)",
+      scRulesTabBg: s.scrubView === "rules" ? "var(--surface-1)" : "transparent",
+      scRulesTabColor: s.scrubView === "rules" ? "var(--text)" : "var(--text-muted)",
+      scDenseBg: s.scrubDense ? "var(--accent-subtle)" : "var(--surface-2)",
+      scDenseColor: s.scrubDense ? "var(--accent)" : "var(--text-muted)",
+      scDrawerReasons: sc.drawerReasons, scDrawerField: sc.drawerField, scDrawerFix: sc.drawerFix, scDrawerRule: sc.drawerRule,
+      scSelId: sel.id, scSelPayer: pick(PAYERS[sel.payer]), scSelCodes: sel.codes, scSelAmount: grouped(sel.amount),
+      scSelPatient: sel.patient, scSelRisk: sel.risk, scSelRiskColor: tier(sel.risk).txt, scSelTop: pick(sel.top),
+      scDrawerRules: drawerRules, scHasRules: sel.rules.length > 0, scHasRulesEmpty: sel.rules.length === 0,
+      scRulesCols: sc.rulesCols, scRulesLib: rulesLib, scRulesNote: sc.rulesNote,
+      scChecked: s.scrubChecked.length, scHasChecked: s.scrubChecked.length > 0,
+      scCheckedLabel: s.scrubChecked.length + " " + sc.selected, scCheckedSar: "SAR " + grouped(checkedSar),
+      scBulkReviewed: sc.bulkReviewed, scBulkSendBack: sc.bulkSendBack, scBulkClear: sc.bulkClear, scAudited: sc.audited,
+      scClearChecks: () => this.clearScrubChecks(), scAmountAtRisk: sc.amountAtRisk
+    };
+  }
+
+  buildAppeals(s, t, ar) {
+    const ap = t.appeals;
+    const pick = (o) => (ar ? o.ar : o.en);
+    const grouped = (n) => Math.round(n).toLocaleString("en-US");
+    const rows = APPEALS.map((a, i) => {
+      const urgent = a.days <= 5;
+      return {
+        id: a.id, payerName: pick(PAYERS[a.payer]), reason: pick(a.reason), carc: a.carc,
+        sarStr: "SAR " + grouped(a.sar),
+        daysLabel: a.days + " " + (a.days === 1 ? ap.dayLeft : ap.daysLeft),
+        dayColor: urgent ? "var(--at-risk-text)" : "var(--text-muted)",
+        dayWeight: urgent ? 600 : 500,
+        selected: s.apSelected === i,
+        rowBg: s.apSelected === i ? "var(--accent-subtle)" : "transparent",
+        rowBorder: s.apSelected === i ? "var(--accent)" : "var(--hairline)",
+        onSelect: () => this.selectAppeal(i)
+      };
+    });
+    const sel = APPEALS[s.apSelected] || APPEALS[0];
+    const letterAr = (s.apLang || s.lang) === "ar";
+    const docs = sel.docs.map((d) => ({ label: (letterAr ? d.ar : d.en) }));
+    const reviewed = s.apReviewed;
+
+    return {
+      apTitle: ap.title, apKicker: ap.kicker,
+      apQueueTitle: ap.queueTitle, apQueueSub: ap.queueSub, apGenerate: ap.generate,
+      apRows: rows,
+      apSelId: sel.id, apSelPayer: pick(PAYERS[sel.payer]), apSelMember: sel.member, apSelProvider: sel.provider,
+      apSelSbs: sel.sbs, apSelReason: pick(sel.reason), apSelCarc: sel.carc, apSelSarStr: "SAR " + grouped(sel.sar), apSelSarNum: grouped(sel.sar),
+      apAppealing: ap.appealing, apCtx: ap.ctx, apLockedNote: ap.lockedNote,
+      apLetterTitle: ap.letterTitle, apLetterLangLabel: ap.letterLang, apRegen: ap.regen,
+      apLetterAr: letterAr,
+      apLetterBody: (letterAr ? sel.body.ar : sel.body.en),
+      apLetterTo: ap.to,
+      apLetterToWord: STRINGS[letterAr ? "ar" : "en"].appeals.to,
+      apLetterPayer: letterAr ? PAYERS[sel.payer].ar : PAYERS[sel.payer].en,
+      apLetterDir: letterAr ? "rtl" : "ltr",
+      apLetterAlign: letterAr ? "right" : "left",
+      apLetterFont: letterAr ? "var(--font-ar)" : "var(--font-ui)",
+      apSetEn: () => this.setAppealLang("en"), apSetAr: () => this.setAppealLang("ar"),
+      apEnBg: !letterAr ? "var(--surface-1)" : "transparent", apEnColor: !letterAr ? "var(--text)" : "var(--text-muted)",
+      apArBg: letterAr ? "var(--surface-1)" : "transparent", apArColor: letterAr ? "var(--text)" : "var(--text-muted)",
+      apDocsTitle: ap.docsTitle, apDocs: docs,
+      apReviewLabel: ap.reviewLabel, apReviewPlaceholder: ap.reviewPlaceholder, apReviewConfirm: ap.reviewConfirm,
+      apReviewed: reviewed, apToggleReviewed: () => this.toggleReviewed(),
+      apReviewBorder: reviewed ? "var(--accent)" : "var(--hairline-strong)", apReviewBg: reviewed ? "var(--accent)" : "transparent",
+      apExportPdf: ap.exportPdf, apCopyBlock: ap.copyBlock, apMarkSubmitted: ap.markSubmitted,
+      apExportBg: reviewed ? "var(--accent)" : "var(--surface-3)", apExportColor: reviewed ? "var(--accent-fg)" : "var(--text-faint)",
+      apExportCursor: reviewed ? "pointer" : "not-allowed",
+      apGateShow: !reviewed, apGateNote: ap.gateNote,
+      apHitl: ap.hitl, apShowFallback: !sel.payerSpecific, apFallback: ap.fallback,
+      apOuterCols: s.vw < 1180 ? "1fr" : "300px minmax(0, 1fr)",
+      apInnerCols: s.vw < 1080 ? "1fr" : "230px minmax(0, 1fr)"
+    };
+  }
+
+  buildRecovery(s, t, ar) {
+    const rc = t.recovery;
+    const pick = (o) => (ar ? o.ar : o.en);
+    const grouped = (n) => Math.round(n).toLocaleString("en-US");
+    const stageMeta = {
+      submitted: { color: "var(--money-neutral)", bg: "var(--surface-3)" },
+      review: { color: "var(--recovered-text)", bg: "var(--recovered-bg)" },
+      won: { color: "var(--recovered-text)", bg: "var(--recovered-bg)" },
+      partial: { color: "var(--recovered-text)", bg: "var(--recovered-bg)" },
+      lost: { color: "var(--money-neutral)", bg: "var(--surface-3)" }
+    };
+    const stages = REC_STAGE_ORDER.map((k) => {
+      const items = RECOVERY.filter((r) => r.stage === k);
+      const appealedSum = items.reduce((a, r) => a + r.appealed, 0);
+      const recoveredSum = items.reduce((a, r) => a + r.recovered, 0);
+      const showRec = k === "won" || k === "partial";
+      const rows = items.slice().sort((a, b) => b.appealed - a.appealed).map((r, i) => ({
+        id: r.id, payerName: pick(PAYERS[r.payer]),
+        appealedStr: grouped(r.appealed),
+        recoveredStr: r.recovered > 0 ? grouped(r.recovered) : "—",
+        recoveredColor: r.recovered > 0 ? "var(--recovered-text)" : "var(--text-faint)",
+        days: String(r.days), owner: r.owner, reason: r.reason ? pick(r.reason) : "",
+        hasReason: !!r.reason, border: i === 0 ? "none" : "1px solid var(--hairline)"
+      }));
+      return {
+        key: k, label: rc.stages[k], count: String(items.length),
+        appealedStr: grouped(appealedSum),
+        recoveredStr: showRec ? grouped(recoveredSum) : null, showRecovered: showRec,
+        color: stageMeta[k].color, bg: stageMeta[k].bg,
+        isWon: k === "won", isLost: k === "lost", isReview: k === "review", isSubmitted: k === "submitted", isPartial: k === "partial",
+        rows
+      };
+    });
+    return {
+      recTitle: rc.title, recKicker: rc.kicker, recProvenance: rc.provenance,
+      recRoiRecoveredLabel: rc.roiRecovered, recRecoveredVal: grouped(s.recovered),
+      recWinLabel: rc.roiWin, recWinVal: "68%",
+      recMedianLabel: rc.roiMedian, recMedianVal: "22", recDaysUnit: rc.daysUnit,
+      recShareLabel: rc.roiShare, recShareVal: "49,548", recShareNote: rc.roiShareNote,
+      recCols: rc.cols, recPipelineTitle: rc.pipelineTitle, recLogOutcome: rc.logOutcome, recRolled: rc.rolled,
+      recStages: stages
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const ar = s.lang === "ar";
+    const t = STRINGS[s.lang];
+    const role = this.props.role || "owner";
+
+    // branch summary
+    const onBranches = s.branches.filter((b) => b.on);
+    const branchSummary =
+      onBranches.length === s.branches.length ? t.allBranches :
+      onBranches.length === 0 ? "—" :
+      onBranches.length === 1 ? (ar ? onBranches[0].ar : onBranches[0].en) :
+      t.branchCount(onBranches.length);
+
+    const branchList = s.branches.map((b) => ({
+      label: ar ? b.ar : b.en,
+      on: b.on,
+      boxBorder: b.on ? "var(--accent)" : "var(--hairline-strong)",
+      boxBg: b.on ? "var(--accent)" : "transparent",
+      onToggle: () => this.toggleBranch(b.id)
+    }));
+
+    // RBAC nav
+    const navItems = NAV_ORDER
+      .filter((k) => ACCESS[k][role] !== "hidden")
+      .map((k) => {
+        const level = ACCESS[k][role];
+        const active = s.activeModule === k;
+        const base = "display:flex;align-items:center;gap:12px;height:38px;padding-inline:9px;border-radius:var(--r-md);text-decoration:none;cursor:pointer;";
+        const style = active
+          ? base + "background:var(--accent-subtle);color:var(--accent);"
+          : base + "background:transparent;color:var(--text-muted);";
+        const item = {
+          key: k,
+          label: t.nav[k],
+          level,
+          levelLabel: t.levels[level] || "",
+          showLevel: s.railExpanded && level !== "full",
+          active,
+          style,
+          iconColor: active ? "var(--accent)" : "var(--text-muted)",
+          weight: active ? 600 : 500,
+          onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.selectModule(k); },
+          isOverview: false, isAnalytics: false, isIngest: false, isScrubber: false, isAppeals: false, isRecovery: false, isSettings: false
+        };
+        item[FLAG[k]] = true;
+        return item;
+      });
+
+    const loopRows = t.loop.map((r, i) => ({
+      n: String(i + 1).padStart(2, "0"),
+      title: r.title,
+      desc: r.desc,
+      module: r.module,
+      border: i === 0 ? "none" : "1px solid var(--hairline)"
+    }));
+
+    return {
+      ...this.buildAnalytics(s, t, ar),
+      ...this.buildIngest(s, t, ar),
+      ...this.buildScrubber(s, t, ar),
+      ...this.buildAppeals(s, t, ar),
+      ...this.buildRecovery(s, t, ar),
+      railWidth: s.railExpanded ? "240px" : "68px",
+      collapsedAttr: s.railExpanded ? "0" : "1",
+      showSearch: s.vw >= 1080,
+      showSearchIcon: s.vw < 1080,
+      switcherFull: s.vw >= 1080,
+      indicatorFull: s.vw >= 1080,
+      indPad: s.vw < 1080 ? "8px" : "12px",
+      headerGap: s.vw < 1080 ? "8px" : "14px",
+      headerPad: s.vw < 1080 ? "12px" : "16px",
+      switcherMax: s.vw < 1080 ? "150px" : "none",
+      dirFlip: ar ? "transform: scaleX(-1);" : "",
+      isDark: s.theme === "dark",
+      isLight: s.theme !== "dark",
+
+      brandSub: t.brandSub,
+      residency: t.residency,
+      navItems,
+
+      tenantLabel: t.tenantLabel,
+      tenantWord: t.tenantWord,
+      branchWord: t.branchWord,
+      branchSummary,
+      branchList,
+      switcherOpen: s.switcherOpen,
+      toggleSwitcher: () => this.toggleSwitcher(),
+
+      searchPh: t.searchPh,
+
+      recoveredWord: t.recoveredWord,
+      atRiskWord: t.atRiskWord,
+      mockWord: t.mockWord,
+      recoveredCompact: this.compact(s.recovered),
+      atRiskCompact: this.compact(s.atRisk),
+      recoveredFull: this.grouped(s.recovered),
+      atRiskFull: this.grouped(s.atRisk),
+      settled: s.settled,
+
+      indicatorOpen: s.indicatorOpen,
+      toggleIndicator: () => this.toggleIndicator(),
+      scopeLabel: t.scopeLabel,
+      popRecoveredMonth: t.popRecoveredMonth,
+      popOpenAppeals: t.popOpenAppeals,
+      popTopPayer: t.popTopPayer,
+      popCta: t.popCta,
+
+      toggleLang: () => this.toggleLang(),
+      toggleTheme: () => this.toggleTheme(),
+      toggleRail: () => this.toggleRail(),
+      langToggleLabel: t.langToggleLabel,
+
+      roleLabel: t.roles[role],
+      roleInitials: t.roleInitials[role],
+      roleWord: t.roleWord,
+
+      overviewTitle: t.overviewTitle,
+      heroKicker: t.heroKicker,
+      atRiskLong: t.atRiskLong,
+      recoveredLong: t.recoveredLong,
+      denialRateWord: t.denialRateWord,
+      benchmarkNote: t.benchmarkNote,
+      deltaVs: t.deltaVs,
+      provenance: t.provenance,
+      reservoirNote: t.reservoirNote,
+      loopTitle: t.loopTitle,
+      loopSub: t.loopSub,
+      loopRows
+    };
+  }
+}
+</script>
+</body>
+</html>

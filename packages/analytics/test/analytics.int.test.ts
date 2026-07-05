@@ -36,6 +36,7 @@ const ctxA: NormalizeContext = {
   providerId: newId(),
   payerId: newId(),
   patientId: newId(),
+  dataOrigin: "synthetic",
 };
 
 // Distinct seeds so each bundle carries a distinct nphies_claim_id (unique per

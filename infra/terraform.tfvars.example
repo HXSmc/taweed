@@ -1,0 +1,9 @@
+# EXECUTE §C — copy to terraform.tfvars (gitignored) and fill at DEPLOY (BLK-8).
+# NEVER commit the real terraform.tfvars. Secrets belong in a secrets manager, not
+# here; this file holds only non-secret identifiers.
+
+region                 = "me-riyadh-1"
+compartment_ocid       = "ocid1.compartment.oc1..REPLACE_ME"
+object_store_namespace = "REPLACE_ME"
+db_shape               = "PostgreSQL.VM.Standard.E4.Flex"
+kms_tenant_ids         = [] # e.g. ["<tenant-uuid-1>", "<tenant-uuid-2>"]

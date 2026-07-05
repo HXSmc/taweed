@@ -36,6 +36,16 @@ export interface TrendPoint {
   recoveredSar: string;
 }
 
+/** A recovery baseline snapshot (EXECUTE B8) — the fixed at-risk starting point. */
+export interface BaselineSnapshot {
+  id: string;
+  capturedAt: string;
+  atRiskSar: string;
+  deniedCount: number;
+  claimCount: number;
+  note: string | null;
+}
+
 /** Optional slicers shared by every query. Dates are ISO strings on claims. */
 export interface AnalyticsFilters {
   branchIds?: string[];

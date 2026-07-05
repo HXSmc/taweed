@@ -8,6 +8,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { DataOrigin } from "@taweed/shared";
 
 // Canonical relational model (build-plan §7). Property names are snake_case to
 // match the *_Row types in @taweed/shared, so normalizer output inserts
@@ -89,6 +90,16 @@ export const claims = pgTable("claims", {
   submitted_at: text("submitted_at"),
   total_amount: money("total_amount").notNull(),
   currency: text("currency").notNull(),
+  // EXECUTE B5 — origin tag (gates the synthetic scrubber projection) + real
+  // scrubber-signal columns. Signals are nullable: null = the source carries no
+  // such signal, so the rule that reads it goes "unevaluable" (design-brief §8.3).
+  // Default 'production' fails CLOSED: only an explicit 'synthetic' tag uses the
+  // fabricating projection; untagged data is treated as real, never fabricated.
+  data_origin: text("data_origin").notNull().default("production").$type<DataOrigin>(),
+  preauth_present: boolean("preauth_present"),
+  eligibility_verified: boolean("eligibility_verified"),
+  is_duplicate: boolean("is_duplicate"),
+  has_documentation: boolean("has_documentation"),
 });
 
 export const claimLines = pgTable("claim_lines", {
@@ -194,6 +205,23 @@ export const appeals = pgTable("appeals", {
   submitted_at: timestamp("submitted_at", { withTimezone: true }),
 });
 
+/**
+ * EXECUTE B8 — recovery baseline snapshot captured at onboarding (build-plan §11).
+ * Fixes the at-risk denominator so recovered-SAR ROI is measured against a stable
+ * starting point, not a moving target, keeping attribution conservative and honest.
+ */
+export const recoveryBaselines = pgTable("recovery_baselines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  captured_at: timestamp("captured_at", { withTimezone: true }).defaultNow(),
+  baseline_at_risk_sar: money("baseline_at_risk_sar").notNull(),
+  baseline_denied_count: integer("baseline_denied_count").notNull(),
+  baseline_claim_count: integer("baseline_claim_count").notNull(),
+  note: text("note"),
+});
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenant_id: uuid("tenant_id")
@@ -231,6 +259,7 @@ export const TENANT_SCOPED_TABLES = [
   "scrub_results",
   "appeal_templates",
   "appeals",
+  "recovery_baselines",
   "audit_logs",
   "users",
 ] as const;

@@ -5,6 +5,8 @@ import {
   moneyScope,
   reasonPareto,
   trend,
+  getLatestBaseline,
+  type BaselineSnapshot,
   type DimRate,
   type MoneyScope,
   type ReasonRow,
@@ -13,10 +15,15 @@ import {
 import {
   scrub,
   SCRUBBER_RULES,
-  type ClaimFacts,
+  selectRulesForClaim,
+  projectClaimFacts,
   type ScrubResult,
 } from "@taweed/rules-engine";
 import { withSession } from "./db";
+
+// Scrubber "current year" for age derivation. TODO(nphies-creds): once real claims
+// carry service dates, derive age at service date, not at wall-clock year.
+const SCRUB_YEAR = 2026;
 
 // ---------- Analytics ----------
 
@@ -103,68 +110,6 @@ export interface ScrubRow {
   result: ScrubResult;
 }
 
-// Deterministic hash so the synthetic projection is stable across renders.
-function hash(s: string): number {
-  let x = 0;
-  for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0;
-  return x;
-}
-
-/**
- * Project a canonical claim into ClaimFacts for the scrubber.
- * TODO(nphies-creds): the schema has no pre-auth / eligibility / duplicate /
- * documentation columns yet, so those signals are DERIVED synthetically from a
- * stable per-claim hash purely to exercise the rule set on synthetic data. Real
- * NPHIES claims carry these fields; swap this projection for the real mapping
- * when the ingest schema gains them. Amount, age, gender, line units and line
- * count come from real rows.
- */
-function claimToFacts(
-  claim: typeof schema.claims.$inferSelect,
-  lines: (typeof schema.claimLines.$inferSelect)[],
-  patient: typeof schema.patients.$inferSelect | undefined,
-): ClaimFacts {
-  const seed = hash(claim.id);
-  const bucket = seed % 10;
-  const realCodes = lines
-    .map((l) => l.sbs_code)
-    .filter((c): c is string => Boolean(c));
-  // Map a subset of claims to placeholder edit scenarios so the scrubber shows
-  // its full rule range on synthetic data (documented above).
-  const injected: string[] = [];
-  if (bucket === 0) injected.push("SBS-0003");
-  else if (bucket === 1) injected.push("SBS-0004");
-  else if (bucket === 2) injected.push("SBS-0007", "SBS-0008");
-  else if (bucket === 3) injected.push("SBS-9999");
-
-  const rawAge = patient?.birth_year ? 2026 - patient.birth_year : null;
-  const ageUnknown = seed % 11 === 0; // ~9% -> unevaluable age rule
-  const age = bucket === 1 ? 12 : ageUnknown ? null : rawAge;
-
-  const lineUnits: Record<string, number> = {};
-  for (const l of lines) if (l.sbs_code) lineUnits[l.sbs_code] = l.qty;
-
-  const gender = (patient?.gender ?? "unknown") as ClaimFacts["patientGender"];
-
-  return {
-    claimId: claim.id,
-    payerId: claim.payer_id,
-    hasPreAuth: seed % 4 !== 0,
-    patientGender: ["male", "female", "other", "unknown"].includes(gender)
-      ? gender
-      : "unknown",
-    patientAgeYears: age,
-    serviceDate: claim.submitted_at ?? "",
-    policyActive: seed % 12 !== 0,
-    sbsCodes: Array.from(new Set([...realCodes, ...injected])),
-    lineUnits,
-    totalAmount: Number(claim.total_amount),
-    isDuplicate: seed % 9 === 0,
-    hasDiagnosis: seed % 6 !== 0,
-    hasDocumentation: seed % 5 !== 0,
-  };
-}
-
 export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> {
   return withSession(tenantId, async (db) => {
     const claims = await db
@@ -194,8 +139,22 @@ export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> 
     const rows = await Promise.all(
       claims.map(async (claim) => {
         const cl = linesByClaim.get(claim.id) ?? [];
-        const facts = claimToFacts(claim, cl, patientById.get(claim.patient_id));
-        const result = await scrub(facts, SCRUBBER_RULES);
+        // projectClaimFacts dispatches on claim.data_origin: a production-tagged
+        // claim uses the real column mapping; the synthetic hash projection is
+        // hard-blocked on production data (EXECUTE B5 gate, packages/rules-engine).
+        const facts = projectClaimFacts(
+          claim,
+          cl,
+          patientById.get(claim.patient_id),
+          SCRUB_YEAR,
+        );
+        // B7: scope the rule library to this claim's payer/tenant before scrubbing
+        // (global + this payer's tuned rules + this tenant's overrides).
+        const rules = selectRulesForClaim(SCRUBBER_RULES, {
+          payerId: claim.payer_id,
+          tenantId,
+        });
+        const result = await scrub(facts, rules);
         return {
           claimId: claim.id,
           nphiesClaimId: claim.nphies_claim_id,
@@ -231,12 +190,18 @@ export interface RecoveryBundle {
   medianDays: number;
   sharePct: number;
   shareSar: string;
+  // EXECUTE B8: the onboarding baseline, so the ROI band can show progress
+  // against a fixed at-risk starting point (null if none captured yet).
+  baseline: BaselineSnapshot | null;
   rows: AppealPipelineRow[];
 }
 
 export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
   return withSession(tenantId, async (db) => {
-    const money = await moneyScope(db);
+    const [money, baseline] = await Promise.all([
+      moneyScope(db),
+      getLatestBaseline(db),
+    ]);
     const rows = await db.execute<{
       appeal_id: string;
       claim_id: string;
@@ -288,7 +253,7 @@ export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
     const sharePct = 0.12; // recovery-share model (design-brief §12); DEPLOY: per-contract
     const shareSar = (recovered * sharePct).toFixed(2);
 
-    return { money, winRate, medianDays, sharePct, shareSar, rows: list };
+    return { money, winRate, medianDays, sharePct, shareSar, baseline, rows: list };
   });
 }
 

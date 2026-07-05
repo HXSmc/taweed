@@ -192,5 +192,30 @@
     "auditAction": "Action",
     "auditEntity": "Entity",
     "auditWhen": "When"
+  },
+  "landing": {
+    "signIn": "Sign in",
+    "eyebrow": "NPHIES-native denial recovery for mid-market clinic groups",
+    "heroLead": "You are losing",
+    "heroTrail": "a year to denied claims.",
+    "heroSub": "See exactly which payers and codes are draining your revenue, and recover it, from your own NPHIES data. No new system.",
+    "illustrative": "Illustrative figure. Get your real number from a free audit.",
+    "cta": "Get a free denial audit",
+    "ctaNote": "We quantify the leak in one report. No commitment.",
+    "interestTitle": "Three moves. Your own numbers.",
+    "beat1Title": "See the leak",
+    "beat1Body": "Denial analytics on your own claims. Denial rate by payer, branch, code, and reason, with the money at risk named.",
+    "beat2Title": "Stop new leaks",
+    "beat2Body": "A pre-submission scrubber flags claims likely to deny before you send them. Every flag traces to a named rule.",
+    "beat3Title": "Recover the old ones",
+    "beat3Body": "Bilingual appeals drafted for you. You review, you send. Recovered SAR tracked to the riyal.",
+    "desireTitle": "You pay for what we recover.",
+    "desireBody": "A per-branch base plus 10 to 15% of what we actually recover. If you do not recover, that share is zero.",
+    "trustResidency": "In-Kingdom data, Riyadh. PDPL.",
+    "trustEncryption": "Encrypted at rest. Every access logged.",
+    "trustHuman": "Not an SFDA medical device. A person reviews every appeal.",
+    "actionTitle": "Get your leak number this week.",
+    "actionBody": "A free denial audit on your own data. We quantify the leak in one report and leave it with you.",
+    "footer": "Taweed. NPHIES denial recovery for KSA clinic groups."
   }
 }

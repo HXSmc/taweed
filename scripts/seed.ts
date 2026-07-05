@@ -14,6 +14,7 @@ import { parseBundle } from "@taweed/fhir";
 import { normalize, type NormalizeContext } from "@taweed/normalizer";
 import { generateBundle, SCENARIOS } from "@taweed/synthetic-fhir";
 import { SCRUBBER_RULES } from "@taweed/rules-engine";
+import { captureBaseline } from "@taweed/analytics";
 import { newId, type NormalizedClaim } from "@taweed/shared";
 import {
   getPool,
@@ -162,6 +163,7 @@ function buildClaims(
         providerId: dims.providers[i % dims.providers.length]!.id,
         payerId: dims.payers[(seed + s) % dims.payers.length]!.id,
         patientId: dims.patients[i % dims.patients.length]!.id,
+        dataOrigin: "synthetic",
       };
       const normalized = normalize(pairs[0]!, ctx);
       // Guarantee nphies_claim_id uniqueness per tenant (idempotency index).
@@ -184,6 +186,7 @@ function buildClaims(
         providerId: dims.providers[i % dims.providers.length]!.id,
         payerId: dims.payers[(seed + k) % dims.payers.length]!.id,
         patientId: dims.patients[i % dims.patients.length]!.id,
+        dataOrigin: "synthetic",
       };
       const normalized = normalize(pairs[0]!, ctx);
       normalized.claim.nphies_claim_id = `clean-x-${seed}-${k}`;
@@ -291,6 +294,9 @@ async function main(): Promise<void> {
       for (const nc of claims) await insertNormalizedClaim(db, nc);
       totalRules += await seedRules(db, t.id);
       await seedUsers(db, t);
+      // EXECUTE B8: capture the onboarding baseline BEFORE any appeals exist, so
+      // it snapshots the true starting at-risk figure (build-plan §11).
+      await captureBaseline(db, "seed onboarding baseline");
       return claims;
     });
 
