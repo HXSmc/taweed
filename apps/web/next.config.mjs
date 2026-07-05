@@ -16,6 +16,7 @@ const nextConfig = {
     "@taweed/appeals",
     "@taweed/analytics",
     "@taweed/synthetic-fhir",
+    "@taweed/ai",
   ],
   // pg is a server-only dependency; never bundle it into client/edge chunks.
   serverExternalPackages: ["pg"],

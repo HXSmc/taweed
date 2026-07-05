@@ -25,4 +25,17 @@ export default defineWorkspace([
       poolOptions: { forks: { singleFork: true } },
     },
   },
+  {
+    // LIVE AI evals (real Anthropic API). Deliberately a SEPARATE project so CI —
+    // which runs `--project unit` and `--project integration` only — NEVER runs
+    // them (plan 04 §6). Each eval file is additionally skipped unless
+    // AI_EVALS_LIVE=1. Run with: AI_EVALS_LIVE=1 vitest run --project evals.
+    test: {
+      name: "evals",
+      include: ["packages/*/evals/**/*.eval.ts"],
+      exclude: ["**/node_modules/**"],
+      pool: "forks",
+      poolOptions: { forks: { singleFork: true } },
+    },
+  },
 ]);

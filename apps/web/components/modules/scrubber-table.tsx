@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { TableWrap, Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { FlagExplainer } from "@/components/modules/flag-explainer";
 
 const SEV_COLOR: Record<string, string> = {
   high: "bg-at-risk",
@@ -128,6 +129,10 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
                       {t("ruleLabel")}: <span className="mono">{f.ruleId}</span>
                     </span>
                   </p>
+                  <FlagExplainer
+                    ruleId={f.ruleId}
+                    ruleVersion={selected.ruleVersions[f.ruleId] ?? 1}
+                  />
                 </li>
               ))}
               {selected.result.unevaluable.map((id) => (

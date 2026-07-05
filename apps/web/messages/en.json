@@ -140,7 +140,12 @@
     "severity": "Severity",
     "version": "Version",
     "emptyTitle": "No flags yet",
-    "emptyBody": "Run the scrubber on your latest batch to surface deny risk."
+    "emptyBody": "Run the scrubber on your latest batch to surface deny risk.",
+    "explain": "Explain this rule",
+    "explaining": "Generating explanation…",
+    "explainUnavailable": "AI explanation unavailable.",
+    "aiExplanation": "AI explanation",
+    "suggestedFix": "Suggested fix"
   },
   "appeals": {
     "title": "Appeal Generator",

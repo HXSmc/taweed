@@ -1,0 +1,111 @@
+// Deterministic field-level pseudonymization from STRUCTURED columns only
+// (plan 04 §3.3, §4.4). This is the LOAD-BEARING de-identification control for
+// PHI-adjacent LLM calls (AI-2 appeal assist), NOT statistical NER: direct
+// identifiers from known columns are replaced with opaque tokens pre-call and
+// re-substituted post-call; free-text columns are EXCLUDED unless explicitly
+// allowlisted; DOB becomes an age band. Pure + exhaustively unit-tested.
+//
+// AI-1 (explainFlag) is PHI-free by construction and does not use this — it
+// ships here as the foundation the appeal-assist phase builds on.
+
+export interface PseudonymizeConfig {
+  /** column -> TOKEN prefix, e.g. { patient_name: "PATIENT", member_id: "MEMBER_ID" }. */
+  identifiers: Record<string, string>;
+  /** columns holding an ISO date to collapse into a coarse age band. */
+  dob?: readonly string[];
+  /** free-text columns explicitly allowed through verbatim (opt-in; default: dropped). */
+  freeTextAllow?: readonly string[];
+}
+
+export interface Pseudonymized {
+  /** safe-to-send projection: identifiers tokenized, DOB banded, free text dropped. */
+  record: Record<string, string>;
+  /** token -> original value, for detokenize() after the model responds. */
+  detokenMap: Record<string, string>;
+}
+
+/** Age in whole years from an ISO date to `now`, or null if unparseable/future. */
+function ageYears(dobIso: string, now: Date): number | null {
+  const dob = new Date(dobIso);
+  if (Number.isNaN(dob.getTime())) return null;
+  let age = now.getFullYear() - dob.getFullYear();
+  const monthDelta = now.getMonth() - dob.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+  return age < 0 ? null : age;
+}
+
+/** Decade band label, e.g. 36 -> "30-39"; unknown ages -> "unknown". */
+export function ageBand(dobIso: string, now: Date): string {
+  const age = ageYears(dobIso, now);
+  if (age === null) return "unknown";
+  const low = Math.floor(age / 10) * 10;
+  return `${low}-${low + 9}`;
+}
+
+/** Collision-free composite key for (prefix, value) dedupe — JSON, never a delimiter char. */
+function seenKey(prefix: string, value: string): string {
+  return JSON.stringify([prefix, value]);
+}
+
+/**
+ * Project a flat record into a pseudonymized form. Deterministic: identical
+ * input yields identical tokens. Equal values under the same prefix share a
+ * token (so a patient referenced twice reads as one [PATIENT_1]).
+ */
+export function pseudonymize(
+  input: Record<string, unknown>,
+  config: PseudonymizeConfig,
+  now: Date,
+): Pseudonymized {
+  const record: Record<string, string> = {};
+  const detokenMap: Record<string, string> = {};
+  const counters: Record<string, number> = {};
+  const seen: Record<string, string> = {}; // seenKey(prefix, value) -> token
+
+  for (const [column, prefix] of Object.entries(config.identifiers)) {
+    const raw = input[column];
+    if (raw === undefined || raw === null || raw === "") continue;
+    const value = String(raw);
+    const key = seenKey(prefix, value);
+    let token = seen[key];
+    if (token === undefined) {
+      const n = (counters[prefix] ?? 0) + 1;
+      counters[prefix] = n;
+      token = `[${prefix}_${n}]`;
+      seen[key] = token;
+      detokenMap[token] = value;
+    }
+    record[column] = token;
+  }
+
+  for (const column of config.dob ?? []) {
+    const raw = input[column];
+    if (raw === undefined || raw === null || raw === "") continue;
+    record[column] = ageBand(String(raw), now);
+  }
+
+  for (const column of config.freeTextAllow ?? []) {
+    const raw = input[column];
+    if (raw === undefined || raw === null) continue;
+    record[column] = String(raw);
+  }
+
+  return { record, detokenMap };
+}
+
+/**
+ * Restore original identifier values in model output. Runs LAST, after every
+ * safety check, so tokens never leak to the UI. Tokens are fully bracket-
+ * delimited (`[PREFIX_N]`), so none is a substring of another; the
+ * longest-first order is belt-and-suspenders, not load-bearing.
+ */
+export function detokenize(text: string, map: Record<string, string>): string {
+  let out = text;
+  const tokens = Object.keys(map).sort((a, b) => b.length - a.length);
+  for (const token of tokens) {
+    out = out.split(token).join(map[token] as string);
+  }
+  return out;
+}

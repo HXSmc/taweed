@@ -13,6 +13,7 @@
     "seed": "tsx ../../scripts/seed.ts"
   },
   "dependencies": {
+    "@taweed/ai": "workspace:*",
     "@taweed/analytics": "workspace:*",
     "@taweed/appeals": "workspace:*",
     "@taweed/audit": "workspace:*",
