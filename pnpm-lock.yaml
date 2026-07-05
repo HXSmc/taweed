@@ -71,6 +71,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.6
         version: 1.2.11(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@taweed/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@taweed/analytics':
         specifier: workspace:*
         version: link:../../packages/analytics

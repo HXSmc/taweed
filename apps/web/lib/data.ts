@@ -108,6 +108,9 @@ export interface ScrubRow {
   sbsCodes: string[];
   amount: string;
   result: ScrubResult;
+  // ruleId -> the version-resolved rule version used for this claim (B7 scope).
+  // Lets the AI-1 explainer dedupe by (rule, version) without widening ScrubFlag.
+  ruleVersions: Record<string, number>;
 }
 
 export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> {
@@ -155,6 +158,10 @@ export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> 
           tenantId,
         });
         const result = await scrub(facts, rules);
+        // Map each applicable rule id to its resolved version so the client can
+        // ask the explainer for the exact (rule, version) that fired.
+        const ruleVersions: Record<string, number> = {};
+        for (const r of rules) ruleVersions[r.id] = r.version;
         return {
           claimId: claim.id,
           nphiesClaimId: claim.nphies_claim_id,
@@ -163,6 +170,7 @@ export function getScrubRows(tenantId: string, limit = 60): Promise<ScrubRow[]> 
           sbsCodes: facts.sbsCodes,
           amount: claim.total_amount,
           result,
+          ruleVersions,
         } satisfies ScrubRow;
       }),
     );
