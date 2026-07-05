@@ -293,6 +293,8 @@ importers:
         specifier: workspace:*
         version: link:../../test/synthetic-fhir
 
+  packages/platform: {}
+
   packages/rules-engine:
     dependencies:
       '@taweed/shared':
