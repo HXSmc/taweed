@@ -13,9 +13,9 @@
 
 ## Counters (loop memory)
 
-- `iteration_counter` = 5
-- `change_iteration_counter` = 5 _(only iterations that changed product source count toward the cap of 12)_
-- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 5 changed product source)_
+- `iteration_counter` = 6
+- `change_iteration_counter` = 6 _(only iterations that changed product source count toward the cap of 12)_
+- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 6 changed product source)_
 - `last_clean_head_sha` = _(empty)_
 
 ## ✅ RESOLVED (iter4) — money-path semantics (escalated → human authorized via product docs → FIXED with TDD)
@@ -150,3 +150,9 @@ _(terse per-iteration status appended below each pass)_
 - **Wired** apps/web into the root `eslint.config.mjs`: removed the ignore; added an `apps/web/**/*.{ts,tsx}` block (typescript-eslint recommended + no-unused-vars + jsx parserOptions); ignored `next-env.d.ts` + `*.config.{ts,cts,mts}` build tooling (tailwind.config uses `require()` legitimately). Fixed the 3 dead symbols.
 - **react-hooks + jsx-a11y DEFERRED**: the plugin install (127 transitive pkgs) kept failing on registry socket timeouts; reverted the partial package.json/lockfile write so CI's `--frozen-lockfile` stays intact. Follow-up when the registry is reachable — `rules-of-hooks` (error) is the high-value add.
 - Gates: root+web typecheck ✓, **lint 0 errors** (apps/web now enforced — confirmed via single-file lint; the 2 remaining warnings are pre-existing `.claude/scripts`, non-product), unit **284/284** ✓, int unchanged (24/24). **EXIT = CONTINUE** — remaining: react-hooks/jsx-a11y (registry), chrome-devtools runtime smoke, a11y row-semantics, drizzle journal, normalizer-at-real-data → 2 clean passes → PR.
+
+### iteration 6 — react-hooks + jsx-a11y ESLint wired (registry recovered)
+
+- The plugin install (`eslint-plugin-react-hooks@7`, `eslint-plugin-jsx-a11y@6`) succeeded on retry. **Measured** the cascade (react-hooks v7 recommended + jsx-a11y recommended) → only **3**: `react-hooks/refs` (count-up latest-callback ref) + `set-state-in-effect` (theme-toggle post-hydration DOM sync) — both legit patterns flagged by v7's strict React-Compiler rules — and 1 `jsx-a11y/heading-has-content` (CardTitle `<h3 {...props}>` spread-children false positive).
+- **Wired the high-value subset**: `react-hooks/rules-of-hooks` (error — the hook-order bug-catcher) + `exhaustive-deps` (warn) + full `jsx-a11y` recommended (34 rules). Left the v7 React-Compiler extras OFF (advisory, false-positive on valid patterns here). Fixed `CardTitle` to pass `children` explicitly (satisfies heading-has-content; semantically identical).
+- Gates: web typecheck ✓, **lint 0 errors** (react-hooks + jsx-a11y now enforced), unit/int unchanged. This closes the react reviewer's CRITICAL a11y/hooks-gate finding fully.
