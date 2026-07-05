@@ -25,7 +25,13 @@ test.describe("money arc (seeded DB)", () => {
 
     await page.goto("/en/analytics");
     // A SAR money figure is the largest thing on the analytics surface.
-    await expect(page.getByText(/SAR/).first()).toBeVisible();
+    // The hero money figure is visible at every breakpoint; the command-bar
+    // money indicator is responsive-hidden below lg, so target the first VISIBLE
+    // SAR rather than the first in the DOM (which is the hidden indicator on
+    // tablet/mobile).
+    await expect(
+      page.getByText(/SAR/).filter({ visible: true }).first(),
+    ).toBeVisible();
   });
 
   test("marking an appeal won moves recovered money up (recovery surface)", async ({
@@ -40,7 +46,13 @@ test.describe("money arc (seeded DB)", () => {
     await page.waitForURL(/\/en\/(overview|analytics)/);
 
     await page.goto("/en/recovery");
-    await expect(page.getByText(/SAR/).first()).toBeVisible();
+    // The hero money figure is visible at every breakpoint; the command-bar
+    // money indicator is responsive-hidden below lg, so target the first VISIBLE
+    // SAR rather than the first in the DOM (which is the hidden indicator on
+    // tablet/mobile).
+    await expect(
+      page.getByText(/SAR/).filter({ visible: true }).first(),
+    ).toBeVisible();
     // Full mark-won interaction is asserted here once the seeded pipeline row is
     // selected; kept resilient to row markup so it fails on behavior, not styling.
   });

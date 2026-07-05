@@ -11,12 +11,7 @@ import {
   type Database,
   type Pool,
 } from "@taweed/db";
-import {
-  denialRateBy,
-  moneyScope,
-  reasonPareto,
-  trend,
-} from "../src/index.js";
+import { denialRateBy, moneyScope, reasonPareto, trend } from "../src/index.js";
 // Reuse the db package's destructive migrator + app-role helper (read-only
 // import) so this suite stands up an identical schema with RLS FORCE active.
 import { migrate, appConnectionString } from "../../db/test/migrate.js";
@@ -30,6 +25,7 @@ const pool: Pool = getPool(appConnectionString(adminUrl));
 
 const tenantA = newId();
 const tenantB = newId();
+const tenantC = newId();
 const ctxA: NormalizeContext = {
   tenantId: tenantA,
   branchId: newId(),
@@ -128,6 +124,88 @@ beforeAll(async () => {
       recovered_amount: null,
     });
   });
+
+  // tenantC: a KNOWN partial win (denied 1000, recovered 600) to prove at-risk
+  // keeps the 400 unrecovered remainder rather than excluding the whole denial.
+  await seedTenant(tenantC, "Clinic C");
+  await withTenant(pool, tenantC, async (db) => {
+    const branchId = newId();
+    const providerId = newId();
+    const payerId = newId();
+    const patientId = newId();
+    const claimId = newId();
+    const lineId = newId();
+    const denialId = newId();
+    await db.insert(schema.branches).values({
+      id: branchId,
+      tenant_id: tenantC,
+      name: "C Branch",
+      city: null,
+      license: null,
+    });
+    await db.insert(schema.providers).values({
+      id: providerId,
+      tenant_id: tenantC,
+      name: "C Provider",
+      specialty: null,
+      nphies_practitioner_id: null,
+    });
+    await db.insert(schema.payers).values({
+      id: payerId,
+      tenant_id: tenantC,
+      name: "C Insurer",
+      nphies_payer_id: null,
+      type: "insurer",
+    });
+    await db.insert(schema.patients).values({
+      id: patientId,
+      tenant_id: tenantC,
+      pseudonym: "pat-c",
+      birth_year: 1990,
+      gender: "unknown",
+    });
+    await db.insert(schema.claims).values({
+      id: claimId,
+      tenant_id: tenantC,
+      branch_id: branchId,
+      provider_id: providerId,
+      payer_id: payerId,
+      patient_id: patientId,
+      nphies_claim_id: "C-CLM-1",
+      status: "denied",
+      submitted_at: "2026-03-01",
+      total_amount: "1000.00",
+      currency: "SAR",
+      data_origin: "synthetic",
+    });
+    await db.insert(schema.claimLines).values({
+      id: lineId,
+      tenant_id: tenantC,
+      claim_id: claimId,
+      line_number: 1,
+      sbs_code: null,
+      icd10am_code: null,
+      qty: 1,
+      unit_price: "1000.00",
+      line_amount: "1000.00",
+    });
+    await db.insert(schema.denials).values({
+      id: denialId,
+      tenant_id: tenantC,
+      claim_line_id: lineId,
+      reason_code: "TWD-D01",
+      reason_text: null,
+      category: null,
+      denied_amount: "1000.00",
+    });
+    await db.insert(schema.appeals).values({
+      id: newId(),
+      tenant_id: tenantC,
+      denial_id: denialId,
+      status: "won",
+      recovered_amount: "600.00",
+    });
+  });
 }, 60_000);
 
 afterAll(async () => {
@@ -145,7 +223,9 @@ describe("analytics rollups over the canonical model (RLS active)", () => {
       expect(rows.reduce((n, r) => n + r.denied, 0)).toBe(5);
       expect(byCode.get("TWD-D03")?.denied).toBe(2);
       // reason label resolves through the placeholder taxonomy.
-      expect(byCode.get("TWD-D03")?.label).toBe("Diagnosis / procedure mismatch");
+      expect(byCode.get("TWD-D03")?.label).toBe(
+        "Diagnosis / procedure mismatch",
+      );
       // at-risk money is a valid 2-decimal SAR string.
       for (const r of rows) expect(r.atRiskSar).toMatch(/^\d+\.\d{2}$/);
     });
@@ -186,9 +266,25 @@ describe("analytics rollups over the canonical model (RLS active)", () => {
       expect(scope.claimCount).toBe(3);
       expect(scope.deniedCount).toBe(5);
       expect(scope.recoveredSar).toBe(WON_RECOVERED);
-      // At-risk = denied money with no won appeal; there are still-open denials.
+      // At-risk = denied money not yet recovered; there are still-open denials.
       expect(Number(scope.atRiskSar)).toBeGreaterThan(0);
       expect(scope.atRiskSar).toMatch(/^\d+\.\d{2}$/);
+    });
+  });
+
+  it("at-risk keeps a partial win's unrecovered remainder (denied - recovered), not zero", async () => {
+    await withTenant(pool, tenantC, async (db) => {
+      const scope = await moneyScope(db);
+      expect(scope.deniedCount).toBe(1);
+      expect(scope.claimCount).toBe(1);
+      expect(scope.recoveredSar).toBe("600.00");
+      // The 400 remainder stays at-risk — NOT excluded just because a won appeal
+      // exists — so at_risk + recovered reconciles to total denied (design §8.5).
+      expect(scope.atRiskSar).toBe("400.00");
+      expect(Number(scope.atRiskSar) + Number(scope.recoveredSar)).toBeCloseTo(
+        1000,
+        2,
+      );
     });
   });
 

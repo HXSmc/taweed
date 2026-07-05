@@ -13,18 +13,18 @@
 
 ## Counters (loop memory)
 
-- `iteration_counter` = 3
-- `change_iteration_counter` = 3 _(only iterations that changed product source count toward the cap of 12)_
-- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 3 changed product source)_
+- `iteration_counter` = 4
+- `change_iteration_counter` = 4 _(only iterations that changed product source count toward the cap of 12)_
+- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 4 changed product source)_
 - `last_clean_head_sha` = _(empty)_
 
-## ⚠ OPEN ESCALATION — money-path semantics (HUMAN decision required, NOT patched)
+## ✅ RESOLVED (iter4) — money-path semantics (escalated → human authorized via product docs → FIXED with TDD)
 
 `analytics/queries.ts:207,216` — `moneyScope` at-risk = `LEFT JOIN appeals a ON a.denial_id=d.id AND a.status='won' WHERE a.id IS NULL`, summing the **full** `denied_amount` of denials with no won appeal; `recovered_sar` sums the actual (possibly partial) `recovered_amount`. **On a PARTIAL win** (denied 100, recovered 60) the denial is fully excluded from at-risk (a won appeal exists) yet only 60 counts as recovered → the unrecovered **40 lands in NEITHER** at-risk nor recovered. Contradicts the docstring's stated intent ("atRiskSar = denied amount NOT yet recovered"). Filed CRITICAL by the money-path finder (opus); its adversarial verifiers **died on the session limit** → UNVERIFIED-by-sweep but confirmed by my own read.
 
 - **Per the loop the money path is the moat — NOT patched.** Semantics question only a human with RCM/product knowledge can settle: **is the partial-win remainder still "at-risk" (→ real bug, understates the headline) or a resolved write-off (→ by-design)?**
 - Repro: seed a denial with a `won` appeal whose `recovered_amount < denied_amount`; check `atRiskSar + recoveredSar` vs total denied. If they must reconcile, the at-risk subquery needs to subtract the partial recovery (money-path change → still human-gated).
-- **DEPLOY-READY is blocked** on this decision (money-path re-verify DoD cannot tick while open).
+- **RESOLVED (iter4):** the human authorized deciding from the product docs. Design-brief §8.5 (a "Partially paid" stage + "partial-pay auto-diff" + "recovered-exceeds-appealed blocks… to protect the ROI integrity the pricing depends on") makes it a **BUG**. Fixed: at-risk = `SUM(GREATEST(denied − won_recovered, 0))` per denial, so a partial win keeps its unrecovered remainder and `at_risk + recovered = total denied`. TDD int test (tenantC: denied 1000 / recovered 600 → at-risk 400, currently 0) proves it; analytics int 24/24 green. `resolveRecovery`'s own math unchanged.
 
 ## Defect log
 
@@ -134,3 +134,10 @@ _(terse per-iteration status appended below each pass)_
 - **Handoff added** to `docs/AI_HARDEN_LOOP.md` (new "## HANDOFF — current state" block) so a fresh agent can take over.
 - **CI diagnosis (user asked)**: CI on `main` is red only because **`ai-harden` is NOT pushed** (origin has main/back-up/back-up-not-agentic only); the latest run `28741047013` is the pre-fix main merge. **Local Playwright can't run** — playwright 1.61 TS-config loader fails under the pinned node **20.2.0** (`Cannot use import statement outside a module`); CI's newer node 20.x loads it fine. The money-arc fix is root-caused with high confidence; definitive verification = push `ai-harden` (or the human merges) → CI runs.
 - Gates: root+web typecheck ✓, lint ✓, unit **284/284** ✓, int unchanged (23/23; no DB/schema change). **EXIT = CONTINUE** (money-path escalation open; push-for-CI, runtime smoke, lint-gap, a11y row-semantics, drizzle journal, normalizer-at-real-data pending).
+
+### iteration 4 — money-path fix (human-authorized) + push to CI + E2E responsive fix
+
+- **Pushed `ai-harden` to origin** (user-authorized) → CI ran. Run `28752722785`: quality ✓, integration ✓, **E2E 12→4 failures** — the login fix WORKED (4/6 projects green); remaining 4 were `getByText(/SAR/).first()` hidden on tablet-768 + mobile-320.
+- **E2E responsive fix**: the command-bar `MoneyIndicator` is `hidden lg:block` (hidden <1024), so the first-DOM SAR is hidden on small viewports while the hero `money-figure` stays visible → `money-arc.spec.ts` now targets `.filter({ visible: true }).first()`. Test-locator fix, not an app bug (money IS shown via the hero on every breakpoint). Note: whether the "persistent" indicator should also show on tablet/mobile is a minor design decision, not a functional money-loss.
+- **Money-path escalation RESOLVED** (see the ✅ block up top): human authorized deciding from the docs → §8.5 → BUG → fixed `moneyScope` at-risk to keep the partial-win remainder (`SUM(GREATEST(denied − won_recovered, 0))`) with a TDD int test. `resolveRecovery` math untouched.
+- Gates: root+web typecheck ✓, lint ✓, unit **284/284** ✓, int **24/24** ✓ (partial-win test added). **EXIT = CONTINUE** — after this push CI should be fully green (verify); then remaining pending = runtime smoke, apps/web lint-gap, a11y row-semantics, drizzle journal, normalizer-at-real-data. Money-path no longer blocks DEPLOY-READY.
