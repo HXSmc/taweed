@@ -21,7 +21,7 @@ export interface AppealTemplate {
 // in one place keeps per-reason entries to just subject + one paragraph.
 const SALUTATION_EN = "To the Claims Review Department at {payerName},";
 const INTRO_EN =
-  "We formally appeal the denial of claim {claimId} for member {memberId} " +
+  "We formally appeal the denial of claim {claimRef} for member {memberId} " +
   "(service date {serviceDate}, SBS {sbsCode}), submitted by {providerName} " +
   "to {payerName}. The amount at risk is SAR {atRiskSar}.";
 const CLOSING_EN =
@@ -31,7 +31,7 @@ const CLOSING_EN =
 
 const SALUTATION_AR = "إلى إدارة مراجعة المطالبات لدى {payerName} المحترمين،";
 const INTRO_AR =
-  "نتقدّم إليكم باعتراضٍ رسميٍّ على رفض المطالبة رقم {claimId} الخاصة بالمشترك " +
+  "نتقدّم إليكم باعتراضٍ رسميٍّ على رفض المطالبة رقم {claimRef} الخاصة بالمشترك " +
   "{memberId} (تاريخ الخدمة {serviceDate}، رمز الخدمة {sbsCode})، والمقدَّمة من " +
   "{providerName} إلى {payerName}. وتبلغ قيمة المبلغ المعرَّض للخطر {atRiskSar} ريال سعودي.";
 const CLOSING_AR =
@@ -39,7 +39,10 @@ const CLOSING_AR =
   "المؤيِّدة وفق القائمة أدناه.\n\nوتفضّلوا بقبول فائق الاحترام والتقدير،\n" +
   "{providerName} — مكتب سلامة الإيرادات";
 
-function letter(reasonEn: string, reasonAr: string): {
+function letter(
+  reasonEn: string,
+  reasonAr: string,
+): {
   body_en: string;
   body_ar: string;
 } {
@@ -53,8 +56,8 @@ function doc(key: string, en: string, ar: string): DocChecklistItem {
   return { key, label_en: en, label_ar: ar };
 }
 
-const SUBJECT_EN = "Formal appeal — claim {claimId} — {payerName}";
-const SUBJECT_AR = "اعتراض رسمي على رفض المطالبة {claimId} لدى {payerName}";
+const SUBJECT_EN = "Formal appeal — claim {claimRef} — {payerName}";
+const SUBJECT_AR = "اعتراض رسمي على رفض المطالبة {claimRef} لدى {payerName}";
 
 export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
   // TWD-D01 Service not covered (CARC)
@@ -66,9 +69,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "إن الخدمة المرفوضة مشمولة ضمن منافع وثيقة المشترك السارية في تاريخ الخدمة. وقد أرفقنا جدول المنافع وخطاب الضرورة الطبية الذي يؤكد التغطية.",
     ),
     docChecklist: [
-      doc("benefit-schedule", "Benefit schedule / policy coverage page", "جدول المنافع أو صفحة تغطية الوثيقة"),
-      doc("medical-necessity", "Letter of medical necessity", "خطاب الضرورة الطبية"),
-      doc("coverage-confirmation", "Coverage confirmation for the service date", "تأكيد التغطية في تاريخ الخدمة"),
+      doc(
+        "benefit-schedule",
+        "Benefit schedule / policy coverage page",
+        "جدول المنافع أو صفحة تغطية الوثيقة",
+      ),
+      doc(
+        "medical-necessity",
+        "Letter of medical necessity",
+        "خطاب الضرورة الطبية",
+      ),
+      doc(
+        "coverage-confirmation",
+        "Coverage confirmation for the service date",
+        "تأكيد التغطية في تاريخ الخدمة",
+      ),
     ],
   },
   // TWD-D02 Prior authorization missing (CARC)
@@ -80,9 +95,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "تسري على هذه الخدمة موافقة مسبقة سارية. وقد أرفقنا الرقم المرجعي للموافقة، وعند الاقتضاء طلب موافقة بأثر رجعي مشفوعاً بالمبرِّر السريري.",
     ),
     docChecklist: [
-      doc("auth-reference", "Prior authorization reference number", "الرقم المرجعي للموافقة المسبقة"),
-      doc("retro-auth-request", "Retroactive authorization request", "طلب موافقة بأثر رجعي"),
-      doc("clinical-justification", "Clinical justification for the service", "المبرر السريري للخدمة"),
+      doc(
+        "auth-reference",
+        "Prior authorization reference number",
+        "الرقم المرجعي للموافقة المسبقة",
+      ),
+      doc(
+        "retro-auth-request",
+        "Retroactive authorization request",
+        "طلب موافقة بأثر رجعي",
+      ),
+      doc(
+        "clinical-justification",
+        "Clinical justification for the service",
+        "المبرر السريري للخدمة",
+      ),
     ],
   },
   // TWD-D03 Diagnosis / procedure mismatch (CARC)
@@ -94,9 +121,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "يدعم التشخيص المُسجَّل الإجراء المُطالَب به دعماً كاملاً. وقد أرفقنا الترميز المصحَّح والملاحظات السريرية التي تُثبت الارتباط بين التشخيص والخدمة.",
     ),
     docChecklist: [
-      doc("corrected-coding", "Corrected diagnosis / procedure coding", "الترميز المصحَّح للتشخيص والإجراء"),
-      doc("clinical-notes", "Clinical notes linking diagnosis to service", "الملاحظات السريرية الرابطة بين التشخيص والخدمة"),
-      doc("physician-statement", "Treating physician statement", "إفادة الطبيب المُعالِج"),
+      doc(
+        "corrected-coding",
+        "Corrected diagnosis / procedure coding",
+        "الترميز المصحَّح للتشخيص والإجراء",
+      ),
+      doc(
+        "clinical-notes",
+        "Clinical notes linking diagnosis to service",
+        "الملاحظات السريرية الرابطة بين التشخيص والخدمة",
+      ),
+      doc(
+        "physician-statement",
+        "Treating physician statement",
+        "إفادة الطبيب المُعالِج",
+      ),
     ],
   },
   // TWD-D04 Patient not eligible on service date (CARC)
@@ -108,9 +147,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "كان المشترك مؤهَّلاً في تاريخ الخدمة. وقد أرفقنا إثبات الأهلية وصورة من البطاقة التأمينية تؤكد سريان الاشتراك.",
     ),
     docChecklist: [
-      doc("eligibility-verification", "Eligibility verification for the service date", "إثبات الأهلية في تاريخ الخدمة"),
-      doc("insurance-card", "Copy of the insurance card", "صورة من البطاقة التأمينية"),
-      doc("enrollment-proof", "Active enrollment proof", "إثبات سريان الاشتراك"),
+      doc(
+        "eligibility-verification",
+        "Eligibility verification for the service date",
+        "إثبات الأهلية في تاريخ الخدمة",
+      ),
+      doc(
+        "insurance-card",
+        "Copy of the insurance card",
+        "صورة من البطاقة التأمينية",
+      ),
+      doc(
+        "enrollment-proof",
+        "Active enrollment proof",
+        "إثبات سريان الاشتراك",
+      ),
     ],
   },
   // TWD-D05 Duplicate claim / service (CARC)
@@ -122,9 +173,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "ليست هذه المطالبة مكرَّرة، بل تمثِّل خدمةً مستقلةً موثَّقةً على حِدة. وقد أرفقنا مرجع المطالبة الأصلية والملاحظات التي تُثبت استقلال الزيارة.",
     ),
     docChecklist: [
-      doc("original-claim-ref", "Original claim reference", "مرجع المطالبة الأصلية"),
-      doc("distinct-service-note", "Note evidencing the distinct encounter", "ملاحظة تُثبت استقلال الزيارة"),
-      doc("service-timestamps", "Service date / time records", "سجلات تاريخ ووقت تقديم الخدمة"),
+      doc(
+        "original-claim-ref",
+        "Original claim reference",
+        "مرجع المطالبة الأصلية",
+      ),
+      doc(
+        "distinct-service-note",
+        "Note evidencing the distinct encounter",
+        "ملاحظة تُثبت استقلال الزيارة",
+      ),
+      doc(
+        "service-timestamps",
+        "Service date / time records",
+        "سجلات تاريخ ووقت تقديم الخدمة",
+      ),
     ],
   },
   // TWD-D06 Missing supporting documentation (RARC)
@@ -136,9 +199,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "أرفقنا كامل المستندات المؤيِّدة المطلوبة، بما في ذلك التقرير العملياتي أو السريري والنتائج ذات الصلة، لاستكمال الملف.",
     ),
     docChecklist: [
-      doc("operative-report", "Operative / clinical report", "التقرير العملياتي أو السريري"),
-      doc("lab-imaging-results", "Relevant lab / imaging results", "نتائج المختبر أو الأشعة ذات الصلة"),
-      doc("itemized-record", "Itemized medical record", "السجل الطبي المُفصَّل"),
+      doc(
+        "operative-report",
+        "Operative / clinical report",
+        "التقرير العملياتي أو السريري",
+      ),
+      doc(
+        "lab-imaging-results",
+        "Relevant lab / imaging results",
+        "نتائج المختبر أو الأشعة ذات الصلة",
+      ),
+      doc(
+        "itemized-record",
+        "Itemized medical record",
+        "السجل الطبي المُفصَّل",
+      ),
     ],
   },
   // TWD-D07 Procedure bundled into another line (RARC)
@@ -150,9 +225,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "الإجراء المُطالَب به قابل للتمييز بشكلٍ مستقل ولا يجوز دمجه. وقد أرفقنا المستندات والمُعدِّل المناسب الذي يدعم إفراده في الترميز.",
     ),
     docChecklist: [
-      doc("unbundling-justification", "Unbundling justification", "مبرر فك الدمج"),
-      doc("distinct-procedure-doc", "Documentation of the distinct procedure", "توثيق الإجراء المستقل"),
-      doc("modifier-support", "Supporting modifier evidence", "دليل المُعدِّل المؤيِّد"),
+      doc(
+        "unbundling-justification",
+        "Unbundling justification",
+        "مبرر فك الدمج",
+      ),
+      doc(
+        "distinct-procedure-doc",
+        "Documentation of the distinct procedure",
+        "توثيق الإجراء المستقل",
+      ),
+      doc(
+        "modifier-support",
+        "Supporting modifier evidence",
+        "دليل المُعدِّل المؤيِّد",
+      ),
     ],
   },
   // TWD-D08 Quantity exceeds allowed limit (RARC)
@@ -164,9 +251,21 @@ export const APPEAL_TEMPLATES: Readonly<Record<string, AppealTemplate>> = {
       "الكمية المُطالَب بها ضروريةٌ طبياً. وقد أرفقنا أمر الطبيب ومبرِّر الجرعة أو التكرار الذي يدعم الكمية المقدَّمة.",
     ),
     docChecklist: [
-      doc("physician-order", "Physician order for the quantity", "أمر الطبيب بالكمية"),
-      doc("dosage-justification", "Dosage / frequency justification", "مبرر الجرعة أو التكرار"),
-      doc("quantity-necessity", "Medical necessity for the quantity", "الضرورة الطبية للكمية"),
+      doc(
+        "physician-order",
+        "Physician order for the quantity",
+        "أمر الطبيب بالكمية",
+      ),
+      doc(
+        "dosage-justification",
+        "Dosage / frequency justification",
+        "مبرر الجرعة أو التكرار",
+      ),
+      doc(
+        "quantity-necessity",
+        "Medical necessity for the quantity",
+        "الضرورة الطبية للكمية",
+      ),
     ],
   },
 };
@@ -180,8 +279,16 @@ export const GENERIC_TEMPLATE: AppealTemplate = {
     "نعترض على هذا الرفض ونطلب إعادة النظر في المطالبة استناداً إلى المستندات السريرية والإدارية المرفقة الداعمة للمطالبة.",
   ),
   docChecklist: [
-    doc("clinical-documentation", "Clinical documentation supporting the claim", "المستندات السريرية الداعمة للمطالبة"),
-    doc("administrative-documentation", "Administrative / billing documentation", "المستندات الإدارية والفوترة"),
+    doc(
+      "clinical-documentation",
+      "Clinical documentation supporting the claim",
+      "المستندات السريرية الداعمة للمطالبة",
+    ),
+    doc(
+      "administrative-documentation",
+      "Administrative / billing documentation",
+      "المستندات الإدارية والفوترة",
+    ),
   ],
 };
 
@@ -201,9 +308,21 @@ export const PAYER_TEMPLATE_OVERRIDES: Readonly<
         "وفقاً لسياسة الموافقات المسبقة لدى التعاونية، تسري على هذه الخدمة موافقة سارية. وقد أرفقنا الرقم المرجعي للموافقة، وعند الاقتضاء طلب موافقة بأثر رجعي مشفوعاً بالمبرِّر السريري.",
       ),
       docChecklist: [
-        doc("auth-reference", "Prior authorization reference number", "الرقم المرجعي للموافقة المسبقة"),
-        doc("retro-auth-request", "Retroactive authorization request", "طلب موافقة بأثر رجعي"),
-        doc("clinical-justification", "Clinical justification for the service", "المبرر السريري للخدمة"),
+        doc(
+          "auth-reference",
+          "Prior authorization reference number",
+          "الرقم المرجعي للموافقة المسبقة",
+        ),
+        doc(
+          "retro-auth-request",
+          "Retroactive authorization request",
+          "طلب موافقة بأثر رجعي",
+        ),
+        doc(
+          "clinical-justification",
+          "Clinical justification for the service",
+          "المبرر السريري للخدمة",
+        ),
       ],
     },
   },

@@ -94,6 +94,12 @@ async function ensureAppRole(client: pg.PoolClient): Promise<void> {
   // would be silently clobbered by this ensureAppRole() call, which runs last.
   // The production forward-only migrator MUST preserve this same REVOKE.
   await client.query(`REVOKE UPDATE, DELETE ON TABLE llm_calls FROM ${role};`);
+  // `audit_logs` is the primary APPEND-ONLY PHI-access trail (packages/audit) —
+  // same immutability guarantee as llm_calls: the app role may INSERT + SELECT
+  // but must NEVER UPDATE or DELETE a row. Enforced by PRIVILEGE (RLS scopes but
+  // does not prevent mutating the tenant's own rows). The production forward-only
+  // migrator MUST preserve this REVOKE too.
+  await client.query(`REVOKE UPDATE, DELETE ON TABLE audit_logs FROM ${role};`);
 }
 
 /** Derive the app-role connection URL from an admin DATABASE_URL. */

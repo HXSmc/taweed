@@ -93,6 +93,8 @@ export function FlagExplainer({
           id={panelId}
           role="region"
           aria-label={t("aiExplanation")}
+          aria-live="polite"
+          aria-busy={state.status === "loading"}
           className="mt-2 rounded-md border border-hairline bg-surface-2 p-3"
         >
           {state.status === "loading" && (

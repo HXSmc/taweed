@@ -34,14 +34,16 @@ describe("appealToPdfModel", () => {
     const segs = flatten(doc.blocks);
 
     const ltrTexts = segs.filter((s) => s.dir === "ltr").map((s) => s.text);
-    // Ids/codes appear as whole ltr tokens, never split across segments.
-    expect(ltrTexts).toContain(CLAIM_ID);
+    // Ids/codes appear as whole ltr tokens, never split across segments. The claim
+    // reference is the payer-facing NPHIES id, never the internal DB UUID.
+    expect(ltrTexts).toContain("NPHIES-CLM-77");
+    expect(ltrTexts).not.toContain(CLAIM_ID);
     expect(ltrTexts).toContain(SBS_CODE);
 
     // Real Arabic prose is carried as rtl segments around the isolated ids.
-    expect(
-      segs.some((s) => s.dir === "rtl" && AR_SCRIPT.test(s.text)),
-    ).toBe(true);
+    expect(segs.some((s) => s.dir === "rtl" && AR_SCRIPT.test(s.text))).toBe(
+      true,
+    );
   });
 
   it("emits an all-ltr model for EN", () => {

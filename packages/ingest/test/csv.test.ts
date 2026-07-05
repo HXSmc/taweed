@@ -65,4 +65,40 @@ describe("parseDelimited — CSV", () => {
     expect(headers).toEqual(["Amount", "Amount_2"]);
     expect(rows[0]).toEqual({ Amount: "1", Amount_2: "2" });
   });
+
+  it("treats a stray mid-field quote as a literal, not a mode switch (no row swallowing)", () => {
+    const { rows } = parseDelimited(
+      'claimId,reasonText,amount\nC1,2" bandage not covered,100\nC2,Duplicate,50\nC3,Not covered,75\n',
+    );
+    // A single unescaped inch-mark quote must NOT swallow the rest of the file.
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toEqual({
+      claimId: "C1",
+      reasonText: '2" bandage not covered',
+      amount: "100",
+    });
+    expect(rows[1]).toEqual({
+      claimId: "C2",
+      reasonText: "Duplicate",
+      amount: "50",
+    });
+    expect(rows[2]).toEqual({
+      claimId: "C3",
+      reasonText: "Not covered",
+      amount: "75",
+    });
+  });
+
+  it("disambiguates a generated header that would collide with a distinct column", () => {
+    const { headers, rows } = parseDelimited(
+      "Amount,Amount_2,Amount\n100,200,300",
+    );
+    // The 3rd "Amount" must not overwrite the genuine "Amount_2" column.
+    expect(headers).toEqual(["Amount", "Amount_2", "Amount_3"]);
+    expect(rows[0]).toEqual({
+      Amount: "100",
+      Amount_2: "200",
+      Amount_3: "300",
+    });
+  });
 });

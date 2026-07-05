@@ -45,7 +45,11 @@ function toMatrix(text: string, delimiter: string): string[][] {
       i += 1;
       continue;
     }
-    if (ch === '"') {
+    if (ch === '"' && field === "") {
+      // A quote only OPENS a quoted field at the field start (RFC-4180). A stray
+      // quote mid-field (e.g. an inch-mark in `2" bandage`) is a literal char,
+      // not a mode switch — otherwise one unescaped quote flips quote-mode on and
+      // swallows every following delimiter/newline, dropping the rest of the file.
       inQuotes = true;
       i += 1;
       continue;
@@ -78,11 +82,26 @@ function toMatrix(text: string, delimiter: string): string[][] {
 /** Suffix repeated headers (`Amount`, `Amount_2`, ...) so no column's data is
  *  silently overwritten when a source file has duplicate column names. */
 function dedupeHeaders(raw: string[]): string[] {
-  const seen = new Map<string, number>();
+  const used = new Set<string>();
+  const counts = new Map<string, number>();
   return raw.map((h) => {
-    const count = seen.get(h) ?? 0;
-    seen.set(h, count + 1);
-    return count === 0 ? h : `${h}_${count + 1}`;
+    if (!used.has(h)) {
+      used.add(h);
+      counts.set(h, 1);
+      return h;
+    }
+    // `h` repeats — find the next free `h_N`, SKIPPING any suffix that already
+    // exists as a genuinely-distinct column (e.g. a real "Amount_2"), so we never
+    // synthesize a name that collides with and overwrites another column's data.
+    let n = (counts.get(h) ?? 1) + 1;
+    let candidate = `${h}_${n}`;
+    while (used.has(candidate)) {
+      n += 1;
+      candidate = `${h}_${n}`;
+    }
+    counts.set(h, n);
+    used.add(candidate);
+    return candidate;
   });
 }
 

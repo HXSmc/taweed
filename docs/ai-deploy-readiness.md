@@ -13,10 +13,18 @@
 
 ## Counters (loop memory)
 
-- `iteration_counter` = 1
-- `change_iteration_counter` = 1 _(only iterations that changed product source count toward the cap of 12)_
-- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 1 changed product source)_
+- `iteration_counter` = 2
+- `change_iteration_counter` = 2 _(only iterations that changed product source count toward the cap of 12)_
+- `consecutive_clean_passes` = 0 _(need 2 to STOP DEPLOY-READY; reset — iteration 2 changed product source)_
 - `last_clean_head_sha` = _(empty)_
+
+## ⚠ OPEN ESCALATION — money-path semantics (HUMAN decision required, NOT patched)
+
+`analytics/queries.ts:207,216` — `moneyScope` at-risk = `LEFT JOIN appeals a ON a.denial_id=d.id AND a.status='won' WHERE a.id IS NULL`, summing the **full** `denied_amount` of denials with no won appeal; `recovered_sar` sums the actual (possibly partial) `recovered_amount`. **On a PARTIAL win** (denied 100, recovered 60) the denial is fully excluded from at-risk (a won appeal exists) yet only 60 counts as recovered → the unrecovered **40 lands in NEITHER** at-risk nor recovered. Contradicts the docstring's stated intent ("atRiskSar = denied amount NOT yet recovered"). Filed CRITICAL by the money-path finder (opus); its adversarial verifiers **died on the session limit** → UNVERIFIED-by-sweep but confirmed by my own read.
+
+- **Per the loop the money path is the moat — NOT patched.** Semantics question only a human with RCM/product knowledge can settle: **is the partial-win remainder still "at-risk" (→ real bug, understates the headline) or a resolved write-off (→ by-design)?**
+- Repro: seed a denial with a `won` appeal whose `recovered_amount < denied_amount`; check `atRiskSar + recoveredSar` vs total denied. If they must reconcile, the at-risk subquery needs to subtract the partial recovery (money-path change → still human-gated).
+- **DEPLOY-READY is blocked** on this decision (money-path re-verify DoD cannot tick while open).
 
 ## Defect log
 
@@ -102,3 +110,17 @@ _(terse per-iteration status appended below each pass)_
 - **Deferred to next iterations** (see defect log): D8 rate-limit, D12 i18n-loud, a11y (aria-live + row semantics), lint-infra gap (apps/web unlinted), full-product prior-core latent sweep, chrome-devtools runtime smoke, coverage-overall interpretation, money-path RE-VERIFY.
 - **DoD**: 9/18 ticked at this HEAD. **EXIT = CONTINUE** (E2E/runtime/full-sweep/rate-limit/i18n/lint/money-path pending; consecutive_clean_passes=0).
 - Docker note: the Docker CLI hangs on daemon metadata queries on this host, but the Postgres container/port work (verified via TCP probe) — integration runs fine; avoid `docker info`/`ps`/`version`/`exec` (they hang), probe port 5432 directly.
+
+### iteration 2 — deferred AI fixes + full-product prior-core sweep
+
+- **Known AI-surface fixes** (verified green): D8 rate-limit (`packages/shared` pure `checkRateLimit` + `apps/web/lib/rate-limit.ts` wrapper, wired into `explainFlagAction`, per-actor 30/60s, +4 unit tests), D12 i18n loud-missing-message (next-intl `onError`+`getMessageFallback`, dev throws / prod ⚠MISSING), a11y `aria-live`+`aria-busy` on the flag-explainer panel.
+- **Full-product prior-core sweep** via Workflow (10 finder areas + adversarial verify). **6 confirmed** defects FIXED + tested this iteration (all NON-money-path, all verified):
+  - `audit-phi` **CRITICAL** — `audit_logs` (primary PHI trail) was NOT append-only-enforced (same gap as llm_calls) → REVOKE UPDATE,DELETE in ensureAppRole + int test (23/23).
+  - `appeals/generate.ts` — prototype-chain read: untrusted `denialCode`/`payerName` = `"toString"`/`"__proto__"` etc. resolved to inherited built-ins → crash instead of GENERIC_TEMPLATE → `ownGet` (hasOwnProperty) + tests.
+  - `appeals/templates.ts` — appeal letter/PDF used the internal DB UUID, not the payer-facing `nphiesClaimId` → `{claimRef}` = nphiesClaimId ?? claimId; corrected 2 tests that asserted the buggy behavior + added tests.
+  - `ingest/csv.ts` — (a) quote-mode toggled on ANY quote → a stray inch-mark swallowed the rest of the file (field-start guard); (b) `dedupeHeaders` could synth a name colliding with a real column (collision-skip) → + tests.
+- **Escalated (NOT patched)**: the money-path `moneyScope` partial-win discrepancy (see the ⚠ OPEN ESCALATION block up top) — awaits a human semantics decision.
+- **Unverified findings (sweep verifiers died on the session limit — re-verify next)**: `normalizer/normalize.ts:191` missing denial amount → 0.00 instead of quarantine (money-path-adjacent, filed HIGH); `web/lib/auth.ts:19` DEV_AUTH forceable in prod via env (filed HIGH); `recovery.ts:43` markAppealOutcome no-row-check still logs write+ok (filed MEDIUM, money-path-adjacent). Platform `tenantKey` '/'-collision was REFUTED (tenantId is a slash-free UUID).
+- **Deferred (documented)**: drizzle-kit journal stale (0001-0006 not snapshotted → `pnpm db:generate` emits duplicate DDL; MEDIUM dev-tooling); apps/web ESLint gap; chrome-devtools runtime smoke; E2E Playwright local verify; row-semantics a11y.
+- Gates this iteration: root+web typecheck/build ✓, lint ✓, unit **284/284** ✓, int **23/23** ✓. **EXIT = CONTINUE** (money-path escalation open; unverified findings + runtime smoke + Playwright + lint-infra pending; consecutive_clean_passes=0).
+- Constraint: hit the session limit (resets 8:20pm Asia/Riyadh) — 15 sweep verifier subagents failed; main-agent work unaffected.
