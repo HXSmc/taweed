@@ -69,17 +69,16 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
     });
 
     it("returns a non-empty bilingual explanation with Western digits", async () => {
-      const result = await withTenant(appPool, tenant, (db) =>
-        explainFlag({
-          actor: "eval-runner",
-          db,
-          flag: FLAG,
-          env: {
-            TAWEED_AI_ENABLED: "true",
-            TAWEED_AI_EXPLAIN_ENABLED: "true",
-          },
-        }),
-      );
+      const result = await explainFlag({
+        actor: "eval-runner",
+        tenantId: tenant,
+        pool: appPool,
+        flag: FLAG,
+        env: {
+          TAWEED_AI_ENABLED: "true",
+          TAWEED_AI_EXPLAIN_ENABLED: "true",
+        },
+      });
 
       for (const value of Object.values(result)) {
         expect(value.length).toBeGreaterThan(0);

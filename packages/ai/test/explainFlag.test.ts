@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Database } from "@taweed/db";
+import type { Pool } from "@taweed/db";
 import {
   explainFlag,
   assertPhiFreeFlag,
@@ -17,16 +17,16 @@ const FLAG: ExplainableFlag = {
   message_ar: "هذه الخدمة تتطلب موافقة مسبقة.",
 };
 
-// A DB stub that fails loudly if ever touched — the kill switch must short-circuit
-// before any DB access when the feature is off.
-const UNREACHABLE_DB = new Proxy(
+// A pool that fails loudly if ever touched — the feature kill switch must
+// short-circuit before any DB access when the feature is off.
+const UNREACHABLE_POOL = new Proxy(
   {},
   {
     get() {
-      throw new Error("DB must not be accessed when AI is disabled");
+      throw new Error("pool must not be accessed when the feature is off");
     },
   },
-) as unknown as Database;
+) as unknown as Pool;
 
 describe("assertPhiFreeFlag", () => {
   it("accepts a well-formed PHI-free flag", () => {
@@ -42,10 +42,16 @@ describe("assertPhiFreeFlag", () => {
   });
 });
 
-describe("explainFlag kill switch (fails closed, no DB touched)", () => {
+describe("explainFlag feature kill switch (fails closed before any DB access)", () => {
   it("throws AiDisabledError when the global switch is off", async () => {
     await expect(
-      explainFlag({ actor: "u1", db: UNREACHABLE_DB, flag: FLAG, env: {} }),
+      explainFlag({
+        actor: "u1",
+        tenantId: "t1",
+        pool: UNREACHABLE_POOL,
+        flag: FLAG,
+        env: {},
+      }),
     ).rejects.toBeInstanceOf(AiDisabledError);
   });
 
@@ -53,7 +59,8 @@ describe("explainFlag kill switch (fails closed, no DB touched)", () => {
     await expect(
       explainFlag({
         actor: "u1",
-        db: UNREACHABLE_DB,
+        tenantId: "t1",
+        pool: UNREACHABLE_POOL,
         flag: FLAG,
         env: { TAWEED_AI_ENABLED: "true" },
       }),

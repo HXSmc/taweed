@@ -1,8 +1,8 @@
 "use server";
 import { authorizeAction } from "@/lib/authz";
-import { withSession } from "@/lib/db";
+import { appPool } from "@/lib/db";
 import { SCRUBBER_RULES } from "@taweed/rules-engine";
-import { explainFlag, type FlagExplanation } from "@taweed/ai";
+import { explainFlag, isAiDisabledError, type FlagExplanation } from "@taweed/ai";
 
 // AI-1 — bilingual plain-language explanation of a scrub rule (plan 04 §2).
 // Read-only decision support; anyone who can view the scrubber may request it.
@@ -22,31 +22,39 @@ export async function explainFlagAction(
   const session = await authorizeAction("scrubber", [...SCRUBBER_VIEW_ROLES]);
   if (!session) return null;
 
+  // Boundary validation — a Server Action is a public HTTP endpoint (react/
+  // security.md). These only drive a strict-equality lookup below, but validate
+  // anyway so malformed input fails fast rather than reaching the feature.
+  if (typeof ruleId !== "string" || !Number.isInteger(ruleVersion)) return null;
+
   const rule = SCRUBBER_RULES.find(
     (r) => r.id === ruleId && r.version === ruleVersion,
   );
   if (!rule) return null;
 
   try {
-    return await withSession(session.tenantId, (db) =>
-      explainFlag({
-        actor: session.userId,
-        db,
-        flag: {
-          ruleId: rule.id,
-          ruleVersion: rule.version,
-          ruleName: rule.name,
-          field: rule.field,
-          severity: rule.severity,
-          message_en: rule.message_en,
-          message_ar: rule.message_ar,
-        },
-      }),
-    );
-  } catch {
-    // AI disabled, or a provider/parse failure — fall back to the deterministic
-    // messages already on the row. The llm_calls audit row (if a call happened)
-    // was written inside explainFlag before any throw, so there is still a trail.
+    return await explainFlag({
+      actor: session.userId,
+      tenantId: session.tenantId,
+      pool: appPool(),
+      flag: {
+        ruleId: rule.id,
+        ruleVersion: rule.version,
+        ruleName: rule.name,
+        field: rule.field,
+        severity: rule.severity,
+        message_en: rule.message_en,
+        message_ar: rule.message_ar,
+      },
+    });
+  } catch (err) {
+    // AiDisabledError is the expected "AI off" path — fall back silently to the
+    // deterministic messages already on the row. Anything else is a real
+    // provider/DB/programming failure: log it server-side so ops has a signal,
+    // then still fall back (the feature is additive, never load-bearing).
+    if (!isAiDisabledError(err)) {
+      console.error("explainFlagAction failed", err);
+    }
     return null;
   }
 }

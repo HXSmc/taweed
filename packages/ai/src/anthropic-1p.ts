@@ -71,10 +71,17 @@ export function mapParseResponse<T>(
   };
 }
 
+// Bound the request so a hung upstream can't stall a caller indefinitely (the
+// explainer's payload is tiny — 1024 max_tokens — so 30s is generous). ms.
+const REQUEST_TIMEOUT_MS = 30_000;
+
 export function createAnthropicProvider(
   opts: AnthropicProviderOptions = {},
 ): LlmProvider {
-  const anthropic = new Anthropic(opts.apiKey ? { apiKey: opts.apiKey } : {});
+  const anthropic = new Anthropic({
+    ...(opts.apiKey ? { apiKey: opts.apiKey } : {}),
+    timeout: REQUEST_TIMEOUT_MS,
+  });
 
   const client: LlmClient = {
     async parseStructured<T>(

@@ -32,6 +32,9 @@ export function FlagExplainer({
   const panelId = React.useId();
 
   async function handleToggle() {
+    // A request is already in flight — ignore the click so a rapid double-click
+    // can't fire a second (paid) request that also misses the server cache.
+    if (state.status === "loading") return;
     // Already fetched — just collapse/expand, no second call (dedupe is also
     // server-side, but avoid the round-trip entirely once we have the answer).
     if (state.status === "ready" || state.status === "unavailable") {

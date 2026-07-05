@@ -1,12 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { and, eq } from "drizzle-orm";
 import { newId } from "@taweed/shared";
-import {
-  getPool,
-  withTenant,
-  schema,
-  type Database,
-  type Pool,
-} from "@taweed/db";
+import { getPool, withTenant, schema, type Pool } from "@taweed/db";
 import { migrate, appConnectionString } from "../../db/test/migrate.js";
 import { explainFlag, type ExplainableFlag } from "../src/features/explainFlag.js";
 import { AiDisabledError } from "../src/errors.js";
@@ -44,7 +39,12 @@ const RAW_OUTPUT: FlagExplanation = {
   suggested_fix_ar: "أرفق رقم الموافقة ٤٢ وأعد الإرسال.",
 };
 
-function makeStubProvider(output: FlagExplanation): {
+type StubBehavior =
+  | { kind: "ok"; output: FlagExplanation }
+  | { kind: "parsedNull" }
+  | { kind: "throws" };
+
+function makeStubProvider(behavior: StubBehavior): {
   provider: LlmProvider;
   calls: () => number;
 } {
@@ -56,13 +56,24 @@ function makeStubProvider(output: FlagExplanation): {
     client: {
       async parseStructured<T>() {
         calls += 1;
+        if (behavior.kind === "throws") throw new Error("stub provider boom");
+        if (behavior.kind === "parsedNull") {
+          return {
+            parsed: null,
+            model: "stub-haiku",
+            requestId: "stub-req",
+            usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0 },
+            latencyMs: 1,
+            rawOutput: "",
+          };
+        }
         return {
-          parsed: output as unknown as T,
+          parsed: behavior.output as unknown as T,
           model: "stub-haiku",
           requestId: "stub-req-1",
           usage: { inputTokens: 5, outputTokens: 8, cacheReadTokens: 0 },
           latencyMs: 1,
-          rawOutput: JSON.stringify(output),
+          rawOutput: JSON.stringify(behavior.output),
         };
       },
     },
@@ -82,6 +93,13 @@ async function seedTenant(id: string, name: string): Promise<void> {
   }
 }
 
+async function llmCallCount(tenantId: string): Promise<number> {
+  return withTenant(pool, tenantId, async (db) => {
+    const rows = await db.select().from(schema.llmCalls);
+    return rows.length;
+  });
+}
+
 beforeAll(async () => {
   await migrate(adminPool);
   await seedTenant(tenantA, "Clinic A");
@@ -94,18 +112,17 @@ afterAll(async () => {
 });
 
 describe("explainFlag — audited dedupe cache over Postgres (RLS active)", () => {
-  const stub = makeStubProvider(RAW_OUTPUT);
+  const stub = makeStubProvider({ kind: "ok", output: RAW_OUTPUT });
 
   it("generates once, normalizes AR output, and writes one hashes-only llm_calls row", async () => {
-    const result = await withTenant(pool, tenantA, (db: Database) =>
-      explainFlag({
-        actor: "user-a",
-        db,
-        flag: FLAG,
-        provider: stub.provider,
-        env: ENABLED,
-      }),
-    );
+    const result = await explainFlag({
+      actor: "user-a",
+      tenantId: tenantA,
+      pool,
+      flag: FLAG,
+      provider: stub.provider,
+      env: ENABLED,
+    });
 
     // AR post-processing applied: Arabic-Indic digits normalized to Western.
     expect(result.explanation_ar).toContain("42");
@@ -132,15 +149,14 @@ describe("explainFlag — audited dedupe cache over Postgres (RLS active)", () =
   });
 
   it("returns the cached explanation without a second model call or audit row", async () => {
-    const result = await withTenant(pool, tenantA, (db: Database) =>
-      explainFlag({
-        actor: "user-a",
-        db,
-        flag: FLAG,
-        provider: stub.provider,
-        env: ENABLED,
-      }),
-    );
+    const result = await explainFlag({
+      actor: "user-a",
+      tenantId: tenantA,
+      pool,
+      flag: FLAG,
+      provider: stub.provider,
+      env: ENABLED,
+    });
 
     expect(result.explanation_en).toBe(RAW_OUTPUT.explanation_en);
     expect(stub.calls()).toBe(1); // no new model call
@@ -154,23 +170,22 @@ describe("explainFlag — audited dedupe cache over Postgres (RLS active)", () =
   });
 
   it("fails closed with AiDisabledError when the feature env flag is off", async () => {
-    const stub2 = makeStubProvider(RAW_OUTPUT);
+    const stub2 = makeStubProvider({ kind: "ok", output: RAW_OUTPUT });
     await expect(
-      withTenant(pool, tenantA, (db: Database) =>
-        explainFlag({
-          actor: "user-a",
-          db,
-          flag: FLAG,
-          provider: stub2.provider,
-          env: {},
-        }),
-      ),
+      explainFlag({
+        actor: "user-a",
+        tenantId: tenantA,
+        pool,
+        flag: FLAG,
+        provider: stub2.provider,
+        env: {},
+      }),
     ).rejects.toBeInstanceOf(AiDisabledError);
     expect(stub2.calls()).toBe(0);
   });
 
   it("honors the per-tenant kill switch and writes no call for that tenant", async () => {
-    const stub3 = makeStubProvider(RAW_OUTPUT);
+    const stub3 = makeStubProvider({ kind: "ok", output: RAW_OUTPUT });
     await withTenant(pool, tenantB, async (db) => {
       await db.insert(schema.tenantAiSettings).values({
         tenant_id: tenantB,
@@ -179,15 +194,14 @@ describe("explainFlag — audited dedupe cache over Postgres (RLS active)", () =
     });
 
     await expect(
-      withTenant(pool, tenantB, (db: Database) =>
-        explainFlag({
-          actor: "user-b",
-          db,
-          flag: FLAG,
-          provider: stub3.provider,
-          env: ENABLED,
-        }),
-      ),
+      explainFlag({
+        actor: "user-b",
+        tenantId: tenantB,
+        pool,
+        flag: FLAG,
+        provider: stub3.provider,
+        env: ENABLED,
+      }),
     ).rejects.toBeInstanceOf(AiDisabledError);
     expect(stub3.calls()).toBe(0);
 
@@ -199,4 +213,66 @@ describe("explainFlag — audited dedupe cache over Postgres (RLS active)", () =
       expect(calls).toHaveLength(0);
     });
   });
+
+  it("audits a schema-parse failure (call happened) and caches nothing", async () => {
+    const before = await llmCallCount(tenantA);
+    const stub4 = makeStubProvider({ kind: "parsedNull" });
+    await expect(
+      explainFlag({
+        actor: "user-a",
+        tenantId: tenantA,
+        pool,
+        flag: { ...FLAG, ruleVersion: 99 },
+        provider: stub4.provider,
+        env: ENABLED,
+      }),
+    ).rejects.toThrow(/schema validation/);
+    expect(stub4.calls()).toBe(1);
+
+    const after = await llmCallCount(tenantA);
+    expect(after).toBe(before + 1); // audit row written despite the failure
+    await withTenant(pool, tenantA, async (db) => {
+      const rows = await db
+        .select()
+        .from(schema.flagExplanations)
+        .where(eqVersion(99));
+      expect(rows).toHaveLength(0); // nothing cached on a parse failure
+    });
+  });
+
+  it("audits a provider exception (request left the boundary) then rethrows", async () => {
+    const before = await llmCallCount(tenantA);
+    const stub5 = makeStubProvider({ kind: "throws" });
+    await expect(
+      explainFlag({
+        actor: "user-a",
+        tenantId: tenantA,
+        pool,
+        flag: { ...FLAG, ruleVersion: 98 },
+        provider: stub5.provider,
+        env: ENABLED,
+      }),
+    ).rejects.toThrow(/boom/);
+
+    const after = await llmCallCount(tenantA);
+    expect(after).toBe(before + 1); // audit row written for the failed attempt
+    await withTenant(pool, tenantA, async (db) => {
+      const errRows = await db
+        .select()
+        .from(schema.llmCalls)
+        .where(errorState());
+      expect(errRows.length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });
+
+// Small local drizzle predicate helpers (kept below the suite for readability).
+function eqVersion(v: number) {
+  return and(
+    eq(schema.flagExplanations.rule_id, "preauth-required"),
+    eq(schema.flagExplanations.rule_version, v),
+  );
+}
+function errorState() {
+  return eq(schema.llmCalls.flags_state, "explain=error");
+}

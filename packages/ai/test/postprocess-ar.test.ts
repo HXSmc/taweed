@@ -56,6 +56,15 @@ describe("isolateLatinRuns", () => {
     const once = isolateLatinRuns(input);
     expect(isolateLatinRuns(once)).toBe(once);
   });
+
+  it("strips bidi override/isolate controls (RLO, PDF, LRI) from the text", () => {
+    // A malicious model output could embed U+202E (RLO) / U+202C (PDF) /
+    // U+2066 (LRI) to reorder codes. They must not survive.
+    const input = "رمز ‮SBS-0002‬ ⁦end⁩";
+    const out = isolateLatinRuns(input);
+    expect(out).not.toMatch(/[‪-‮⁦-⁩]/);
+    expect(out).toContain("SBS-0002");
+  });
 });
 
 describe("normalizeArabicOutput (full pipeline)", () => {
