@@ -91,10 +91,18 @@ export function RuleAuthoring({
   const [result, setResult] = React.useState<DraftRuleResult | null>(null);
   const [pending, start] = React.useTransition();
   const [acting, setActing] = React.useState<string | null>(null);
+  // Approve/reject failures are surfaced here, never swallowed. A re-gate block
+  // (the library changed since drafting) carries stage+errors; other failures
+  // (forbidden, not_draft, invalid) fall back to a generic message.
+  const [actionErr, setActionErr] = React.useState<{
+    gate?: { ok: boolean; stage?: string; errors?: string[] };
+    error?: string;
+  } | null>(null);
 
   const draft = () => {
     if (text.trim().length < 3) return;
     setResult(null);
+    setActionErr(null);
     start(async () => {
       const r = await draftRuleAction(
         text,
@@ -107,19 +115,51 @@ export function RuleAuthoring({
 
   const decide = (
     rowId: string,
-    fn: (id: string) => Promise<{ ok: boolean }>,
+    fn: (
+      id: string,
+    ) => Promise<{
+      ok: boolean;
+      gate?: { ok: boolean; stage?: string; errors?: string[] };
+      error?: string;
+    }>,
   ) => {
     setActing(rowId);
+    setActionErr(null);
     start(async () => {
-      await fn(rowId);
+      const r = await fn(rowId);
       setActing(null);
-      setResult(null);
-      router.refresh();
+      if (r.ok) {
+        setResult(null);
+        router.refresh();
+      } else {
+        setActionErr({ gate: r.gate, error: r.error });
+      }
     });
   };
 
   const gate = result?.gate;
   const draftView = result?.draft;
+
+  // A single draft-error note key so no hard failure (rate_limited, forbidden,
+  // invalid, generation, off, misconfigured, or any future error) is swallowed.
+  // A GATE block is not an error here — draftRuleAction returns ok:true with the
+  // model's proposal so the SME can refine, handled by the draftView branch.
+  const draftNoteKey =
+    result && !result.ok
+      ? result.disabled
+        ? "authorOff"
+        : result.misconfigured
+          ? "authorMisconfigured"
+          : result.error === "generation"
+            ? "authorGenError"
+            : result.error === "rate_limited"
+              ? "authorRateLimited"
+              : result.error === "forbidden"
+                ? "authorForbidden"
+                : result.error === "invalid"
+                  ? "authorInvalid"
+                  : "actionFailed"
+      : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -197,33 +237,30 @@ export function RuleAuthoring({
           </Button>
         </div>
 
-        {/* Result */}
-        {result && !result.ok && result.disabled && (
-          <p className="mt-4 rounded-md border border-hairline bg-surface-2 p-3 text-body text-muted">
-            {t("authorOff")}
-          </p>
-        )}
-        {result && !result.ok && result.misconfigured && (
-          <p className="mt-4 rounded-md border border-hairline bg-surface-2 p-3 text-body text-muted">
-            {t("authorMisconfigured")}
-          </p>
-        )}
-        {result && !result.ok && result.error === "generation" && (
-          <p className="mt-4 rounded-md border border-hairline bg-surface-2 p-3 text-body text-muted">
-            {t("authorGenError")}
-          </p>
-        )}
+        {/* Draft-path notes (off / misconfigured / hard errors) — announced to
+            assistive tech via a polite live region; a single derived key means no
+            failure is silently dropped. */}
+        <div aria-live="polite" role="status">
+          {draftNoteKey && (
+            <p className="mt-4 rounded-md border border-hairline bg-surface-2 p-3 text-body text-muted">
+              {t(draftNoteKey)}
+            </p>
+          )}
+        </div>
 
         {draftView && (
           <div className="mt-4 flex flex-col gap-3 rounded-lg border border-hairline bg-surface-2 p-4">
-            {/* Gate verdict */}
+            {/* Gate verdict — announced (pass = status, block = alert). */}
             {gate?.ok ? (
-              <p className="flex items-center gap-2 text-label font-medium text-recovered-text">
+              <p
+                role="status"
+                className="flex items-center gap-2 text-label font-medium text-recovered-text"
+              >
                 <ShieldCheck className="size-4" aria-hidden="true" />
                 {t("gatePassed")}
               </p>
             ) : (
-              <div>
+              <div role="alert">
                 <p className="flex items-center gap-2 text-label font-medium text-at-risk-text">
                   <ShieldAlert className="size-4" aria-hidden="true" />
                   {t("gateBlocked", { stage: gate?.stage ?? "" })}
@@ -282,6 +319,33 @@ export function RuleAuthoring({
           </div>
         )}
       </Card>
+
+      {/* Approve / reject failures — surfaced, never swallowed. The live region
+          is a PERSISTENT (always-mounted) empty container so assistive tech
+          registers it before content changes; a re-gate block (the approved
+          library changed since drafting) shows the blocking stage and reasons,
+          any other failure gets a generic retry note. */}
+      <div role="alert" aria-live="assertive">
+        {actionErr && (
+          <div className="rounded-lg border border-hairline bg-surface-2 p-3">
+            {actionErr.gate && !actionErr.gate.ok ? (
+              <div>
+                <p className="flex items-center gap-2 text-label font-medium text-at-risk-text">
+                  <ShieldAlert className="size-4" aria-hidden="true" />
+                  {t("gateBlocked", { stage: actionErr.gate.stage ?? "" })}
+                </p>
+                <ul className="mt-1 list-disc ps-6 text-label text-muted">
+                  {(actionErr.gate.errors ?? []).map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-label text-muted">{t("actionFailed")}</p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Authored-rule library */}
       <Card className="overflow-hidden">

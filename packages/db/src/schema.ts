@@ -171,6 +171,10 @@ export const rules = pgTable("rules", {
   message_en: text("message_en"),
   message_ar: text("message_ar"),
   version: integer("version").notNull().default(1),
+  // `status` (below) is the SINGLE source of truth for whether a rule is live —
+  // both getRules and the scrubber gate on status='approved'. `active` is kept as
+  // a derived MIRROR (active === status 'approved'); writers keep it in sync but
+  // no reader gates on it independently, so the two can never disagree.
   active: boolean("active").notNull().default(true),
   // AI-3 authoring columns (0007).
   rule_key: text("rule_key"),

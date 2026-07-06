@@ -1,11 +1,15 @@
 import "server-only";
 import { checkRateLimit, type RateWindow } from "@taweed/shared";
 
-// Per-process in-memory rate limiter for billable server actions (the AI flag
-// explainer). This is a per-INSTANCE control — enough to bound burst abuse at
-// the first-retrofit-stage deploy bar; a distributed limiter (Redis/KV) is a
-// DEPLOY item. Storage-level dedupe of AI explanations is a SEPARATE concern
-// (flag_explanations) and only bounds steady-state spend, not bursts.
+// Per-process in-memory rate limiter for billable server actions (AI explain +
+// AI-3 authoring). This is a per-INSTANCE control: each server process keeps its
+// own window map, so under horizontal scale (N instances behind a load balancer)
+// the effective ceiling is up to N × `limit` — it FAILS OPEN at scale, not closed.
+// Adequate for the first-retrofit single-instance deploy bar; a shared-store
+// limiter (Redis/KV) is a DEPLOY item and the swap point is this one module (the
+// pure decision in @taweed/shared checkRateLimit is already store-agnostic).
+// Storage-level dedupe of AI explanations is a SEPARATE concern (flag_explanations)
+// and only bounds steady-state spend, not bursts.
 const windows = new Map<string, RateWindow>();
 const MAX_KEYS = 10_000;
 

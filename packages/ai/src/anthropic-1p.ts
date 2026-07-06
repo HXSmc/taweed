@@ -9,11 +9,20 @@ import type {
   StructuredResult,
 } from "./provider.js";
 
-// Anthropic first-party provider (plan 04 §3.3: 1P with ZDR + inference_geo:"us"
-// on PHI-free / pseudonymized paths). Structured output via messages.parse() +
-// zodOutputFormat (claude-api skill). NO thinking / effort — both error on
-// Haiku 4.5, and the explainer is a small structured extraction. NO Batches
-// (not ZDR-eligible) — capabilities.batches gates that at the feature layer.
+// Anthropic first-party provider (plan 04 §3.3). Structured output via
+// messages.parse() + zodOutputFormat (claude-api skill). NO thinking / effort —
+// both error on Haiku 4.5, and the explainer is a small structured extraction.
+//
+// Data residency is enforced at TWO levels, and they are NOT the same field:
+//   - inference_geo: a top-level Messages API REQUEST param that pins where the
+//     model runs. It is set on every call below (INFERENCE_GEO). @anthropic-ai/sdk
+//     ^0.110 predates it in the request TYPE, so it is threaded via a spread
+//     (forwarded on the wire); bump the SDK to make it a typed field.
+//   - Zero Data Retention: an ORG/account-level posture, NOT a request field — it
+//     cannot be "set on the request". It is configured on the Anthropic account
+//     and, because Batches is not ZDR-eligible, capabilities.batches gates Batches
+//     off at the feature layer so a PHI-adjacent call never takes the Batches path.
+const INFERENCE_GEO = "us";
 //
 // The response→result mapping and system-block construction are extracted as
 // pure functions so they are unit-testable WITHOUT a live call; the provider is
@@ -95,6 +104,8 @@ export function createAnthropicProvider(
         system: buildSystemBlocks(req.system, req.cacheSystem),
         messages: [{ role: "user", content: req.user }],
         output_config: { format: zodOutputFormat(req.schema) },
+        // Data-residency pin. Spread past the SDK's request type (see header).
+        ...({ inference_geo: INFERENCE_GEO } as { inference_geo: string }),
       });
       return mapParseResponse<T>(
         res as unknown as ParseResponseLike<T>,

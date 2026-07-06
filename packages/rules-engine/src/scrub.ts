@@ -80,6 +80,23 @@ export async function scrub(
   const evaluable = rules.filter((r) => !unevalSet.has(r.id));
 
   const engine = new Engine([], { allowUndefinedFacts: true });
+  // Defense-in-depth (audit HIGH): json-rules-engine's DEFAULT `in`/`notIn`
+  // evaluate `constant.indexOf(factValue)`, which SUBSTRING-matches when the
+  // constant is a string — a `patientGender in "female"` rule fires for a "male"
+  // claim ("female".indexOf("male") === 2). Authoring already excludes these
+  // operators (registry.SCRUB_OPERATORS), but the engine must not silently
+  // mis-fire for any rule that reaches it by another path (seed / manual DB /
+  // legacy). Override with STRICT array membership: a non-array constant is a
+  // modelling error and simply never fires — no false positive, and (unlike a
+  // throw) no aborted scrub for the whole claim.
+  engine.addOperator("in", (factValue: unknown, arrayValue: unknown): boolean =>
+    Array.isArray(arrayValue) && arrayValue.includes(factValue),
+  );
+  engine.addOperator(
+    "notIn",
+    (factValue: unknown, arrayValue: unknown): boolean =>
+      Array.isArray(arrayValue) && !arrayValue.includes(factValue),
+  );
   // Dynamic fact: per-SBS billed units, keyed by rule params { code }.
   engine.addFact("lineUnitsFor", (params: Record<string, unknown>): number => {
     const code = params["code"];

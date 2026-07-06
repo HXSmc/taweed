@@ -212,6 +212,11 @@ async function seedRules(db: Database, tenantId: string): Promise<number> {
     message_en: rule.message_en,
     message_ar: rule.message_ar,
     version: rule.version,
+    // The shipped library is live: `status='approved'` is the authoritative gate
+    // (getRules + the scrubber read status), and `active` mirrors it. Seeding both
+    // consistently is what stops the two columns from disagreeing (a shipped rule
+    // was previously active=true but status defaulted to 'draft').
+    status: "approved",
     active: true,
   }));
   await db.insert(schema.rules).values(rows as never);

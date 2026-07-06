@@ -321,11 +321,16 @@ export function getBranches(tenantId: string): Promise<BranchRow[]> {
 }
 
 export function getRules(tenantId: string) {
+  // `status` is the SINGLE source of truth for "is this rule live" — the same
+  // gate the scrubber executes on (rules-data.loadApprovedAuthoredRulesTx). The
+  // legacy `active` boolean is kept only as a derived mirror (active === status
+  // 'approved') and is intentionally NOT read here, so the Settings rule library
+  // and the scrubber can never disagree about which rules are in force.
   return withSession(tenantId, (db) =>
     db
       .select()
       .from(schema.rules)
-      .where(eq(schema.rules.active, true))
+      .where(eq(schema.rules.status, "approved"))
       .orderBy(schema.rules.severity),
   );
 }

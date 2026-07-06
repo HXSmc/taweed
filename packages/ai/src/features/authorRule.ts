@@ -19,11 +19,15 @@ import {
 
 // AI-3 — NL → ScrubRule DRAFT (plan 04 §2, §4.3). The SME types an English or
 // Arabic sentence describing a BILLING rule; the model proposes a structured
-// ScrubRule draft. PHI-FREE: the input is a rule description + a tenant/payer
-// scope — no claim, patient, amount, or date. Nothing here is trusted: the draft
-// runs through the deterministic gate (rules-engine validateAuthoredRule) and is
-// persisted DISABLED for human approval before it can ever execute. This function
-// only GENERATES the candidate.
+// ScrubRule draft. PHI posture is PHI-free BY POLICY, not by construction: unlike
+// explainFlag (a structured ExplainableFlag with a runtime key-guard, PHI-free by
+// construction), the input here is FREE TEXT and cannot be structurally guaranteed
+// clean — the SME is expected to describe a rule, not a patient. The residual is
+// bounded, not eliminated: the call runs in-region (inference_geo) and the audit
+// stores ONLY hashes (writeLlmCall), so even a pasted identifier is never persisted
+// raw. Nothing here is trusted: the draft runs through the deterministic gate
+// (rules-engine validateAuthoredRule) and is persisted DISABLED for human approval
+// before it can ever execute. This function only GENERATES the candidate.
 
 export interface AuthorRuleInput {
   /** the SME's rule description (EN or AR). PHI-free by policy — a billing rule, not a claim. */
