@@ -1,6 +1,7 @@
 import "server-only";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { denialLabel, isDenialReasonCode } from "@taweed/shared";
+import { schema } from "@taweed/db";
 import {
   generateAppeal,
   appealToPdfModel,
@@ -82,6 +83,88 @@ export function getAppealables(tenantId: string, limit = 100): Promise<Appealabl
       sbsCode: r.sbs_code,
       deadlineDays: deadlineDays(r.denial_id),
     }));
+  });
+}
+
+// AI-2 — record a generated suggestion for the SME-edit quality metric (plan
+// §4.2). METADATA ONLY (lengths, verify score) — never the prose; RLS-scoped.
+export interface RecordSuggestionInput {
+  denialId: string;
+  actor: string;
+  locale: "en" | "ar";
+  model: string;
+  verifyScore: number;
+  suggestionChars: number;
+}
+
+export function recordSuggestion(
+  tenantId: string,
+  input: RecordSuggestionInput,
+): Promise<string> {
+  return withSession(tenantId, async (db) => {
+    const rows = await db
+      .insert(schema.appealSuggestions)
+      .values({
+        tenant_id: sql`current_setting('app.tenant_id')::uuid`,
+        denial_id: input.denialId,
+        actor_id: input.actor,
+        locale: input.locale,
+        model: input.model,
+        verify_score: input.verifyScore,
+        suggestion_chars: input.suggestionChars,
+        outcome: "suggested",
+      })
+      .returning({ id: schema.appealSuggestions.id });
+    return rows[0]!.id;
+  });
+}
+
+/** Record that a suggestion was suppressed by a guardrail (metric coverage). */
+export function recordSuppressedSuggestion(
+  tenantId: string,
+  input: { denialId: string; actor: string; locale: "en" | "ar"; model: string },
+): Promise<void> {
+  return withSession(tenantId, async (db) => {
+    await db.insert(schema.appealSuggestions).values({
+      tenant_id: sql`current_setting('app.tenant_id')::uuid`,
+      denial_id: input.denialId,
+      actor_id: input.actor,
+      locale: input.locale,
+      model: input.model,
+      verify_score: null,
+      suggestion_chars: 0,
+      outcome: "suppressed",
+    });
+  });
+}
+
+/** Update the outcome + edit distance once the reviewer inserts/edits/discards. */
+export function updateSuggestionOutcome(
+  tenantId: string,
+  id: string,
+  input: {
+    outcome: "inserted" | "edited" | "discarded";
+    editDistance?: number;
+    finalChars?: number;
+  },
+): Promise<boolean> {
+  return withSession(tenantId, async (db) => {
+    const rows = await db
+      .update(schema.appealSuggestions)
+      .set({
+        outcome: input.outcome,
+        edit_distance: input.editDistance ?? null,
+        final_chars: input.finalChars ?? null,
+        updated_at: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.appealSuggestions.id, id),
+          eq(schema.appealSuggestions.outcome, "suggested"),
+        ),
+      )
+      .returning({ id: schema.appealSuggestions.id });
+    return rows.length > 0;
   });
 }
 

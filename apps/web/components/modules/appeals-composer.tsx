@@ -1,10 +1,16 @@
 "use client";
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { FileText, ShieldCheck, Loader2, Download } from "lucide-react";
+import { FileText, ShieldCheck, Loader2, Download, Sparkles, Plus, X } from "lucide-react";
+import { levenshtein } from "@taweed/shared";
+import type { AppealSuggestion } from "@taweed/appeals";
 import type { AppealableRow } from "@/lib/appeals-data";
 import type { AppealResult } from "@/lib/appeals-data";
 import { loadAppealDraft, recordAppealExport } from "@/lib/actions/appeals";
+import {
+  assistAppealAction,
+  recordSuggestionEditAction,
+} from "@/lib/actions/assist-appeal";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,24 +35,109 @@ export function AppealsComposer({
   const [selected, setSelected] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState<AppealResult | null>(null);
   const [lang, setLang] = React.useState<"en" | "ar">(locale === "ar" ? "ar" : "en");
-  const [body, setBody] = React.useState("");
+  // Per-language letter body so toggling EN/AR never discards reviewer edits or the
+  // AI paragraphs inserted into one language (each keeps its own working copy).
+  const [bodies, setBodies] = React.useState<{ en: string; ar: string }>({
+    en: "",
+    ar: "",
+  });
+  const body = bodies[lang];
+  const setBody = React.useCallback(
+    (v: string | ((prev: string) => string)) =>
+      setBodies((prev) => ({
+        ...prev,
+        [lang]: typeof v === "function" ? v(prev[lang]) : v,
+      })),
+    [lang],
+  );
   const [name, setName] = React.useState(reviewerName);
   const [reviewed, setReviewed] = React.useState(false);
   const [pending, start] = React.useTransition();
 
+  // AI-2 assist state (additive; the deterministic body above always stands alone).
+  type AssistState = "idle" | "loading" | "ready" | "suppressed" | "unavailable";
+  const [assist, setAssist] = React.useState<AssistState>("idle");
+  const [suggestion, setSuggestion] = React.useState<AppealSuggestion | null>(null);
+  const [suggestionId, setSuggestionId] = React.useState<string | null>(null);
+  const [edited, setEdited] = React.useState<Record<string, string>>({});
+
+  const resetAssist = () => {
+    setAssist("idle");
+    setSuggestion(null);
+    setSuggestionId(null);
+    setEdited({});
+  };
+
   const select = (denialId: string) => {
     setSelected(denialId);
     setReviewed(false);
+    resetAssist();
     start(async () => {
       const r = await loadAppealDraft(denialId);
       setDraft(r);
-      if (r) setBody(lang === "ar" ? r.draft.body_ar : r.draft.body_en);
+      // Seed BOTH language bodies from the deterministic template up front, so a
+      // later language toggle swaps between working copies instead of re-deriving.
+      if (r) setBodies({ en: r.draft.body_en, ar: r.draft.body_ar });
     });
   };
 
+  const requestAssist = async () => {
+    if (!selected) return;
+    setAssist("loading");
+    const r = await assistAppealAction(selected, lang);
+    if (r.ok && r.suggestion) {
+      setSuggestion(r.suggestion);
+      setSuggestionId(r.suggestionId ?? null);
+      setEdited({});
+      setAssist("ready");
+    } else if (r.suppressed) {
+      setAssist("suppressed");
+    } else {
+      setAssist("unavailable");
+    }
+  };
+
+  // Insert a (possibly reviewer-edited) suggestion paragraph into the letter body
+  // and record the edit distance — the ongoing quality metric (plan §4.2). NOTE:
+  // one appeal_suggestions row per suggestion REQUEST; the metric captures the
+  // FIRST action's outcome + edit distance (updateSuggestionOutcome only mutates a
+  // still-'suggested' row). A later insert/discard on the same request is a no-op —
+  // an accepted v1 aggregate; per-paragraph metrics would need a child table.
+  const insertParagraph = async (idx: number, original: string) => {
+    const key = `${lang}-${idx}`;
+    const text = (edited[key] ?? original).trim();
+    if (text.length === 0) return;
+    setBody((b) => (b.trim() ? `${b}\n\n${text}` : text));
+    if (suggestionId) {
+      const dist = levenshtein(original, text);
+      await recordSuggestionEditAction(
+        suggestionId,
+        dist > 0 ? "edited" : "inserted",
+        dist,
+        text.length,
+      );
+    }
+  };
+
+  const discardSuggestion = async () => {
+    if (suggestionId) {
+      await recordSuggestionEditAction(suggestionId, "discarded", 0, 0);
+    }
+    resetAssist();
+  };
+
+  const suggestionParagraphs =
+    suggestion === null
+      ? []
+      : lang === "ar"
+        ? suggestion.paragraphs_ar
+        : suggestion.paragraphs_en;
+
+  // Toggle language only — each language's body is its own working copy (seeded in
+  // select), so switching never overwrites edits or inserted AI paragraphs.
   const switchLang = (next: "en" | "ar") => {
+    if (next === lang) return;
     setLang(next);
-    if (draft) setBody(next === "ar" ? draft.draft.body_ar : draft.draft.body_en);
   };
 
   // Escape EVERY interpolated value — the letter may be opened in a browser.
@@ -189,6 +280,84 @@ export function AppealsComposer({
               rows={12}
               className="w-full rounded-md border border-hairline bg-surface-1 p-3 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             />
+
+            {/* AI-2 — additive suggestion panel. The letter above is complete on
+                its own; these are clearly-labelled DRAFT paragraphs. */}
+            <div className="rounded-lg border border-dashed border-hairline p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-label font-medium text-muted">
+                  <Sparkles className="size-4 text-accent" aria-hidden="true" />
+                  {t("aiSuggestions")}
+                </p>
+                {assist === "ready" ? (
+                  <Button variant="ghost" onClick={() => void discardSuggestion()}>
+                    <X className="size-4" aria-hidden="true" />
+                    {t("discard")}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => void requestAssist()}
+                    disabled={assist === "loading"}
+                  >
+                    {assist === "loading" ? (
+                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                    ) : (
+                      <Sparkles className="size-4" aria-hidden="true" />
+                    )}
+                    {t("aiSuggest")}
+                  </Button>
+                )}
+              </div>
+
+              {assist === "suppressed" && (
+                <p className="mt-2 text-label text-muted">{t("aiSuppressed")}</p>
+              )}
+              {assist === "unavailable" && (
+                <p className="mt-2 text-label text-muted">{t("aiUnavailable")}</p>
+              )}
+
+              {assist === "ready" && (
+                <div
+                  className="mt-3 flex flex-col gap-3"
+                  role="region"
+                  aria-label={t("aiSuggestions")}
+                >
+                  <p className="text-label text-muted">{t("aiDisclaimer")}</p>
+                  {suggestionParagraphs.map((p, idx) => {
+                    const key = `${lang}-${idx}`;
+                    return (
+                      <div
+                        key={key}
+                        className="rounded-md border border-hairline bg-surface-1 p-3"
+                      >
+                        <div className="mb-1 flex items-center gap-2">
+                          <Badge variant="mock">{t("aiDraftLabel")}</Badge>
+                        </div>
+                        <textarea
+                          dir={lang === "ar" ? "rtl" : "ltr"}
+                          value={edited[key] ?? p}
+                          onChange={(e) =>
+                            setEdited((m) => ({ ...m, [key]: e.target.value }))
+                          }
+                          rows={3}
+                          className="w-full rounded-md border border-hairline bg-surface-1 p-2 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        />
+                        <div className="mt-2 flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => void insertParagraph(idx, p)}
+                          >
+                            <Plus className="size-4" aria-hidden="true" />
+                            {t("insert")}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Doc checklist */}
             <div>

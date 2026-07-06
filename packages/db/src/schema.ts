@@ -152,6 +152,14 @@ export const denials = pgTable("denials", {
 
 // --- Tables-only for later phases (no logic this pass) ---
 
+/**
+ * Pre-submission rule library (build-plan §7). EXTENDED by AI-3 (migration 0007)
+ * with authoring metadata so an LLM-authored ScrubRule persists DISABLED, is gated
+ * by the deterministic authoring gate, and is human-approved before it executes.
+ * `rule_key` is the logical ScrubRule id; `status` drives draft -> approved|rejected
+ * (a rule executes only when approved). `authored_by`/`prompt_sha256`/`model` are
+ * the LLM provenance for the audit trail.
+ */
 export const rules = pgTable("rules", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenant_id: uuid("tenant_id")
@@ -164,6 +172,21 @@ export const rules = pgTable("rules", {
   message_ar: text("message_ar"),
   version: integer("version").notNull().default(1),
   active: boolean("active").notNull().default(true),
+  // AI-3 authoring columns (0007).
+  rule_key: text("rule_key"),
+  name: text("name"),
+  field: text("field"),
+  weight: integer("weight").notNull().default(0),
+  payer_id: text("payer_id"),
+  authored_by: text("authored_by").notNull().default("human"),
+  prompt_sha256: text("prompt_sha256"),
+  model: text("model"),
+  status: text("status").notNull().default("draft"),
+  rationale: text("rationale"),
+  created_by: text("created_by"),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const scrubResults = pgTable("scrub_results", {
@@ -287,6 +310,33 @@ export const tenantAiSettings = pgTable("tenant_ai_settings", {
   updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+/**
+ * AI-2 — appeal-suggestion edit tracking (plan 04 §4.2). The ongoing quality
+ * metric: how much a reviewer edited each AI suggestion. Stores METADATA ONLY —
+ * lengths, the second-model verify score, the edit distance, and the outcome —
+ * never the raw suggestion prose (PHI-adjacent, like the appeal letter, which the
+ * app never persists). The model-call compliance record is the llm_calls row.
+ */
+export const appealSuggestions = pgTable("appeal_suggestions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  denial_id: uuid("denial_id").notNull(),
+  actor_id: text("actor_id").notNull(),
+  locale: text("locale").notNull(),
+  model: text("model").notNull(),
+  verify_score: integer("verify_score"),
+  suggestion_chars: integer("suggestion_chars").notNull().default(0),
+  edit_distance: integer("edit_distance"),
+  final_chars: integer("final_chars"),
+  outcome: text("outcome").notNull().default("suggested"),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenant_id: uuid("tenant_id")
@@ -329,5 +379,6 @@ export const TENANT_SCOPED_TABLES = [
   "llm_calls",
   "flag_explanations",
   "tenant_ai_settings",
+  "appeal_suggestions",
   "users",
 ] as const;

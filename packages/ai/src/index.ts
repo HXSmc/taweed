@@ -45,3 +45,40 @@ export {
 // AI-1
 export { explainFlag, type ExplainableFlag } from "./features/explainFlag.js";
 export { type FlagExplanation } from "./schemas/flagExplanation.js";
+
+// AI-3 — NL → ScrubRule draft (generation only; the rules-engine gate validates it).
+export {
+  authorRule,
+  type AuthorRuleInput,
+  type AuthorRuleOptions,
+  type AuthorRuleResult,
+} from "./features/authorRule.js";
+export {
+  ScrubRuleDraftSchema,
+  type ScrubRuleDraft,
+} from "./schemas/scrubRuleDraft.js";
+
+// AI-2 — additive EN/AR appeal-draft assist (pseudonymized, guarded, verified).
+export {
+  assistAppeal,
+  type AssistAppealInput,
+  type AssistAppealOptions,
+  type AssistAppealResult,
+} from "./features/assistAppeal.js";
+export {
+  buildFactSlots,
+  slotLegend,
+  assertNoInventedNumbers,
+  unknownSlots,
+  detokenizeSlots,
+  checkParagraphs,
+  type AppealFacts,
+  type AppealSuggestion,
+  type SlotMap,
+} from "./appeal-guardrails.js";
+export {
+  AppealAssistSchema,
+  AppealVerifySchema,
+  type AppealAssist,
+  type AppealVerify,
+} from "./schemas/appealAssist.js";

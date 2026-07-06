@@ -2,10 +2,11 @@
 
 > Entry point for a new Claude Code session picking up Taweed. Read this, then run the
 > next-step prompt (`docs/NEXT_STEP_PROMPT.md`). Blocker register + a per-blocker unblock prompt:
-> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-05 (**AI-0 + AI-1 merged to `main`** —
-> the `@taweed/ai` foundation + the bilingual scrub-flag explainer, PHI-free/additive/fail-closed;
-> next = PROMPT 2 of `docs/04_agentic_retrofit_plan.md` §9 = AI-3 rule authoring + AI-2 appeal assist.
-> The EXECUTE UI tail A2/A3 + the real-data headline (BLK-1/2/9) remain independently pending).
+> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-06 (**AI-0 + AI-1 + the harden loop
+> merged to `origin/main` (`2d0e1bb`); PROMPT 2 = AI-2 appeal assist + AI-3 rule authoring now BUILT
+> and merged too** — both additive, PHI-free-build, fail-closed. Next = PROMPT 3 of
+> `docs/04_agentic_retrofit_plan.md` §9 = AI-4 vision extraction. The EXECUTE UI tail A2/A3 + the
+> real-data headline (BLK-1/2/9) remain independently pending).
 
 ## Where the project stands
 
@@ -24,8 +25,20 @@
   - **AI-0** `@taweed/ai` — the ONLY package that talks to an LLM. `LlmProvider` typed swap (`anthropic-1p` via `@anthropic-ai/sdk` — `messages.parse` + `zodOutputFormat`, models `claude-opus-4-8`/`claude-sonnet-5`/`claude-haiku-4-5`; `FixtureProvider` for CI). Three-layer kill switch (`TAWEED_AI_ENABLED` default OFF + per-feature env + per-tenant DB flag) → typed `AiDisabledError` → deterministic fallback. Audited runner writes an `llm_calls` row on **every** attempt (success, parse-failure, and provider exception) — **hashes only**, never raw prompt/output/PHI (extends the audit PHI-leak guard). Pure `pseudonymize` (structured-column tokenize/detokenize, DOB→age band, free-text excluded) + `postprocess-ar` (Arabic-Indic→Western digit law, tashkeel strip, bidi-control strip + LRM code isolation). evalite-style eval project (`AI_EVALS_LIVE=1` only, never CI). The **raw provider client is never exported** — a call can't skip the audit.
   - **AI-1** `explainFlag` (Haiku) — bilingual plain-language explanation of a scrub flag. Input is **PHI-free by construction** (`ExplainableFlag`: rule metadata + generic messages, runtime guard rejects any extra key); output is a zod `FlagExplanation` (both locales, one call). Deduped per (tenant, rule, version) in `flag_explanations`. Additive UI popover on the scrubber flag rows (EN/AR RTL × light/dark, a11y region + aria-expanded, reduced-motion, digit law); deterministic messages always shown, graceful "unavailable" when AI off. Server action re-derives the prompt from `SCRUBBER_RULES` (no client text into the LLM).
   - Verified: **266 unit + 6 integration green** (fixture/stub provider only — CI never calls the live API), root+web typecheck green, `next build` green, coverage 92% (`@taweed/ai`). chrome-devtools verified EN+AR RTL × light/dark on the scrubber explainer (cached path, no key). Multi-lens review (typescript + security + healthcare) run on the diff with adversarial verification; findings fixed — a pool-exhaustion DoS (LLM call no longer wrapped in a held DB transaction; short transactions + 30s client timeout), raw NUL bytes in `pseudonymize.ts` (rewritten as text), audit-on-provider-exception, SFDA prompt hardening (billing-only + anti-upcoding), digit-law on all fields, dedupe-race convergence, bounded output.
-- **Next up:** **PROMPT 2 of `docs/04_agentic_retrofit_plan.md` §9** — AI-3 rule authoring + AI-2 appeal assist (PHI-free build; pseudonymized live use gated on BLK-AI-1 counsel + BLK-AI-2 ZDR org). Independently pending: EXECUTE UI tail (**A2 first-run corridor**, **A3 free-audit + owner report**) on synthetic data, then the **real-data headline** (recovered-SAR on a real partner) when BLK-1/2/9 clear. Full paste-ready prompt: `docs/NEXT_STEP_PROMPT.md`. Every blocker + its unblock prompt: `docs/blocker.md` (now incl. BLK-AI-1..4).
-- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2/3/4 pending)** → DEPLOY.
+- **AI phase — AI-2 + AI-3 DONE (synthetic/PHI-free), merged to `main` 2026-07-06 (PROMPT 2).** AI-3
+  `authorRule` (Opus): SME EN/AR sentence → structured `ScrubRule` DRAFT → the `@taweed/rules-engine`
+  `validateAuthoredRule` gate (shape vs registry → engine dry-run → golden regression) → persist
+  DISABLED (`rules.status`, migration `0007`) → human approve (rcm/owner/admin, server-enforced) →
+  feeds the live scrubber. AI-2 `assistAppeal` (Opus + Sonnet judge): additive `suggestedParagraphs`;
+  structural anti-hallucination (digit-free slot tokens → any literal digit = invented → suppress),
+  pseudonymized member id, verify pass, detokenize-last, SME edit-distance metric (`appeal_suggestions`).
+  Verified: unit 340/340 + integration 33/33 green, typecheck + lint (0 errors) + build green, migration
+  0007 applies clean; multi-lens adversarial review run pre-merge (all 9 confirmed findings fixed).
+- **Next up:** **PROMPT 3 of `docs/04_agentic_retrofit_plan.md` §9** — AI-4 vision EOB/PDF extraction +
+  ground-truth eval (dual-gated: build on synthetic docs now, production route = counsel + hosting).
+  Independently pending: EXECUTE UI tail (**A2 first-run corridor**, **A3 free-audit + owner report**)
+  on synthetic data, then the **real-data headline** when BLK-1/2/9 clear. Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
+- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 pending)** → DEPLOY.
 
 ## Can you start now?
 

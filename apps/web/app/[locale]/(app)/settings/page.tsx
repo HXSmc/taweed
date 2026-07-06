@@ -2,7 +2,10 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ShieldCheck } from "lucide-react";
 import { requireSession } from "@/lib/session";
 import { getRules, getAuditLog } from "@/lib/data";
+import { capability } from "@/lib/rbac";
+import { getTenantPayers, listAuthoredRules } from "@/lib/rules-data";
 import { PageHeader } from "@/components/shell/page-header";
+import { RuleAuthoring } from "@/components/modules/rule-authoring";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,9 +25,15 @@ export default async function SettingsPage({
   const tr = await getTranslations("trust");
   const ts = await getTranslations("scrubber");
 
-  const [rules, audit] = await Promise.all([
+  // AI-3: only roles that can write rules (rcm='rules', owner/admin='full') see the
+  // authoring surface. The server action re-enforces this — the tab is UX only.
+  const canAuthor = ["full", "rules"].includes(capability(session.role, "settings"));
+
+  const [rules, audit, payers, authoredRules] = await Promise.all([
     getRules(session.tenantId),
     getAuditLog(session.tenantId),
+    canAuthor ? getTenantPayers(session.tenantId) : Promise.resolve([]),
+    canAuthor ? listAuthoredRules(session.tenantId) : Promise.resolve([]),
   ]);
 
   return (
@@ -33,9 +42,16 @@ export default async function SettingsPage({
       <Tabs defaultValue="rules">
         <TabsList>
           <TabsTrigger value="rules">{t("rules")}</TabsTrigger>
+          {canAuthor && <TabsTrigger value="author">{t("author")}</TabsTrigger>}
           <TabsTrigger value="audit">{t("audit")}</TabsTrigger>
           <TabsTrigger value="residency">{t("residency")}</TabsTrigger>
         </TabsList>
+
+        {canAuthor && (
+          <TabsContent value="author">
+            <RuleAuthoring payers={payers} authoredRules={authoredRules} />
+          </TabsContent>
+        )}
 
         <TabsContent value="rules">
           <Card>

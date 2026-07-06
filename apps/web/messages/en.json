@@ -1,5 +1,8 @@
 {
-  "brand": { "name": "Taweed", "tagline": "NPHIES-native denial recovery" },
+  "brand": {
+    "name": "Taweed",
+    "tagline": "NPHIES-native denial recovery"
+  },
   "auth": {
     "signInTitle": "Sign in to Taweed",
     "signInSubtitle": "Denial recovery from your own NPHIES data.",
@@ -164,7 +167,15 @@
     "appealingCaption": "Appealing",
     "readyNudge": "{n} denials are appeal-ready. Drafts written. You review, you send.",
     "emptyTitle": "No appealable denials",
-    "emptyBody": "Denials become appealable once ingested and categorized."
+    "emptyBody": "Denials become appealable once ingested and categorized.",
+    "aiSuggestions": "AI suggestions",
+    "aiSuggest": "Suggest paragraphs",
+    "aiSuppressed": "The assistant’s draft did not pass the safety checks. Use the letter above.",
+    "aiUnavailable": "AI suggestions are unavailable. Use the letter above.",
+    "aiDraftLabel": "AI draft",
+    "insert": "Insert",
+    "discard": "Discard",
+    "aiDisclaimer": "Review each paragraph before inserting. Facts (amounts, dates, codes) are inserted deterministically — the assistant writes only the argument."
   },
   "recovery": {
     "title": "Recovery Tracking",
@@ -196,7 +207,30 @@
     "auditActor": "Actor",
     "auditAction": "Action",
     "auditEntity": "Entity",
-    "auditWhen": "When"
+    "auditWhen": "When",
+    "author": "Author",
+    "authorTitle": "Author a rule",
+    "authorLead": "Describe a billing rule in plain English or Arabic. The assistant drafts a structured scrubber rule; it runs only after you approve it.",
+    "authorPlaceholder": "e.g. Flag any claim over SAR 1000 submitted without prior authorization.",
+    "scopeLegend": "Rule scope",
+    "scopeGlobal": "All payers",
+    "scopePayer": "One payer",
+    "payerLabel": "Payer",
+    "draftButton": "Draft rule",
+    "gatePassed": "Passed every gate — safe to approve",
+    "gateBlocked": "Blocked at the {stage} gate",
+    "authorOff": "AI rule authoring is off. You can still add rules manually.",
+    "authorMisconfigured": "AI authoring is enabled but not configured. Contact an administrator.",
+    "authorGenError": "The assistant could not produce a valid rule. Try rephrasing.",
+    "weightLabel": "Weight",
+    "conditionsLabel": "Conditions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "statusDraft": "Draft",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "authoredHeading": "Authored rules",
+    "authoredEmpty": "No authored rules yet."
   },
   "landing": {
     "signIn": "Sign in",

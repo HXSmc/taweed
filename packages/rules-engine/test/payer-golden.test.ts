@@ -3,65 +3,17 @@ import {
   scrub,
   selectRulesForClaim,
   SCRUBBER_RULES,
-  type ClaimFacts,
+  PAYER_GOLDEN_CASES,
 } from "@taweed/rules-engine";
 
-// EXECUTE B7 — per-payer golden set (build-plan §8 wk10, §9 rule-correctness
-// harness). Each case pins the EXACT rule ids a payer's tuned rule set must raise
-// for a given claim, so a rule edit that changes payer behavior fails loudly.
+// EXECUTE B7 / AI-3 — per-payer golden set (build-plan §8 wk10, §9 rule-correctness
+// harness). The corpus now lives in src/golden.ts so this test AND the AI-3
+// authoring gate (checkGoldenRegression) pin behaviour against the SAME cases —
+// a rule edit that changes payer behaviour fails loudly in both places.
 // selectRulesForClaim scopes the library to the claim's payer before scrubbing.
 
-interface GoldenCase {
-  name: string;
-  payerId: string;
-  facts: ClaimFacts;
-  expectFired: string[]; // rule ids that MUST fire
-  expectNotFired: string[]; // rule ids that must NOT fire
-}
-
-function facts(over: Partial<ClaimFacts>): ClaimFacts {
-  return {
-    claimId: "c1",
-    payerId: "PAYER-GENERIC",
-    hasPreAuth: true,
-    patientGender: "female",
-    patientAgeYears: 40,
-    serviceDate: "2026-01-01",
-    policyActive: true,
-    sbsCodes: [],
-    lineUnits: {},
-    totalAmount: 100,
-    isDuplicate: false,
-    hasDiagnosis: true,
-    hasDocumentation: true,
-    ...over,
-  };
-}
-
-const CASES: GoldenCase[] = [
-  {
-    name: "strict-preauth payer flags the payer unit rule; a generic payer does not",
-    payerId: "PAYER-PREAUTH-STRICT",
-    facts: facts({
-      payerId: "PAYER-PREAUTH-STRICT",
-      hasPreAuth: false,
-      sbsCodes: ["SBS-0002"],
-      lineUnits: { "SBS-0002": 6 },
-    }),
-    expectFired: ["R-D02-preauth-payer-units"],
-    expectNotFired: ["R-D01-payer-excluded-service"],
-  },
-  {
-    name: "narrow-network payer excludes a service; other payers do not",
-    payerId: "PAYER-NARROW-NET",
-    facts: facts({ payerId: "PAYER-NARROW-NET", sbsCodes: ["SBS-0006"] }),
-    expectFired: ["R-D01-payer-excluded-service"],
-    expectNotFired: ["R-D02-preauth-payer-units"],
-  },
-];
-
 describe("payer-scoped golden set", () => {
-  for (const c of CASES) {
+  for (const c of PAYER_GOLDEN_CASES) {
     it(c.name, async () => {
       const rules = selectRulesForClaim(SCRUBBER_RULES, { payerId: c.payerId });
       const result = await scrub(c.facts, rules);

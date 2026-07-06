@@ -20,6 +20,7 @@ import {
   type ScrubResult,
 } from "@taweed/rules-engine";
 import { withSession } from "./db";
+import { loadApprovedAuthoredRulesTx } from "./rules-data";
 
 // Scrubber "current year" for age derivation. TODO(nphies-creds): once real claims
 // carry service dates, derive age at service date, not at wall-clock year.
@@ -151,6 +152,13 @@ export function getScrubRows(
     const patientById = new Map(patients.map((p) => [p.id, p]));
     const payerById = new Map(payers.map((p) => [p.id, p]));
 
+    // AI-3: the executable rule set is the shipped library PLUS this tenant's
+    // APPROVED authored rules (drafts/rejected never execute). Loaded once in this
+    // RLS transaction, then scoped per claim by selectRulesForClaim.
+    const authored = await loadApprovedAuthoredRulesTx(db);
+    const ruleLibrary =
+      authored.length === 0 ? SCRUBBER_RULES : [...SCRUBBER_RULES, ...authored];
+
     const rows = await Promise.all(
       claims.map(async (claim) => {
         const cl = linesByClaim.get(claim.id) ?? [];
@@ -165,7 +173,7 @@ export function getScrubRows(
         );
         // B7: scope the rule library to this claim's payer/tenant before scrubbing
         // (global + this payer's tuned rules + this tenant's overrides).
-        const rules = selectRulesForClaim(SCRUBBER_RULES, {
+        const rules = selectRulesForClaim(ruleLibrary, {
           payerId: claim.payer_id,
           tenantId,
         });

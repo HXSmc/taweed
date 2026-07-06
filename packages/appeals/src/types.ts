@@ -25,6 +25,16 @@ export interface DocChecklistItem {
   label_ar: string;
 }
 
+/** AI-2 — optional argumentative paragraphs suggested by the LLM assist layer.
+ *  ADDITIVE: the deterministic template body above stays the primary output and
+ *  is complete on its own; these are clearly-labelled DRAFT suggestions a reviewer
+ *  may insert, edit, or discard. Facts (amounts/dates/codes) are deterministic —
+ *  the model writes only prose around them (see @taweed/ai assistAppeal). */
+export interface AppealSuggestion {
+  paragraphs_en: string[];
+  paragraphs_ar: string[];
+}
+
 /** A rendered, human-reviewable draft in both languages. */
 export interface AppealDraft {
   subject_en: string;
@@ -33,6 +43,8 @@ export interface AppealDraft {
   body_ar: string;
   docChecklist: DocChecklistItem[];
   payerSpecific: boolean;
+  // AI-2 (additive, optional): never required for an appeal to work.
+  suggestedParagraphs?: AppealSuggestion;
 }
 
 /** A directional run. Latin ids/codes stay ltr-isolated inside RTL Arabic so
