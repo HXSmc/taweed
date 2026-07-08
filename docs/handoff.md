@@ -34,6 +34,17 @@
   pseudonymized member id, verify pass, detokenize-last, SME edit-distance metric (`appeal_suggestions`).
   Verified: unit 340/340 + integration 33/33 green, typecheck + lint (0 errors) + build green, migration
   0007 applies clean; multi-lens adversarial review run pre-merge (all 9 confirmed findings fixed).
+- **Two post-merge hotfixes on `main`, both CI-GREEN (2026-07-06):**
+  - `3acc285` — CI E2E blocker: `@taweed/shared`'s `newId` imported `randomUUID` from `node:crypto`;
+    PROMPT 2's `appeals-composer.tsx` (client component) pulled in `levenshtein` from the same
+    barrel, dragging `node:crypto` into the browser bundle and failing Next's webpack build. Fixed
+    by making `newId` Web-Crypto-global (isomorphic).
+  - `9813fc6` — 7 audit findings hardened: **HIGH** — engine `in`/`notIn` substring-matched on
+    string constants (`"female".indexOf("male")` false-fired); now strict array membership. Golden
+    corpus expanded 2→13 cases. `rules.status` made the single source of rule liveness + migration
+    `0008` backfill. AI-3 approval UI stopped swallowing failures, added aria-live. AI-2
+    `inference_geo` pinned. PHI-free-by-policy wording made honest. Unit 355/355, int 33/33 green,
+    multi-lens review pre-commit.
 - **Next up:** **PROMPT 3 of `docs/04_agentic_retrofit_plan.md` §9** — AI-4 vision EOB/PDF extraction +
   ground-truth eval (dual-gated: build on synthetic docs now, production route = counsel + hosting).
   Independently pending: EXECUTE UI tail (**A2 first-run corridor**, **A3 free-audit + owner report**)
