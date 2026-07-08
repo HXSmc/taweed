@@ -66,4 +66,27 @@
 
 ## Learnings (append after each pass — newest on top)
 
-_(none yet — this file was bootstrapped immediately before the first audit batch, 2026-07-08)_
+### Bug hunt (2026-07-08)
+
+- **21/22 candidates confirmed** — the adversarial-verify stage (2 skeptics, default-to-refute) is
+  worth keeping; it correctly killed one candidate (`project.ts:88`, a dormant field no rule reads).
+- **Running ~15 fix agents in parallel across a shared (non-worktree) working tree works, but each
+  agent gets confused seeing sibling agents' concurrent edits** and reports them as "an unrelated
+  concurrent session." This is harmless (each agent still correctly scoped its own diff to its
+  assigned file(s)) but expect this noise in agent summaries — don't mistake it for a real problem.
+  Grouping fixes by **file** (one agent per file, not per bug) avoided actual edit collisions.
+- **A fix agent can stop at "the pure logic is fixed" and leave the call site unwired**, especially
+  when the task prompt scopes it to one file. Always check whether a money/security-adjacent fix
+  actually closes the loop end-to-end (e.g. `recovery.ts`'s sibling-aware ceiling needed manual
+  wiring into `apps/web/lib/actions/recovery.ts` after the workflow finished).
+- **apps/web had zero unit-test infra before this pass** (only Playwright e2e). Multiple fix agents
+  independently added `apps/web/test/**` to `vitest.workspace.ts`'s unit project, a jsdom
+  `environmentMatchGlobs` for `.test.tsx`, a `@/` path alias, and `apps/web/test/setup.ts` — these
+  merged cleanly since agents were editing disjoint bug files even though they touched the same
+  shared config. It's a good thing this now exists; use it for the next pass instead of re-adding it.
+- **A background Workflow agent can stall mid-response ("API Error: Response stalled mid-stream")
+  after already completing its actual edit** — check `git status`/`git diff` for the target file
+  before assuming a failed agent did nothing; it may have finished the code change and only failed
+  to report/test it (this is what happened for `eob-review-queue.tsx`).
+- **`ScheduleWakeup` at ~1200s intervals is the right cadence for a large background Workflow** (this
+  one ran ~70 minutes end to end, 66 agents, ~6M subagent tokens) — don't short-poll.
