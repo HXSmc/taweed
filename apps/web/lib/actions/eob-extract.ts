@@ -75,6 +75,18 @@ function hasPdfMagicBytes(bytes: Uint8Array): boolean {
   return PDF_MAGIC.every((b, i) => bytes[i] === b);
 }
 
+// This action sends real (non-pseudonymized) PDF page content to the model by
+// design (docs/blocker.md BLK-AI-1) — unlike AI-1/2/3, there is no PHI-free
+// construction here. That means the caught `err` below is NOT safe to log
+// verbatim: a future Anthropic SDK or Zod error could echo request/response
+// content into `.message`/`.stack`, which would land in plaintext server logs
+// instead of the hash-only `llm_calls` audit trail (packages/ai/src/run.ts)
+// that this system otherwise relies on for PHI minimization. Log only a
+// stable, content-free error signal; never the error object itself.
+function describeErrorForLog(err: unknown): string {
+  return err instanceof Error ? err.name : typeof err;
+}
+
 /**
  * Extract a candidate EOB from an uploaded PDF and file it as a new
  * 'pending_review' row. Never writes claims/denials itself — the row only
@@ -99,11 +111,11 @@ export async function extractEobPdfAction(
   }
 
   if (
-    !allowRequest(
+    !(await allowRequest(
       `extract-eob:${session.tenantId}:${session.userId}`,
       EXTRACT_RATE_LIMIT,
       EXTRACT_WINDOW_MS,
-    )
+    ))
   ) {
     return { ok: false, error: "rate_limited" };
   }
@@ -135,7 +147,9 @@ export async function extractEobPdfAction(
     // Covers packages/ingest's pre-existing "not wired" Error (adapter
     // undefined) and any other extraction failure — none of these are a
     // distinct branch from the caller's point of view.
-    console.error("extractEobPdfAction extraction failed", err);
+    console.error(
+      `extractEobPdfAction extraction failed (${describeErrorForLog(err)})`,
+    );
     return { ok: false, error: "failed" };
   }
 

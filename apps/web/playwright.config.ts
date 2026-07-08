@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { DEV_INSECURE_AUTH_SECRET } from "./lib/dev-auth-secret";
 
 // EXECUTE A1 — E2E + visual-regression + a11y at the design-brief breakpoints
 // (320/768/1024/1440 x light/dark x EN/AR). The webServer builds + starts the app
@@ -39,7 +40,9 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       TAWEED_ENABLE_DEV_AUTH: "1",
-      AUTH_SECRET: process.env.AUTH_SECRET ?? "dev-insecure-secret-change-me",
+      // Sourced from the single shared constant (lib/dev-auth-secret.ts) rather
+      // than a duplicated literal — see that file for why duplication is unsafe.
+      AUTH_SECRET: process.env.AUTH_SECRET ?? DEV_INSECURE_AUTH_SECRET,
       DATABASE_URL:
         process.env.DATABASE_URL ??
         "postgres://taweed:taweed@localhost:5432/taweed",

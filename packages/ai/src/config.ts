@@ -5,6 +5,13 @@
 //
 // The third layer — a per-tenant DB flag — is resolved at call time in run.ts
 // (it needs a Database); this module is pure env resolution only.
+//
+// `import "server-only"` matches every other secret-adjacent file in this
+// package (run.ts, anthropic-1p.ts, audit.ts): this module reads
+// ANTHROPIC_API_KEY (missingProviderConfig) and drives the AI kill switches,
+// so it must fail a client bundle build the same way they do rather than
+// compiling silently into client code via a stray non-type-only barrel import.
+import "server-only";
 
 export type AiFeature = "explain" | "appeal" | "authorRule" | "extractEob";
 

@@ -7,6 +7,15 @@ import { insertNormalizedClaim, schema } from "@taweed/db";
 import { logAudit } from "@taweed/audit";
 import { authorizeAction } from "@/lib/authz";
 import { withSession } from "@/lib/db";
+import { allowRequest } from "@/lib/rate-limit";
+
+// Per-tenant+actor throttle for this action (common/security.md): each call does
+// an unbounded JSON.parse plus a per-claim DB insert loop, so without a ceiling
+// one actor can loop this endpoint to drive unbounded CPU/DB load. Mirrors the
+// same-directory AI actions (explain-flag.ts, author-rule.ts, eob-extract.ts),
+// which all call allowRequest — this is the only ingest surface that lacked it.
+const INGEST_RATE_LIMIT = 10;
+const INGEST_WINDOW_MS = 60_000;
 
 export interface QuarantineItem {
   ref: string;
@@ -49,6 +58,17 @@ export async function ingestBundle(formData: FormData): Promise<IngestResult> {
   const file = formData.get("file");
   if (!(file instanceof File)) return { ...empty, error: "no file" };
   const fileName = file.name;
+
+  // Throttle server-side, before the expensive parse/insert work below.
+  if (
+    !(await allowRequest(
+      `ingest:${session.tenantId}:${session.userId}`,
+      INGEST_RATE_LIMIT,
+      INGEST_WINDOW_MS,
+    ))
+  ) {
+    return { ...empty, fileName, error: "rate_limited" };
+  }
 
   let bundle: unknown;
   try {

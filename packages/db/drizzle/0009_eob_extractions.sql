@@ -1,10 +1,11 @@
 -- AI-4 — the EOB vision-extraction review queue (plan 04 §9 PROMPT 3, prep).
 -- One additive tenant-scoped table. Inherits the same RLS treatment as every
 -- other tenant table (ENABLE + FORCE + tenant_isolation policy, per 0001/0006)
--- and the blanket app-role GRANT (migrate.ts) — no new grant is needed, and
--- unlike llm_calls/audit_logs this table is NOT append-only: a reviewer
--- transitions status pending_review -> approved|rejected and stamps
--- reviewed_by/reviewed_at, so UPDATE stays granted.
+-- and the blanket app-role GRANT (drizzle/0010_app_role_grants.sql, applied
+-- after this migration) — no new grant is needed, and unlike llm_calls/
+-- audit_logs this table is NOT append-only: a reviewer transitions status
+-- pending_review -> approved|rejected and stamps reviewed_by/reviewed_at, so
+-- UPDATE stays granted.
 --
 --   eob_extractions   one row per AI-4 vision extraction attempt. `extraction`
 --                     is the validated EobExtraction payload stored as opaque

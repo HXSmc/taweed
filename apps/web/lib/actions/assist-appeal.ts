@@ -55,11 +55,11 @@ export async function assistAppealAction(
     : "en";
 
   if (
-    !allowRequest(
+    !(await allowRequest(
       `assist:${session.tenantId}:${session.userId}`,
       ASSIST_RATE_LIMIT,
       ASSIST_WINDOW_MS,
-    )
+    ))
   ) {
     return { ok: false, error: "rate_limited" };
   }

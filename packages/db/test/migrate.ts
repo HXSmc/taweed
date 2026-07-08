@@ -1,6 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import pg from "pg";
 import type { Pool } from "../src/client.js";
 
 const DRIZZLE_DIR = new URL("../drizzle/", import.meta.url);
@@ -36,9 +35,17 @@ function assertDestructiveAllowed(): void {
 
 /**
  * Reset `public` and apply every drizzle/*.sql migration in order (base DDL,
- * RLS, then indexes). Deliberately destructive so integration tests start from
- * a clean, deterministic schema. NOT for production — production uses a
- * forward-only migrator (deferred to DEPLOY).
+ * RLS, app-role provisioning, then indexes). Deliberately destructive so
+ * integration tests start from a clean, deterministic schema. NOT for
+ * production — production applies these same *.sql files forward-only.
+ *
+ * The app role (`taweed_app`, NOBYPASSRLS), its blanket GRANT, and the
+ * REVOKEs that make `tenants`/`audit_logs`/`llm_calls` actually enforced are
+ * provisioned entirely by `drizzle/0010_app_role_grants.sql` — the last file
+ * in this loop — NOT by any TS code here. That is deliberate: it means the
+ * enforcement travels with the SQL, so any tool that applies drizzle/*.sql in
+ * order (not just this test harness) establishes the same guarantees. See
+ * that file's header for the audit finding this fixes.
  */
 export async function migrate(pool: Pool): Promise<void> {
   assertDestructiveAllowed();
@@ -58,48 +65,9 @@ export async function migrate(pool: Pool): Promise<void> {
       );
       await client.query(sql);
     }
-    await ensureAppRole(client);
   } finally {
     client.release();
   }
-}
-
-async function ensureAppRole(client: pg.PoolClient): Promise<void> {
-  // Identifiers/literals are escaped even though they are constants today, so
-  // this stays safe if APP_ROLE/APP_PASSWORD ever become configurable.
-  const role = client.escapeIdentifier(APP_ROLE);
-  const password = client.escapeLiteral(APP_PASSWORD);
-  await client.query(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = ${client.escapeLiteral(
-        APP_ROLE,
-      )}) THEN
-        CREATE ROLE ${role} LOGIN PASSWORD ${password} NOBYPASSRLS;
-      END IF;
-    END
-    $$;`);
-  await client.query(`GRANT USAGE ON SCHEMA public TO ${role};`);
-  await client.query(
-    `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role};`,
-  );
-  // `tenants` is the RLS-less isolation root — the app role must not read/write
-  // it directly (that would expose every tenant's identity). Seeding/admin of
-  // tenants goes through the superuser/admin connection only.
-  await client.query(`REVOKE ALL ON TABLE tenants FROM ${role};`);
-  // `llm_calls` is an APPEND-ONLY compliance trail (0006 header): the app role
-  // may INSERT + SELECT but must NEVER UPDATE or DELETE an audit row. The blanket
-  // GRANT above (UPDATE, DELETE ON ALL TABLES) re-grants those on every table, so
-  // this REVOKE must run AFTER it — a REVOKE placed inside 0006_llm_calls.sql
-  // would be silently clobbered by this ensureAppRole() call, which runs last.
-  // The production forward-only migrator MUST preserve this same REVOKE.
-  await client.query(`REVOKE UPDATE, DELETE ON TABLE llm_calls FROM ${role};`);
-  // `audit_logs` is the primary APPEND-ONLY PHI-access trail (packages/audit) —
-  // same immutability guarantee as llm_calls: the app role may INSERT + SELECT
-  // but must NEVER UPDATE or DELETE a row. Enforced by PRIVILEGE (RLS scopes but
-  // does not prevent mutating the tenant's own rows). The production forward-only
-  // migrator MUST preserve this REVOKE too.
-  await client.query(`REVOKE UPDATE, DELETE ON TABLE audit_logs FROM ${role};`);
 }
 
 /** Derive the app-role connection URL from an admin DATABASE_URL. */

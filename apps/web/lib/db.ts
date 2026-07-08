@@ -88,8 +88,20 @@ export async function findUserByEmail(email: string): Promise<IdentityUser | nul
   }
 }
 
-/** Demo accounts for the dev sign-in screen (identity store, no PHI). */
+/**
+ * Demo accounts for the dev sign-in screen (identity store, no PHI).
+ *
+ * SECURITY: fails closed to an empty list outside genuine local dev
+ * (`NODE_ENV === "development"`, i.e. `next dev`). `DEV_AUTH_ENABLED`
+ * (lib/auth.ts) is broader — it also allows `TAWEED_ENABLE_DEV_AUTH=1` in a
+ * deployed/production environment — so gating only on that flag would still
+ * let an unauthenticated /login visitor enumerate every tenant's user id,
+ * email, role, and tenant name whenever that override is set. Checking
+ * NODE_ENV here, independent of the caller, keeps that cross-tenant dump from
+ * ever reaching a deployed environment.
+ */
 export async function listDemoAccounts(): Promise<IdentityUser[]> {
+  if (process.env.NODE_ENV !== "development") return [];
   const client = await adminPool().connect();
   try {
     const res = await client.query(

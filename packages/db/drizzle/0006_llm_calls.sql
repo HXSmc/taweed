@@ -1,7 +1,8 @@
 -- AI-0 — the LLM audit + dedupe surface (plan 04 §5). Three tenant-scoped
 -- tables, each with the same RLS treatment (ENABLE + FORCE + tenant_isolation
 -- policy) as every other tenant table (drizzle/0001_rls.sql). The app-role GRANT
--- in migrate.ts runs after all migrations ON ALL TABLES, so these are covered.
+-- in 0010_app_role_grants.sql runs after all migrations ON ALL TABLES, so these
+-- are covered.
 --
 --   llm_calls          append-only compliance record. HASHES ONLY — never the
 --                      raw prompt/output, never PHI (enforced in @taweed/ai audit
@@ -14,9 +15,9 @@
 --
 -- APPEND-ONLY (llm_calls): the compliance trail is INSERT + SELECT only for the
 -- app role — enforced by PRIVILEGE, not convention. The app role is REVOKEd
--- UPDATE, DELETE on llm_calls (packages/db/test/migrate.ts ensureAppRole, which
--- runs after the blanket GRANT; the production forward-only migrator MUST apply
--- the same REVOKE). created_at is NOT NULL so no audit row is timestamp-less.
+-- UPDATE, DELETE on llm_calls in drizzle/0010_app_role_grants.sql, which runs
+-- after the blanket GRANT (it is the last migration applied). created_at is
+-- NOT NULL so no audit row is timestamp-less.
 --
 -- FORWARD-ONLY: like 0001/0005 this is bare CREATE (no IF NOT EXISTS, no down).
 -- The test migrator DROPs + reapplies from zero each run; production uses a

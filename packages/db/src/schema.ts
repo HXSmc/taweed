@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   integer,
   jsonb,
@@ -391,6 +392,21 @@ export const users = pgTable("users", {
   role: text("role").notNull(),
   locale: text("locale").notNull().default("en"),
   email: text("email"),
+});
+
+/**
+ * Shared, cross-instance fixed-window rate-limit store (drizzle/
+ * 0011_rate_limit_windows.sql), backing apps/web/lib/rate-limit.ts (audit
+ * finding, docs/review.md:669: a per-process in-memory limiter fails open
+ * under horizontal scale). Not tenant-scoped / no RLS: callers already bake
+ * tenant+actor into `key` (e.g. "explain:<tenantId>:<userId>"), and some keys
+ * (e.g. "dev-signin") have no tenant at all — a tenant_id column would not
+ * fit every caller.
+ */
+export const rateLimitWindows = pgTable("rate_limit_windows", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  window_start: bigint("window_start", { mode: "number" }).notNull(),
 });
 
 /** Tenant-scoped tables (everything except `tenants`) — RLS applies to these. */

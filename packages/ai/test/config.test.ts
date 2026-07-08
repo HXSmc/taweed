@@ -1,10 +1,27 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   isAiEnabled,
   isFeatureEnabled,
   featureEnvVar,
   missingProviderConfig,
 } from "../src/config.js";
+
+// `server-only` is aliased to a no-op stub for the vitest/Node runtime (see
+// vitest.workspace.ts), so a runtime import can never observe whether the
+// guard is present here — the real client-bundle failure only happens under
+// `next build`. Assert on the source text instead, matching every other
+// secret-adjacent file in this package (run.ts, anthropic-1p.ts, audit.ts).
+describe("server-only guard (defense in depth)", () => {
+  it("imports 'server-only' — this module reads ANTHROPIC_API_KEY and drives the AI kill switches", () => {
+    const configSource = readFileSync(
+      fileURLToPath(new URL("../src/config.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(configSource).toMatch(/^import\s+["']server-only["'];\s*$/m);
+  });
+});
 
 describe("isAiEnabled (fails closed)", () => {
   it("is false when the switch is unset", () => {

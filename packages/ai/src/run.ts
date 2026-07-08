@@ -23,6 +23,26 @@ const PURPOSE_BY_FEATURE: Record<AiFeature, string> = {
   extractEob: "extract_eob",
 };
 
+/** Cap on the redacted audit-write-failure message logged to ops. */
+const AUDIT_LOG_ERROR_MAX_LEN = 300;
+
+/**
+ * Redact an audit-write-failure error before it reaches server logs. The raw
+ * caught value (a Postgres driver error or an Anthropic SDK error) can carry
+ * more than a message — stack traces, `.cause` chains, and (for SDK errors)
+ * response headers/body — any of which may echo request/response detail that
+ * does not belong in a hashes-only audit trail's operational logs. Only the
+ * error's own `name: message` is kept, and only up to a bounded length, so
+ * ops still sees enough to diagnose "the audit DB is failing" without the
+ * full object (and everything nested inside it) being dumped verbatim.
+ */
+export function redactAuditError(err: unknown): string {
+  const summary = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+  return summary.length > AUDIT_LOG_ERROR_MAX_LEN
+    ? `${summary.slice(0, AUDIT_LOG_ERROR_MAX_LEN)}…[truncated]`
+    : summary;
+}
+
 /**
  * Per-tenant kill switch. Reads tenant_ai_settings under RLS (so it can only see
  * the active tenant's row). No row => enabled: the global env switch is the
@@ -98,7 +118,7 @@ export async function runStructured<T>(ctx: RunContext<T>): Promise<T> {
       // a compliance-trail gap ops must be able to see.
       console.error(
         `[llm-audit] write FAILED on the provider-error path (feature=${ctx.feature}); the provider error is preserved but this attempt is UNAUDITED`,
-        auditErr,
+        redactAuditError(auditErr),
       );
     });
     throw err;
@@ -128,7 +148,7 @@ export async function runStructured<T>(ctx: RunContext<T>): Promise<T> {
     // "AI intentionally off". The generated answer is intentionally discarded.
     console.error(
       `[llm-audit] write FAILED after a SUCCESSFUL call (feature=${ctx.feature}); failing closed — the generated answer is discarded because it cannot be audited`,
-      auditErr,
+      redactAuditError(auditErr),
     );
     throw auditErr;
   }

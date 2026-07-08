@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/session";
+import { isVisible } from "@/lib/rbac";
 import { listPendingEobExtractions } from "@/lib/eob-review-data";
 import { PageHeader } from "@/components/shell/page-header";
 import { IngestPanel } from "@/components/modules/ingest-panel";
@@ -16,6 +18,13 @@ export default async function IngestPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const session = await requireSession(locale);
+  // Server-enforced RBAC gate for the read path: rbac.ts's MATRIX marks
+  // ingest "hidden" for owner and clinician — the rail already hides the nav
+  // link, but a direct navigation to /[locale]/ingest must not be allowed to
+  // reach the PHI-adjacent EOB extraction queue below just because the role
+  // has a valid session (authz.ts's doc-comment promise: server-enforced, not
+  // just hidden nav).
+  if (!isVisible(session.role, "ingest")) notFound();
   const t = await getTranslations("ingest");
   const tr = await getTranslations("reviewQueue");
 

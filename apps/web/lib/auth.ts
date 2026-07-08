@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { findUserByEmail } from "./db";
+import { DEV_INSECURE_AUTH_SECRET } from "./dev-auth-secret";
 
 /**
  * Local/dev auth (build-plan §4). A Credentials provider stands in for a real
@@ -8,22 +9,34 @@ import { findUserByEmail } from "./db";
  * The tenant_id and role are read from the identity store at sign-in and carried
  * in the JWT; the app never trusts a client-supplied tenant/role.
  *
- * SECURITY: this provider is PASSWORDLESS (dev/synthetic only). It is disabled in
- * production unless TAWEED_ENABLE_DEV_AUTH=1 is explicitly set, so a passwordless
- * sign-in can never ship as a live auth path.
+ * SECURITY: this provider is PASSWORDLESS (dev/synthetic only). It is enabled
+ * ONLY for an explicit, allow-listed signal: NODE_ENV === "development", or an
+ * affirmative TAWEED_ENABLE_DEV_AUTH=1 opt-in (used by the e2e webServer, which
+ * runs a real `next start` production build). This is deliberately an allow-list
+ * ("is this a known-safe environment?"), not a deny-list ("is this not exactly
+ * production?") — a deny-list fails OPEN whenever NODE_ENV is unset, misspelled,
+ * or something like "staging" (custom Docker/PM2/systemd start scripts, hosts
+ * that don't set NODE_ENV), which would otherwise silently expose passwordless
+ * sign-in on a live deployment.
  * TODO(ksa-oidc)/DEPLOY: swap Credentials for a KSA-resident managed OIDC
  * provider. The provider is the only thing that changes — callbacks, the session
  * shape, and every withSession call stay identical (typed swap).
  */
-const IS_PROD = process.env.NODE_ENV === "production";
-export const DEV_AUTH_ENABLED = !IS_PROD || process.env.TAWEED_ENABLE_DEV_AUTH === "1";
+const IS_DEV_ENV = process.env.NODE_ENV === "development";
+export const DEV_AUTH_ENABLED = IS_DEV_ENV || process.env.TAWEED_ENABLE_DEV_AUTH === "1";
+
+// Only fall back to the public dev secret under the same allow-listed
+// DEV_AUTH_ENABLED condition above (never merely "NODE_ENV isn't exactly
+// production"). Any other environment must supply a real AUTH_SECRET; if
+// unset, NextAuth fails closed (cannot sign/verify) rather than trusting a
+// public repo string. Exported (not just inlined below) so this fail-closed
+// condition is independently testable.
+export const RESOLVED_AUTH_SECRET =
+  process.env.AUTH_SECRET ?? (DEV_AUTH_ENABLED ? DEV_INSECURE_AUTH_SECRET : undefined);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
-  // Require a real AUTH_SECRET in production; only fall back in dev. If unset in
-  // prod, NextAuth fails closed (cannot sign/verify) rather than trusting a
-  // public repo string.
-  secret: process.env.AUTH_SECRET ?? (IS_PROD ? undefined : "dev-insecure-secret-change-me"),
+  secret: RESOLVED_AUTH_SECRET,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: DEV_AUTH_ENABLED

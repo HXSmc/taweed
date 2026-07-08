@@ -35,11 +35,11 @@ export async function explainFlagAction(
 
   // Throttle server-side — the UI loading guard is bypassable on a public action.
   if (
-    !allowRequest(
+    !(await allowRequest(
       `explain:${session.tenantId}:${session.userId}`,
       EXPLAIN_RATE_LIMIT,
       EXPLAIN_WINDOW_MS,
-    )
+    ))
   ) {
     console.warn(
       `explainFlagAction rate limit exceeded (tenant=${session.tenantId} actor=${session.userId})`,

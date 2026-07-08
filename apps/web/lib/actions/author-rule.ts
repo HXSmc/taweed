@@ -111,11 +111,11 @@ export async function draftRuleAction(
   if (!parsed.success) return { ok: false, error: "invalid" };
 
   if (
-    !allowRequest(
+    !(await allowRequest(
       `author:${session.tenantId}:${session.userId}`,
       AUTHOR_RATE_LIMIT,
       AUTHOR_WINDOW_MS,
-    )
+    ))
   ) {
     return { ok: false, error: "rate_limited" };
   }
