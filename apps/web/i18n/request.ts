@@ -14,7 +14,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     // Fail LOUD on a missing/mis-keyed message instead of silently rendering the
     // raw key. en.json <-> ar.json parity is enforced, so this should never fire;
     // if a key ever goes missing, dev THROWS (caught immediately) and prod logs +
-    // renders a visible ⚠MISSING marker — never a silent blank or bare key.
+    // renders a visible MISSING marker — never a silent blank or bare key.
     onError(error) {
       if (error.code === IntlErrorCode.MISSING_MESSAGE) {
         if (process.env.NODE_ENV !== "production") throw error;
@@ -24,7 +24,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
       }
     },
     getMessageFallback({ namespace, key }) {
-      return `⚠MISSING:${[namespace, key].filter(Boolean).join(".")}`;
+      return `MISSING:${[namespace, key].filter(Boolean).join(".")}`;
     },
   };
 });

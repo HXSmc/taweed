@@ -10,10 +10,7 @@ import {
 } from "recharts";
 import type { TrendPoint } from "@taweed/analytics";
 import { formatMoney } from "@/lib/money";
-
-// Hex literals: Recharts fill/stroke are SVG attributes (CSS var() won't resolve).
-// Money hues are theme-invariant in our tokens.
-const C = { atRisk: "#c2410c", recovered: "#0e9f6e", axis: "#8a8a93", hairline: "#8a8a9366" };
+import { CHART_COLORS as C } from "@/lib/chart-colors";
 
 // Trend over time (design-brief §6): at-risk area (rust) + recovered line
 // (emerald). In RTL time still flows inline-start→end, but labels stay LTR.

@@ -10,16 +10,7 @@ import {
 } from "recharts";
 import type { ReasonRow } from "@taweed/analytics";
 import { formatMoney } from "@/lib/money";
-
-// Recharts sets fill/stroke as SVG ATTRIBUTES where CSS var() does not resolve.
-// Money/accent hues are theme-invariant in our token file, so pass hex directly;
-// axis uses a mid-gray that reads on both themes.
-const C = {
-  neutral: "#64748b",
-  accent: "#2557e4",
-  axis: "#8a8a93",
-  hairline: "#8a8a9366",
-};
+import { CHART_COLORS as C } from "@/lib/chart-colors";
 
 // Denial-reason Pareto (design-brief §6): money-neutral bars + cobalt cumulative
 // line to prove "a few reasons drive most of the loss". Value labels LTR.
