@@ -82,3 +82,31 @@ export {
   type AppealAssist,
   type AppealVerify,
 } from "./schemas/appealAssist.js";
+
+// AI-4 — payer EOB/remittance PDF extraction wire schema (generation only).
+export {
+  EobLineSchema,
+  EobClaimSchema,
+  EobExtractionSchema,
+  type EobLine,
+  type EobClaim,
+  type EobExtraction,
+} from "./schemas/eobExtraction.js";
+export {
+  validateEobExtraction,
+  validateEobExtractionArithmetic,
+  type ValidatorFinding,
+  type ValidatorReport,
+} from "./eob-validators.js";
+export {
+  extractEob,
+  type ExtractEobInput,
+  type ExtractEobOptions,
+  type ExtractEobResult,
+} from "./features/extractEob.js";
+export {
+  createClaudeVisionOcrAdapter,
+  resolveEobExtractionAdapter,
+  type ClaudeVisionOcrAdapterOptions,
+} from "./adapters/claude-vision-ocr.js";
+export { SelfHostedVlmAdapter } from "./adapters/selfhosted-vlm-adapter.js";

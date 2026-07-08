@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildSystemBlocks,
+  buildUserContent,
   mapParseResponse,
   type ParseResponseLike,
 } from "../src/anthropic-1p.js";
@@ -13,6 +14,44 @@ describe("buildSystemBlocks", () => {
   it("adds ephemeral cache_control when caching is on", () => {
     expect(buildSystemBlocks("sys", true)).toEqual([
       { type: "text", text: "sys", cache_control: { type: "ephemeral" } },
+    ]);
+  });
+});
+
+describe("buildUserContent", () => {
+  it("returns the plain user string when there are no documents", () => {
+    expect(buildUserContent("hello")).toBe("hello");
+  });
+
+  it("returns the plain user string when documents is an empty array", () => {
+    expect(buildUserContent("hello", [])).toBe("hello");
+  });
+
+  it("puts a document block before the text block for one document", () => {
+    expect(buildUserContent("extract this", [{ base64: "AAAA" }])).toEqual([
+      {
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: "AAAA" },
+      },
+      { type: "text", text: "extract this" },
+    ]);
+  });
+
+  it("orders multiple documents before the single trailing text block", () => {
+    const out = buildUserContent("go", [
+      { base64: "AAAA" },
+      { base64: "BBBB" },
+    ]);
+    expect(out).toEqual([
+      {
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: "AAAA" },
+      },
+      {
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: "BBBB" },
+      },
+      { type: "text", text: "go" },
     ]);
   });
 });

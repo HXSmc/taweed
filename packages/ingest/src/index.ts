@@ -21,3 +21,10 @@ export {
   type XlsxAdapter,
 } from "./xlsx.js";
 export { ocrEob, type OcrAdapter } from "./pdf-ocr.js";
+export {
+  extractEobFromPdf,
+  type EobExtractionAdapter,
+  type EobExtractionResult,
+} from "./eob-extraction-adapter.js";
+export { AzureDocIntelOcrAdapter } from "./adapters/azure-doc-intel-adapter.js";
+export { extractPdfTextLayer } from "./pdf-text-layer.js";

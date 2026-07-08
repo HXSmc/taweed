@@ -128,4 +128,28 @@ describe("full parse → normalize → insert into Postgres (RLS active)", () =>
       }),
     ).rejects.toThrow();
   });
+
+  it("RLS hides tenant A's eob_extractions rows from tenant B", async () => {
+    await withTenant(pool, tenantA, async (db) => {
+      await db.insert(schema.eobExtractions).values({
+        tenant_id: tenantA,
+        actor_id: "actor-1",
+        source_filename: "eob-001.pdf",
+        extraction: { lines: [] },
+        validator_report: { ok: true },
+        model: "claude-test",
+        prompt_sha256: "a".repeat(64),
+      });
+    });
+
+    await withTenant(pool, tenantA, async (db) => {
+      const rows = await db.select().from(schema.eobExtractions);
+      expect(rows).toHaveLength(1);
+    });
+
+    await withTenant(pool, tenantB, async (db) => {
+      const rows = await db.select().from(schema.eobExtractions);
+      expect(rows).toHaveLength(0);
+    });
+  });
 });

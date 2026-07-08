@@ -341,6 +341,35 @@ export const appealSuggestions = pgTable("appeal_suggestions", {
   updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+/**
+ * AI-4 — EOB vision-extraction review queue (plan 04 §9 PROMPT 3, prep). One
+ * row per extraction attempt. `extraction` and `validator_report` are opaque
+ * jsonb here — this schema does not import the EobExtraction zod type (a
+ * parallel task owns it); the app layer validates before/after persistence.
+ * Unlike llm_calls/audit_logs this table is NOT append-only: reviewers
+ * transition `status` pending_review -> approved|rejected and stamp
+ * reviewed_by/reviewed_at.
+ */
+export const eobExtractions = pgTable("eob_extractions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenant_id: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id),
+  actor_id: text("actor_id").notNull(),
+  source_filename: text("source_filename").notNull(),
+  status: text("status").notNull().default("pending_review"),
+  extraction: jsonb("extraction").notNull(),
+  validator_report: jsonb("validator_report").notNull(),
+  model: text("model").notNull(),
+  escalated: boolean("escalated").notNull().default(false),
+  prompt_sha256: text("prompt_sha256").notNull(),
+  reviewed_by: text("reviewed_by"),
+  reviewed_at: timestamp("reviewed_at", { withTimezone: true }),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   tenant_id: uuid("tenant_id")
@@ -384,5 +413,6 @@ export const TENANT_SCOPED_TABLES = [
   "flag_explanations",
   "tenant_ai_settings",
   "appeal_suggestions",
+  "eob_extractions",
   "users",
 ] as const;

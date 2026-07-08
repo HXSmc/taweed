@@ -10,6 +10,8 @@
     "packages/*/evals/**/*.ts",
     "test/synthetic-fhir/src/**/*.ts",
     "test/synthetic-fhir/test/**/*.ts",
+    "test/synthetic-eob/src/**/*.ts",
+    "test/synthetic-eob/test/**/*.ts",
     "vitest.workspace.ts"
   ],
   "exclude": ["**/node_modules/**", "**/dist/**", "apps/**"]
