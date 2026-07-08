@@ -66,6 +66,41 @@
 
 ## Learnings (append after each pass — newest on top)
 
+### Dependency audit (2026-07-08)
+
+- **Ground the CVE list in a real tool run before dispatching any research agents.** Ran
+  `pnpm audit --json` directly first and fed its exact findings (advisory IDs, versions, dependency
+  chains) into the workflow as literal context text — agents then verified/fixed against that real
+  data instead of guessing from training-data memory of "is package X vulnerable." Re-ran
+  `pnpm audit` myself independently after the fixes landed (10 advisories → 0) rather than trusting
+  the fix agents' self-reported counts, since one agent explicitly noted its own `pnpm audit` run
+  had hit a registry timeout mid-task.
+- **A CVE fix often needs a `pnpm.overrides` entry, not a version bump** — the vulnerable package
+  can be several dependency-levels deep with no direct control over it (json-rules-engine's own
+  jsonpath-plus pin, drizzle-kit's deprecated `@esbuild-kit` loader chain, postcss vendored inside
+  Next.js itself). Multiple fix agents needed to add entries to the SAME root `package.json`
+  `pnpm.overrides` block concurrently (in a true `parallel()` barrier, not a pipeline) — each
+  correctly read the file first and merged its own entry alongside siblings' rather than clobbering
+  them. This worked out, but running genuinely conflicting-file-touching fixes in parallel is a real
+  risk; got lucky here because each agent's instructions explicitly said "read the file first, don't
+  clobber."
+- **A major version bump (vitest 2→3, next-intl 3→4) needs a REAL migration-guide read** (WebFetch
+  the actual current changelog/migration doc), not a bump-and-pray. Both bumps in this pass turned
+  out to need zero source-code changes once verified against the actual current usage — but that's
+  a finding from checking, not an assumption to start with.
+- **For a major bump to a library with live, user-facing behavior (i18n routing, RTL), a green test
+  suite and green build aren't quite enough on their own** — one fix agent used chrome-devtools MCP
+  to actually load `/en` and `/ar` and confirm routing/RTL/console-cleanliness, and I independently
+  re-verified with a fresh chrome-devtools snapshot after restarting the dev server against the
+  final dependency state (a stale `next dev` process running against pre-bump `node_modules` doesn't
+  reflect a `package.json`/lockfile change — always restart the dev server after a dependency swap
+  before trusting a live check against it).
+- **"Abandonment" needs a real definition applied consistently, not vibes** — the research agents
+  used a concrete bar (no publish AND no commit in 18+ months, or an archived repo) and then
+  explicitly overrode it with judgment where the bar produced a misleading verdict (`clsx`: clears
+  the bar but is a finished 239-byte utility with ongoing maintainer engagement, not neglected).
+  Report the raw signal AND the judgment call separately rather than collapsing straight to a label.
+
 ### API/server-action auth-check audit (2026-07-08)
 
 - **`pnpm typecheck` at the repo root does NOT catch every typecheck error `apps/web` itself would
