@@ -2,11 +2,13 @@
 
 > Entry point for a new Claude Code session picking up Taweed. Read this, then run the
 > next-step prompt (`docs/NEXT_STEP_PROMPT.md`). Blocker register + a per-blocker unblock prompt:
-> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-06 (**AI-0 + AI-1 + the harden loop
-> merged to `origin/main` (`2d0e1bb`); PROMPT 2 = AI-2 appeal assist + AI-3 rule authoring now BUILT
-> and merged too** — both additive, PHI-free-build, fail-closed. Next = PROMPT 3 of
-> `docs/04_agentic_retrofit_plan.md` §9 = AI-4 vision extraction. The EXECUTE UI tail A2/A3 + the
-> real-data headline (BLK-1/2/9) remain independently pending).
+> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-08 (**PROMPT 3 = AI-4 vision
+> EOB/PDF extraction now BUILT** on branch `ai-phase-4` — synthetic-only, dual-gated, additive,
+> fail-closed. This closes out `docs/04_agentic_retrofit_plan.md` §9 entirely: AI-0 through AI-4
+> are all built and merged. There is no PROMPT 4 in that plan. Next = the EXECUTE UI tail
+> (**A2 first-run corridor, A3 free-audit + owner report**), independently pending since before
+> the AI phase started — see `docs/NEXT_STEP_PROMPT.md`. The real-data headline (BLK-1/2/9)
+> remains independently pending too).
 
 ## Where the project stands
 
@@ -45,11 +47,49 @@
     `0008` backfill. AI-3 approval UI stopped swallowing failures, added aria-live. AI-2
     `inference_geo` pinned. PHI-free-by-policy wording made honest. Unit 355/355, int 33/33 green,
     multi-lens review pre-commit.
-- **Next up:** **PROMPT 3 of `docs/04_agentic_retrofit_plan.md` §9** — AI-4 vision EOB/PDF extraction +
-  ground-truth eval (dual-gated: build on synthetic docs now, production route = counsel + hosting).
-  Independently pending: EXECUTE UI tail (**A2 first-run corridor**, **A3 free-audit + owner report**)
-  on synthetic data, then the **real-data headline** when BLK-1/2/9 clear. Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
-- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 pending)** → DEPLOY.
+- **AI phase — AI-4 DONE (synthetic-only, dual-gated), built 2026-07-08 (PROMPT 3), branch
+  `ai-phase-4`.** `ClaudeVisionOcrAdapter` (sonnet-first, escalates to opus on validator failure OR
+  a thrown call — both failure modes, not just one), behind the `EobExtractionAdapter` seam in
+  `@taweed/ingest`. Deterministic validators (`packages/ai/src/eob-validators.ts`): cross-claim-total
+  arithmetic, PDF-text-layer match, denial-code enum defense-in-depth. Migration `0009` adds
+  `eob_extractions` (RLS ENABLE+FORCE, tenant-isolated, `pending_review`/`approved`/`rejected`).
+  New Ingest-page "Review queue" tab: every extraction is human-reviewed/corrected before anything
+  reaches a real claim record; approving **re-runs the arithmetic validator on the human-edited
+  values** so an edit can't silently break the totals. Eval harness scaffolded (`packages/ai/evals/`)
+  but **has never scored a real pass** — the synthetic corpus (`test/synthetic-eob`) generates
+  ground-truth + an HTML template only; rasterizing to an actual PDF is a documented
+  `TODO(ai-route)`, not yet built. **AI-4 is the one feature that breaks the "PHI-free by
+  construction" property the rest of the AI layer holds** (a real PDF would carry genuine PHI with
+  no way to redact it pre-call) — that's exactly why it's scoped to synthetic PDFs only pending the
+  BLK-AI-1/3/4 route decision + counsel sign-off, not a flag to flip casually. Verified: unit
+  444/444 + integration 37/37 green, root+web typecheck/lint clean, `apps/web` production build
+  green (a real risk given `pdf-parse`/`@napi-rs/canvas`'s native binary — needed an explicit
+  webpack `externals` fix beyond `serverExternalPackages` alone). Multi-lens review
+  (typescript/security/healthcare) run with adversarial verification; findings fixed — escalation
+  now triggers on a thrown call not just a failed validator, `textLayer` now actually reaches the
+  adapter end-to-end, the extraction timeout raised to 90s for PDF+vision, the reviewer UI now
+  surfaces validator findings instead of discarding them, and approve re-validates arithmetic on
+  edited values. Also ran a taste-skill design audit against `.claude/rules/ecc/web/design-quality.md`
+  (code-level only — local Playwright/chrome-devtools is blocked on this machine's Node 20.2.0):
+  the frontend was already a disciplined token-based system, not templated slop; three small fixes
+  landed (a missing focus ring on a keyboard-operable Scrubber row, two chart files' duplicated
+  SVG-only hex colors centralized into `apps/web/lib/chart-colors.ts`, and the one stray literal
+  emoji found anywhere in shipped product code — a `⚠` in the i18n missing-message fallback string
+  — removed). `docs/review.md` rewritten across both halves (testing guide + technical review) to
+  cover AI-4, the Settings-tab use cases, and how to add Scrubber/Appeals test claims without
+  re-seeding.
+- **Two known real-data-enablement gaps for AI-4** (tracked, not blockers on today's synthetic
+  build): the synthetic-EOB→PDF rasterizer doesn't exist yet, so the eval harness's 98%/95%
+  accuracy thresholds are aspirational, unproven; and the extraction schema's 4-bucket money model
+  (billed/paid/patient-share/rejected) has no adjustment/withholding case, so a real remittance with
+  a contractual write-off wouldn't cross-total and could get stuck permanently un-approvable. See
+  `docs/review.md` §2.11 and the AI-4 row in `docs/04_agentic_retrofit_plan.md` §6.
+- **Next up:** `docs/04_agentic_retrofit_plan.md` §9 (PROMPT 1–3) is now fully built — there is no
+  PROMPT 4. The next concrete unit is the EXECUTE UI tail (**A2 first-run corridor**, **A3
+  free-audit + owner report**), independently pending since before the AI phase started. The
+  **real-data headline** stays gated on BLK-1/2/9 as always, and AI-4's production route is a
+  separate legal/ops track (BLK-AI-1/3/4). Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
+- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 pending · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
 
@@ -96,20 +136,20 @@ docker compose down
 - `packages/shared` — canonical row types + placeholder `DENIAL_REASON_CODES` (8 fake `TWD-*`, `TODO(nphies-creds)`; replaced by B2).
 - `packages/fhir` — R4 parse + base-R4 validate (`@medplum/fhirtypes` for types only); `validateAgainstNphiesProfile()` is a creds-gated stub (real IG validation = B6).
 - `packages/normalizer` — FHIR pair → canonical rows, denials exploded.
-- `packages/db` — **Drizzle** schema + migrations **through `0006`**, **RLS (FORCE + non-superuser `taweed_app` role)**, `withSession` → `withTenant` (auth-derived tenant), `insertNormalizedClaim`. **EXECUTE:** `0004` adds `claims.data_origin` (CHECK synthetic|production) + nullable real signal columns; `0005` adds `recovery_baselines`. **AI-0:** `0006` adds `llm_calls` (append-only LLM audit, hashes only), `flag_explanations` (AI-1 dedupe cache), `tenant_ai_settings` (per-tenant AI kill switch) — all RLS ENABLE+FORCE + tenant_isolation policy. *(The custom migrate runner applies all `drizzle/*.sql` sorted; 0006 verified against local Postgres this pass.)*
+- `packages/db` — **Drizzle** schema + migrations **through `0009`**, **RLS (FORCE + non-superuser `taweed_app` role)**, `withSession` → `withTenant` (auth-derived tenant), `insertNormalizedClaim`. **EXECUTE:** `0004` adds `claims.data_origin` (CHECK synthetic|production) + nullable real signal columns; `0005` adds `recovery_baselines`. **AI-0:** `0006` adds `llm_calls` (append-only LLM audit, hashes only), `flag_explanations` (AI-1 dedupe cache), `tenant_ai_settings` (per-tenant AI kill switch). **AI-2/AI-3:** `0007` adds `appeal_suggestions` + rule-authoring columns; `0008` backfills `rules.status` as the single source of rule liveness. **AI-4:** `0009` adds `eob_extractions` (`pending_review`/`approved`/`rejected`, mutable — not append-only like `llm_calls`). All tenant-scoped tables RLS ENABLE+FORCE + tenant_isolation policy. *(The custom migrate runner applies all `drizzle/*.sql` sorted.)*
 - `packages/audit` — **BUILT.** Append-only PHI audit log; tenant from the active RLS GUC; PHI-leak guard. Written on every PHI read/write/export.
 - `packages/rules-engine` — **BUILT.** `json-rules-engine` scrubber, **15 rules-as-data**, golden-set harness; `ScrubResult` traces every flag to a named rule + the failed field. **EXECUTE:** `project.ts` (`projectClaimFacts` real/synthetic split + the B5 production guard; `ClaimFacts` real signals widened to `| null`); `select.ts` (`selectRulesForClaim` — payer/tenant scope + version resolution, B7); the 3 payer rules carry explicit `payerId` metadata.
 - `packages/appeals` — **BUILT.** Deterministic **bilingual EN/AR** appeal letters, document checklist, human-in-the-loop, **never auto-submits**.
 - `packages/analytics` — **BUILT.** Rollups over canonical rows: denial rate, at-risk / recovered SAR, Pareto, trend. **EXECUTE:** `resolveRecovery` (recovered-exceeds-appealed guardrail, §8.5), `captureBaseline`/`getLatestBaseline` (onboarding baseline), `recoverability`/`recoverabilityByPayerReason` (recovered-outcome feedback loop, B7/B8).
-- `packages/ingest` — **BUILT (EXECUTE B6).** Real-data intake: `parseDelimited` (dependency-free RFC-4180 CSV/TSV), `detectFieldMapping`/`applyMappingOverrides` (column→field with confidence + override), `resolveDimension(s)` (per-tenant find-or-create from partner data). `parseXlsx`/`ocrEob` are typed adapter stubs (inject SheetJS + Tesseract at DEPLOY).
-- `packages/ai` — **BUILT (AI-0/AI-1).** The only package that talks to an LLM. `provider.ts` (`LlmProvider`/`LlmClient` narrow swap surface), `anthropic-1p.ts` (`@anthropic-ai/sdk` `messages.parse` + `zodOutputFormat`, no thinking/effort on Haiku, 30s timeout, extracted+tested response mapping), `fixture.ts` (record/replay for CI), `run.ts` (audited runner — 3-layer kill switch, short transactions around the network call, audit on every attempt incl. failures), `audit.ts` (`writeLlmCall` hashes-only + PHI-leak guard), `pseudonymize.ts` + `postprocess-ar.ts` (pure, 100% covered), `config.ts`/`errors.ts` (kill switches + `AiDisabledError`), `schemas/flagExplanation.ts`, `features/explainFlag.ts` (AI-1). `evals/` (live smoke eval, `AI_EVALS_LIVE=1` only). Exports feature fns + gates + pure helpers ONLY — never the provider client or the runner.
+- `packages/ingest` — **BUILT (EXECUTE B6 + AI-4).** Real-data intake: `parseDelimited` (dependency-free RFC-4180 CSV/TSV), `detectFieldMapping`/`applyMappingOverrides` (column→field with confidence + override), `resolveDimension(s)` (per-tenant find-or-create from partner data). `parseXlsx` is a typed adapter stub (inject SheetJS at DEPLOY). **AI-4:** `pdf-text-layer.ts` (`extractPdfTextLayer` — born-digital PDF text extraction via `pdf-parse`/`pdfjs-dist`, self-polyfills `@napi-rs/canvas`'s DOMMatrix/ImageData/Path2D globals since pnpm's strict isolation breaks pdfjs-dist's own polyfill lookup), `eob-extraction-adapter.ts` (the `EobExtractionAdapter` seam + `extractEobFromPdf`, forwards `{hiRes, textLayer}` opts through to the concrete adapter).
+- `packages/ai` — **BUILT (AI-0 through AI-4).** The only package that talks to an LLM. `provider.ts` (`LlmProvider`/`LlmClient` narrow swap surface, now with a per-request `timeoutMs` override), `anthropic-1p.ts` (`@anthropic-ai/sdk` `messages.parse` + `zodOutputFormat`, 30s default timeout overridable per-call, extracted+tested response mapping, `INFERENCE_GEO="us"` pinned on every call), `fixture.ts` (record/replay for CI), `run.ts` (audited runner — 3-layer kill switch, short transactions around the network call, audit on every attempt incl. failures), `audit.ts` (`writeLlmCall` hashes-only + PHI-leak guard), `pseudonymize.ts` + `postprocess-ar.ts` (pure, 100% covered), `config.ts`/`errors.ts` (kill switches + `AiDisabledError`), `schemas/{flagExplanation,scrubRuleDraft,eobExtraction}.ts`, `features/{explainFlag,assistAppeal,authorRule,extractEob}.ts` (AI-1 through AI-4), `eob-validators.ts` (AI-4's deterministic cross-total/text-layer/enum gate), `adapters/claude-vision-ocr.ts` (AI-4's sonnet→opus escalation adapter). `evals/` (live smoke evals + AI-4's `extractEob.eval.ts` scaffold, `AI_EVALS_LIVE=1` only — the AI-4 one has never scored a real pass, see the AI-4 entry above). Exports feature fns + gates + pure helpers ONLY — never the provider client or the runner.
 - `packages/platform` — **BUILT (EXECUTE C, typed swaps).** `ObjectStore` + `InMemoryObjectStore` (per-tenant keyed) + `S3ObjectStoreConfig` (`me-riyadh-1`, SSE); `TenantKms` + `DevPassthroughKms` (dev stub, NOT real crypto, cross-tenant decrypt refused); `ksaOidcConfigFromEnv` + `KsaOidcConfig` (BLK-7 swap, fails closed). Dev impls now; real KSA-region clients at DEPLOY.
 - `infra/` — **BUILT (EXECUTE C, skeleton).** Terraform pinned to Oracle Cloud Riyadh `me-riyadh-1` (Postgres + S3-compatible store + per-tenant KMS), resources commented until BLK-8 creds; NOT applied. `*.tfstate*`/`*.tfvars`/`*.pem`/`*.key` gitignored.
 - `apps/web` — **BUILT.** Next 15 App Router. Design tokens (`globals.css`) → Tailwind + hand-built shadcn/Radix primitives → EN/AR RTL (`next-intl`, logical properties, `dir` on `<html>`) → light/dark → Auth.js **dev credentials** (gated dev-only; `TODO(ksa-oidc)` swap = B7) → app-level RBAC (owner/finance/rcm/clinician/admin), **server-enforced** in server actions → three-zone shell + persistent dual money indicator with count-up. Five module surfaces: Ingest, Denial Analytics, Scrubber, Appeal Generator, Recovery.
   - Seams: `apps/web/lib/{db,auth,session,rbac,authz,audit,data,appeals-data}.ts`, `lib/actions/*` (server actions), `components/{ui,shell,charts,money,modules}`, `i18n/*`, `messages/{en,ar}.json`.
 - `test/synthetic-fhir` — deterministic R4 bundle generator (9 scenarios).
 - CI: `.github/workflows/ci.yml` (lint + typecheck + unit + integration w/ Postgres service + **`e2e` job** — Playwright + a11y against a seeded Postgres, EXECUTE A1).
-- `apps/web` **EXECUTE additions:** marketing landing at `/[locale]` for logged-out visitors (`components/marketing/landing.tsx`, A4); `playwright.config.ts` + `tests/e2e/*` (smoke/a11y/money-arc, A1); `lib/data.ts` uses `projectClaimFacts` + `selectRulesForClaim`; `lib/actions/recovery.ts` uses `resolveRecovery`; `lib/utils.ts` `cn()` teaches tailwind-merge the custom fontSize scale (app-wide hero-size fix). **AI-1 additions:** `lib/actions/explain-flag.ts` (server action → `@taweed/ai` `explainFlag`, re-derives prompt from `SCRUBBER_RULES`, RBAC-gated, catches `AiDisabledError` → deterministic); `components/modules/flag-explainer.tsx` (additive bilingual popover); `lib/data.ts` `ScrubRow` carries `ruleVersions`; `@taweed/ai` added to deps + `transpilePackages`; EN/AR scrubber i18n keys. **Not yet built (next pass): A2 first-run corridor, A3 free-audit + owner report, B6 field-mapping panel wired into the Ingest UI; AI-2/AI-3/AI-4.**
+- `apps/web` **EXECUTE additions:** marketing landing at `/[locale]` for logged-out visitors (`components/marketing/landing.tsx`, A4); `playwright.config.ts` + `tests/e2e/*` (smoke/a11y/money-arc, A1); `lib/data.ts` uses `projectClaimFacts` + `selectRulesForClaim`; `lib/actions/recovery.ts` uses `resolveRecovery`; `lib/utils.ts` `cn()` teaches tailwind-merge the custom fontSize scale (app-wide hero-size fix). **AI-1 additions:** `lib/actions/explain-flag.ts` (server action → `@taweed/ai` `explainFlag`, re-derives prompt from `SCRUBBER_RULES`, RBAC-gated, catches `AiDisabledError` → deterministic); `components/modules/flag-explainer.tsx` (additive bilingual popover); `lib/data.ts` `ScrubRow` carries `ruleVersions`; `@taweed/ai` added to deps + `transpilePackages`; EN/AR scrubber i18n keys. **AI-2/AI-3 additions:** `components/modules/appeals-composer.tsx` (AI-2 "Suggest" panel), `components/modules/rule-authoring.tsx` + the authored-rule library (AI-3 Draft/Gate/Approve flow), Settings "Author" tab. **AI-4 additions:** `lib/actions/{eob-extract,eob-review}.ts` (upload entrypoint + approve/reject, approve re-validates arithmetic on edited values), `lib/eob-review-data.ts` + `lib/eob-to-normalized.ts`, `components/modules/eob-review-queue.tsx` + `components/modules/eob-review/{confidence-badge,eob-extraction-form}.tsx`, a second "Review queue" tab on the Ingest page; `next.config.mjs` gained `serverExternalPackages` + explicit webpack `externals` for `pdf-parse`/`pdfjs-dist`/`@napi-rs/canvas`'s native binary. `lib/chart-colors.ts` (new, 2026-07-08 design-audit fix — shared SVG-safe hex for Pareto/TrendLine, was duplicated in two files). **Not yet built (next pass): A2 first-run corridor, A3 free-audit + owner report, B6 field-mapping panel wired into the Ingest UI.**
 
 ## Must-read before building
 
