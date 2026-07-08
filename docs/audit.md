@@ -66,6 +66,38 @@
 
 ## Learnings (append after each pass — newest on top)
 
+### API/server-action auth-check audit (2026-07-08)
+
+- **`pnpm typecheck` at the repo root does NOT catch every typecheck error `apps/web` itself would
+  hit.** A `NODE_ENV` readonly-property error in two new apps/web test files passed root
+  `pnpm typecheck` clean but failed `pnpm --filter @taweed/web typecheck`. Always run BOTH after
+  a pass that touches `apps/web` — root typecheck is necessary but not sufficient.
+- **Fix:** for tests that need to flip `process.env.NODE_ENV`/other env vars, use
+  `vi.stubEnv(name, value)` / `vi.stubEnv(name, undefined)` + `vi.unstubAllEnvs()` in `afterEach` —
+  NOT direct `process.env.X = ...` / `delete process.env.X`, which doesn't typecheck under modern
+  `@types/node` (it marks `NODE_ENV` readonly).
+- **Two fix agents can target overlapping logic and self-resolve correctly.** One agent (fixing
+  `apps/web/lib/auth.ts`) relocated a rate-limit check into `authorize()`; a second agent (assigned
+  `apps/web/lib/actions/auth.ts`) discovered this mid-task, recognized the throttle had moved
+  rather than vanished, and adapted its fix instead of re-adding a redundant/conflicting one. Don't
+  assume a fix agent noting "unrelated concurrent change" means its own work is compromised — check
+  the actual resulting diff; in this case both ended up correct and consistent.
+- **A dedicated per-file audit (11 known files) surfaces different findings than a broader
+  4-area structural pass** (this pass's task vs. the security audit's own access-control area) —
+  worth running both when the surface is small enough to enumerate exhaustively (client-reachable
+  route handlers + server actions), since the exhaustive pass caught 2 missing page-level RBAC
+  gates (`recovery/page.tsx`, `settings/page.tsx`) and a NextAuth-endpoint rate-limit bypass that
+  the broader pass's `apps/web/lib/auth.ts`-focused finding didn't fully chase down to the REST
+  endpoint level.
+- **chrome-devtools MCP tools work on this machine independent of the repo's own Playwright/Node
+  version block.** `docs/handoff.md`/earlier audit notes said local Playwright/chrome-devtools
+  driving was blocked by Node 20.2.0 — that's specific to the repo's own `node_modules/playwright`
+  binary under its pinned Node version. The `mcp__chrome-devtools__*` tools are a separate,
+  externally-driven browser connection and work fine: confirmed `navigate_page` + `take_snapshot`
+  against a locally-running `pnpm dev` server returns a full accessibility tree. **Use this for the
+  WCAG audit pass** instead of a code-only inference pass — real rendered tree, real contrast,
+  real keyboard nav, not just static analysis.
+
 ### Security audit (2026-07-08)
 
 - **A background Workflow can hit an account-level session/rate limit mid-run** ("You've hit your
