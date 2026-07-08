@@ -66,6 +66,37 @@
 
 ## Learnings (append after each pass — newest on top)
 
+### Security audit (2026-07-08)
+
+- **A background Workflow can hit an account-level session/rate limit mid-run** ("You've hit your
+  session limit · resets HH:MM (tz)") — this is NOT a code/prompt problem, retrying immediately
+  within the same window won't help. `Workflow({scriptPath, resumeFromRunId})` correctly re-runs
+  only the failed/null agents (not a blind full replay) once you do retry — confirmed empirically:
+  a second resume-run picked up exactly the agents that had failed and left successfully-completed
+  ones cached; this pass's resume succeeded because enough of the window had rolled forward by the
+  time it ran (session limits are typically 5h rolling windows). Session-limit errors surface
+  reactively in an agent's failure message; there's no way to poll the limit percentage ahead of
+  time — just react when it appears, capture the reset time from the error text, and if an
+  immediate resume re-hits the same message, wait for the stated reset time instead of repeatedly
+  resuming.
+- **Verify-stage results aren't perfectly reproducible between two runs of the same script** — a
+  finding confirmed in run 1 can come back refuted in run 2 (e.g. `apps/web/lib/actions/auth.ts`'s
+  rate-limiting finding, refuted on rerun because a *different* fix — the shared rate-limit store
+  change — had already closed it in the interim). Don't treat "not in the confirmed list this time"
+  as "definitely not real" without a quick manual sanity check against what else changed.
+- **A finding that's explicitly a "no gap found" positive confirmation can still get marked
+  `real: true`** by a verify lens (because the underlying factual claims in the writeup are
+  accurate) even though it isn't a vulnerability. Read the finding's own text, not just the
+  confirmed/not-confirmed bucket, before writing it up as an actual issue.
+- **A single security fix can require a new DB migration** (`0010_app_role_grants.sql`,
+  `0011_rate_limit_windows.sql` this pass) — always re-run the FULL integration suite after a
+  security-fix batch, not just unit tests, since migration-ordering/role-grant issues only surface
+  against a real Postgres.
+- Same file-collision risk as the bug hunt: parallel fix agents referencing "the working tree also
+  has unrelated changes" in their own summaries is expected noise from running many agents in one
+  shared (non-worktree) directory — verify by `git diff`, don't take an agent's "not mine" note as
+  the last word on what changed.
+
 ### Bug hunt (2026-07-08)
 
 - **21/22 candidates confirmed** — the adversarial-verify stage (2 skeptics, default-to-refute) is
