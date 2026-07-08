@@ -60,6 +60,40 @@ export function buildSystemBlocks(
   ];
 }
 
+export type UserContentBlock =
+  | {
+      type: "document";
+      source: { type: "base64"; media_type: "application/pdf"; data: string };
+    }
+  | { type: "text"; text: string };
+
+/**
+ * The user-turn content: a plain string when there are no documents (the
+ * common case — explainFlag/appeal/authorRule), or a document-then-text
+ * content-block array (AI-4's PDF extraction; claude-api skill's documented
+ * ordering — document blocks before the text block). Pure — never cached
+ * (see StructuredRequest.documents doc comment).
+ */
+export function buildUserContent(
+  user: string,
+  documents?: readonly { base64: string }[],
+): string | UserContentBlock[] {
+  if (documents === undefined || documents.length === 0) return user;
+  return [
+    ...documents.map(
+      (doc): UserContentBlock => ({
+        type: "document",
+        source: {
+          type: "base64",
+          media_type: "application/pdf",
+          data: doc.base64,
+        },
+      }),
+    ),
+    { type: "text", text: user },
+  ];
+}
+
 /** Map an SDK parse response into our provider-neutral StructuredResult. Pure. */
 export function mapParseResponse<T>(
   res: ParseResponseLike<T>,
@@ -82,7 +116,10 @@ export function mapParseResponse<T>(
 }
 
 // Bound the request so a hung upstream can't stall a caller indefinitely (the
-// explainer's payload is tiny — 1024 max_tokens — so 30s is generous). ms.
+// explainer's payload is tiny — 1024 max_tokens — so 30s is generous). This is
+// the CLIENT default; a call with a heavier payload (e.g. AI-4's PDF
+// extraction) overrides it per-request via StructuredRequest.timeoutMs
+// (see above) rather than sharing a constant sized for the explainer. ms.
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export function createAnthropicProvider(
@@ -102,11 +139,13 @@ export function createAnthropicProvider(
         model: mapTaweedModel(req.model),
         max_tokens: req.maxTokens,
         system: buildSystemBlocks(req.system, req.cacheSystem),
-        messages: [{ role: "user", content: req.user }],
+        messages: [
+          { role: "user", content: buildUserContent(req.user, req.documents) },
+        ],
         output_config: { format: zodOutputFormat(req.schema) },
         // Data-residency pin. Spread past the SDK's request type (see header).
         ...({ inference_geo: INFERENCE_GEO } as { inference_geo: string }),
-      });
+      }, req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : undefined);
       return mapParseResponse<T>(
         res as unknown as ParseResponseLike<T>,
         Date.now() - started,

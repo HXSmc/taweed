@@ -22,6 +22,7 @@ export default defineWorkspace([
       include: [
         "packages/*/test/**/*.test.ts",
         "test/synthetic-fhir/test/**/*.test.ts",
+        "test/synthetic-eob/test/**/*.test.ts",
       ],
       exclude: ["**/*.int.test.ts", "**/node_modules/**"],
     },

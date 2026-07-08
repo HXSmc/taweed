@@ -14,6 +14,8 @@
 
 ## 1. Current standpoint (from `docs/handoff.md`, 2026-07-05)
 
+> **Update 2026-07-08:** §9 PROMPT 3 (AI-4) is now also built and merged — see §6's phase table below for the current state of every row. This section's body text is left as the 2026-07-05 snapshot for history; `docs/handoff.md` is the live state doc.
+
 - CREATE ✅ · IMPLEMENT ✅ · **EXECUTE buildable pass ✅ merged to `main`** (B5–B8, C swaps, A1/A4).
 - **AI-0 + AI-1 ✅ merged to `main` (2026-07-05):** `@taweed/ai` foundation + the bilingual scrub-flag
   explainer — PHI-free, additive, fail-closed OFF by default. 266 unit + 6 integration green, coverage 92%,
@@ -203,11 +205,11 @@ money numbers) are never replaced, only augmented.
 | **AI-1 Explainer ✅** | `explainFlag` (Haiku, dedupe by (tenant,rule,version)), UI popover on scrubber flags, both locales/themes — **DONE 2026-07-05** (multi-lens review + fixes: pool-exhaustion, NUL bytes, audit-on-failure, SFDA prompt hardening) | none — PHI-free | ~3–4 d → done |
 | **AI-2 Appeal assist ✅** | `assistAppeal` (Opus): additive `suggestedParagraphs` on `AppealDraft` (template body untouched), digit-free slot-fill + no-invented-number gate + glossary + Sonnet verify pass + AR post-processor + detokenize-last, SME edit-distance metric (`appeal_suggestions`) — **DONE 2026-07-06** (unit+int green, multi-lens review) | **BLK-AI-1 counsel** + **BLK-AI-2 ZDR** gate live PHI calls (per-feature flag OFF until cleared); synthetic operation unrestricted; BLK-9 gates clinic shipping | ~1–1.5 wk → done |
 | **AI-3 Rule authoring ✅** | `authorRule` (Opus) + bounded non-recursive schema + `validateAuthoredRule` gate (shape → engine dry-run → golden regression) + persist DISABLED + approval UI (rcm/owner/admin) + approved rules feed the live scrubber — **DONE 2026-07-06** (unit+int green) | none for build (PHI-free); golden corpus shared with the regression test | ~1–1.5 wk → done |
-| **AI-4 PDF extraction** | `ClaudeVisionOcrAdapter` behind `OcrAdapter`, validators (cross-totals, text-layer match, enums), review-queue UI, 30–50-doc EN/AR ground-truth eval harness | **Production route = decision gate** (§3.3): counsel + hosting pick; eval pass ≥ target on synthetic + de-identified docs first | ~1.5–2 wk build + eval |
+| **AI-4 PDF extraction ✅** | `ClaudeVisionOcrAdapter` (sonnet-first, opus escalation on validator failure OR a thrown call) behind the `EobExtractionAdapter` seam, `validateEobExtraction`/`validateEobExtractionArithmetic` (cross-totals, text-layer match, enum defense-in-depth), `eob_extractions` review-queue UI (re-validates on approve), eval harness scaffold — **DONE 2026-07-08** (unit 444/444 + integration 37/37 green, multi-lens review + fixes). **Two things NOT yet done, tracked as follow-ups, not blockers on this row:** the synthetic corpus has no HTML→PDF rasterizer yet, so the eval harness has never scored a real pass against the 98%/95% targets; and the extraction schema's 4-bucket money model (billed/paid/patient-share/rejected) has no adjustment/withholding case, so a real remittance with a contractual write-off won't cross-total (`docs/review.md` §2.11). | **Production route = decision gate** (§3.3), unchanged: counsel + hosting pick (BLK-AI-1/3/4); build and eval remain synthetic-only until it clears | ~1.5–2 wk build + eval — build done, eval-scoring not yet possible |
 | **AI-5 Orchestration** | deferred — typed feature fns become the tool surface later | in-Kingdom frontier endpoint exists | — |
 
-Order: AI-0 → AI-1 (proof, zero risk) → AI-3 and AI-2 in parallel → AI-4 last (dual-gated).
-A2/A3 UI tail (old NEXT_STEP) is independent — can interleave.
+Order: AI-0 → AI-1 (proof, zero risk) → AI-3 and AI-2 in parallel → AI-4 last (dual-gated). **All of AI-0 through AI-4 are now built** (synthetic/PHI-free-by-policy); AI-5 remains deferred on an in-Kingdom endpoint.
+A2/A3 UI tail (old NEXT_STEP) is independent — can interleave, and is now the nearest un-started unit since the AI phase itself is fully built.
 
 ## 7. Risks
 

@@ -13,12 +13,34 @@ export interface StructuredRequest<T> {
   model: TaweedModel;
   system: string;
   user: string;
+  /**
+   * Additional documents (currently PDF only) attached to the user turn — e.g.
+   * AI-4's payer EOB/remittance extraction (plan 04 §4.1, §9). Provider-neutral:
+   * a bare base64 payload, not an Anthropic SDK content-block type, so this
+   * interface stays implementable by a future Bedrock/Vertex provider without
+   * leaking SDK types here. Rendered before the `user` text block (Claude PDF
+   * docs' recommended ordering). Never prompt-cached — each document is
+   * unique per call, so caching it would only pay the write premium.
+   * `promptSha256` (run.ts / callers) is derived from `system`+`user` only, NOT
+   * these bytes — it identifies the instruction template, not the document;
+   * per-call/per-document identity comes from the provider's `requestId` plus
+   * whatever caller-side document id the feature function threads through.
+   */
+  documents?: readonly { base64: string }[];
   schema: z.ZodType<T>;
   /** Stable schema identity — part of the fixture key and the audit trail. */
   schemaName: string;
   maxTokens: number;
   /** Prompt-cache the system prompt (plan 04 §4.4). */
   cacheSystem?: boolean;
+  /**
+   * Per-request timeout override in ms. The provider's default
+   * (REQUEST_TIMEOUT_MS in anthropic-1p.ts) is sized for small structured-
+   * extraction payloads; a request carrying a `documents` attachment (AI-4's
+   * PDF extraction) is a materially heavier vision workload and should set
+   * this explicitly rather than share that default.
+   */
+  timeoutMs?: number;
 }
 
 export interface LlmUsage {

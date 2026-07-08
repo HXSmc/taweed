@@ -53,7 +53,7 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
               return (
                 <TR
                   key={r.claimId}
-                  className="cursor-pointer"
+                  className="cursor-pointer focus-ring"
                   onClick={() => setSelected(r)}
                   tabIndex={0}
                   role="button"

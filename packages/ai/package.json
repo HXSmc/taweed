@@ -9,7 +9,9 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
+    "@taweed/analytics": "workspace:*",
     "@taweed/db": "workspace:*",
+    "@taweed/ingest": "workspace:*",
     "@taweed/rules-engine": "workspace:*",
     "@taweed/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
@@ -17,6 +19,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@taweed/synthetic-eob": "workspace:*",
     "@taweed/synthetic-fhir": "workspace:*",
     "pg": "^8.22.0"
   }

@@ -19,6 +19,7 @@
     "@taweed/audit": "workspace:*",
     "@taweed/db": "workspace:*",
     "@taweed/fhir": "workspace:*",
+    "@taweed/ingest": "workspace:*",
     "@taweed/normalizer": "workspace:*",
     "@taweed/rules-engine": "workspace:*",
     "@taweed/shared": "workspace:*",
