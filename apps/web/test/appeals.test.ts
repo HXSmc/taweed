@@ -16,11 +16,21 @@ vi.mock("../lib/appeals-data", () => ({
 vi.mock("../lib/audit", () => ({
   recordPhiAccess: vi.fn(),
 }));
+// loadAppealDraft/recordAppealExport both throttle via allowRequest (regression
+// coverage for the audit finding: these two PHI-bearing actions had no rate
+// limiting, unlike sibling assist-appeal.ts). Mock the whole module — same
+// approach as ingest-rate-limit.test.ts — so these tests never touch the real
+// Postgres-backed store, and default it to "allowed" so the existing
+// happy-path tests below are unaffected by this addition.
+const mockedAllowRequest = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  allowRequest: (...args: unknown[]) => mockedAllowRequest(...args),
+}));
 
 import { getSession } from "../lib/session";
 import { getAppealDraft } from "../lib/appeals-data";
 import { recordPhiAccess } from "../lib/audit";
-import { loadAppealDraft } from "../lib/actions/appeals";
+import { loadAppealDraft, recordAppealExport } from "../lib/actions/appeals";
 
 const mockedGetSession = vi.mocked(getSession);
 const mockedGetAppealDraft = vi.mocked(getAppealDraft);
@@ -66,6 +76,9 @@ const DRAFT: AppealResult = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default to "under budget" so tests that aren't specifically about the
+  // throttle exercise the normal control flow, matching ingest-rate-limit.test.ts.
+  mockedAllowRequest.mockResolvedValue(true);
 });
 
 describe("loadAppealDraft — admin cannot read the PHI appeal letter", () => {
@@ -129,5 +142,120 @@ describe("loadAppealDraft — an audit-write failure must not discard a successf
     // Assert
     expect(result).toBeNull();
     expect(mockedRecordPhiAccess).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadAppealDraft — server-side rate limiting", () => {
+  it("returns null and never touches the draft fetch when allowRequest denies the request", async () => {
+    // Arrange: an actor over the per-tenant+actor cap for this window.
+    mockedGetSession.mockResolvedValue(makeSession({ role: "owner" }));
+    mockedAllowRequest.mockResolvedValue(false);
+
+    // Act
+    const result = await loadAppealDraft("denial-1");
+
+    // Assert: the throttle fires before the PHI-bearing fetch ever runs.
+    expect(result).toBeNull();
+    expect(mockedGetAppealDraft).not.toHaveBeenCalled();
+    expect(mockedRecordPhiAccess).not.toHaveBeenCalled();
+  });
+
+  it("keys the throttle per tenant+actor", async () => {
+    // Arrange
+    mockedGetSession.mockResolvedValue(makeSession({ role: "owner" }));
+    mockedGetAppealDraft.mockResolvedValue(DRAFT);
+
+    // Act
+    await loadAppealDraft("denial-1");
+
+    // Assert
+    expect(mockedAllowRequest).toHaveBeenCalledWith(
+      "appeal-draft:11111111-1111-4111-8111-111111111111:u1",
+      expect.any(Number),
+      expect.any(Number),
+    );
+  });
+});
+
+describe("recordAppealExport", () => {
+  it("returns ok:false and never touches the DB when allowRequest denies the request", async () => {
+    // Arrange
+    mockedGetSession.mockResolvedValue(makeSession({ role: "owner" }));
+    mockedAllowRequest.mockResolvedValue(false);
+
+    // Act
+    const result = await recordAppealExport("denial-1");
+
+    // Assert: the throttle fires before the draft-existence check or audit write.
+    expect(result).toEqual({ ok: false });
+    expect(mockedGetAppealDraft).not.toHaveBeenCalled();
+    expect(mockedRecordPhiAccess).not.toHaveBeenCalled();
+  });
+
+  it("keys the throttle per tenant+actor", async () => {
+    // Arrange
+    mockedGetSession.mockResolvedValue(makeSession({ role: "owner" }));
+    mockedGetAppealDraft.mockResolvedValue(DRAFT);
+
+    // Act
+    await recordAppealExport("denial-1");
+
+    // Assert
+    expect(mockedAllowRequest).toHaveBeenCalledWith(
+      "appeal-export:11111111-1111-4111-8111-111111111111:u1",
+      expect.any(Number),
+      expect.any(Number),
+    );
+  });
+
+  it("returns ok:false and never writes the audit row when no appeal draft exists for the denialId", async () => {
+    // Arrange: a caller supplies a denialId for which there is no real,
+    // tenant-scoped appeal data (letters are generated on-demand, never
+    // stored, so this is the server-side proxy for "no letter was ever
+    // generated for this id") — the audit-integrity gap this closes.
+    mockedGetSession.mockResolvedValue(makeSession({ role: "owner" }));
+    mockedGetAppealDraft.mockResolvedValue(null);
+
+    // Act
+    const result = await recordAppealExport("nonexistent-denial");
+
+    // Assert: no fabricated compliance record is written.
+    expect(result).toEqual({ ok: false });
+    expect(mockedRecordPhiAccess).not.toHaveBeenCalled();
+  });
+
+  it("records the export and returns ok:true when a real appeal draft exists for the denialId", async () => {
+    // Arrange
+    mockedGetSession.mockResolvedValue(makeSession({ role: "owner" }));
+    mockedGetAppealDraft.mockResolvedValue(DRAFT);
+    mockedRecordPhiAccess.mockResolvedValue(undefined);
+
+    // Act
+    const result = await recordAppealExport("denial-1");
+
+    // Assert
+    expect(result).toEqual({ ok: true });
+    expect(mockedGetAppealDraft).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      "denial-1",
+    );
+    expect(mockedRecordPhiAccess).toHaveBeenCalledWith(
+      "export",
+      "appeal-pdf",
+      "denial-1",
+    );
+  });
+
+  it("returns ok:false when the session is not entitled (admin cannot export)", async () => {
+    // Arrange: admin's appeals capability is "read", excluded from APPEAL_ROLES.
+    mockedGetSession.mockResolvedValue(makeSession({ role: "admin" }));
+
+    // Act
+    const result = await recordAppealExport("denial-1");
+
+    // Assert: fails closed before the throttle or draft check even run.
+    expect(result).toEqual({ ok: false });
+    expect(mockedAllowRequest).not.toHaveBeenCalled();
+    expect(mockedGetAppealDraft).not.toHaveBeenCalled();
   });
 });

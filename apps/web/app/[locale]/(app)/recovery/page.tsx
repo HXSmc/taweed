@@ -1,6 +1,8 @@
+import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Check, X } from "lucide-react";
 import { requireSession } from "@/lib/session";
+import { isVisible } from "@/lib/rbac";
 import { getRecovery, type AppealPipelineRow } from "@/lib/data";
 import { markAppealOutcomeForm } from "@/lib/actions/recovery";
 import { formatMoney, formatPct, toNumber } from "@/lib/money";
@@ -23,6 +25,15 @@ export default async function RecoveryPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const session = await requireSession(locale);
+  // Server-enforced RBAC gate for the read path: rbac.ts's MATRIX marks
+  // recovery "hidden" for clinician — requireSession() alone only
+  // authenticates, so without this a direct navigation to /[locale]/recovery
+  // reached the full appeal/recovery financial dashboard (recovered/appealed
+  // SAR, win rate, per-claim NPHIES ids and payer names) regardless of role.
+  // The write path was already safe (authorizeAction('recovery', ['full'])
+  // in actions/recovery.ts), but the read-side disclosure happened on render.
+  // Same bug class already fixed for ingest and settings.
+  if (!isVisible(session.role, "recovery")) notFound();
   const t = await getTranslations("recovery");
   const tc = await getTranslations("common");
 

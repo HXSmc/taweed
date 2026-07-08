@@ -1,8 +1,9 @@
+import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ShieldCheck } from "lucide-react";
 import { requireSession } from "@/lib/session";
 import { getRules, getAuditLog } from "@/lib/data";
-import { capability } from "@/lib/rbac";
+import { capability, isVisible } from "@/lib/rbac";
 import { getTenantPayers, listAuthoredRules } from "@/lib/rules-data";
 import { PageHeader } from "@/components/shell/page-header";
 import { RuleAuthoring } from "@/components/modules/rule-authoring";
@@ -21,6 +22,12 @@ export default async function SettingsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const session = await requireSession(locale);
+  // Server-enforced RBAC gate for the read path: rbac.ts's MATRIX marks
+  // settings "hidden" for clinician. Without this, requireSession() alone
+  // let any authenticated role reach the rule library and full tenant audit
+  // log below — canAuthor only ever gated the AI-3 authoring sub-panel, not
+  // the page itself. Same bug class already fixed for the ingest page.
+  if (!isVisible(session.role, "settings")) notFound();
   const t = await getTranslations("settings");
   const tr = await getTranslations("trust");
   const ts = await getTranslations("scrubber");

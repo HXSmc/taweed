@@ -36,10 +36,6 @@ vi.mock("../lib/db", () => ({
 // runs a real `next start` production build — see playwright.config.ts).
 
 describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  const originalDevFlag = process.env.TAWEED_ENABLE_DEV_AUTH;
-  const originalAuthSecret = process.env.AUTH_SECRET;
-
   beforeEach(() => {
     // auth.ts reads these env vars at module-import time, so each test needs a
     // fresh module instance to observe a different combination.
@@ -47,27 +43,16 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
   });
 
   afterEach(() => {
-    if (originalNodeEnv === undefined) {
-      delete process.env.NODE_ENV;
-    } else {
-      process.env.NODE_ENV = originalNodeEnv;
-    }
-    if (originalDevFlag === undefined) {
-      delete process.env.TAWEED_ENABLE_DEV_AUTH;
-    } else {
-      process.env.TAWEED_ENABLE_DEV_AUTH = originalDevFlag;
-    }
-    if (originalAuthSecret === undefined) {
-      delete process.env.AUTH_SECRET;
-    } else {
-      process.env.AUTH_SECRET = originalAuthSecret;
-    }
+    // vi.stubEnv is the type-safe way to mutate process.env in a test — plain
+    // `process.env.NODE_ENV = ...` / `delete process.env.NODE_ENV` don't
+    // typecheck under modern @types/node, which marks NODE_ENV readonly.
+    vi.unstubAllEnvs();
   });
 
   it("stays disabled when NODE_ENV is unset (e.g. a custom server that never sets it)", async () => {
     // Arrange
-    delete process.env.NODE_ENV;
-    delete process.env.TAWEED_ENABLE_DEV_AUTH;
+    vi.stubEnv("NODE_ENV", undefined);
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", undefined);
 
     // Act
     const { DEV_AUTH_ENABLED } = await import("../lib/auth");
@@ -78,8 +63,8 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
 
   it("stays disabled for a misconfigured non-'production' NODE_ENV like 'staging'", async () => {
     // Arrange
-    process.env.NODE_ENV = "staging";
-    delete process.env.TAWEED_ENABLE_DEV_AUTH;
+    vi.stubEnv("NODE_ENV", "staging");
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", undefined);
 
     // Act
     const { DEV_AUTH_ENABLED } = await import("../lib/auth");
@@ -90,8 +75,8 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
 
   it("enables dev auth for genuine local development (NODE_ENV=development)", async () => {
     // Arrange
-    process.env.NODE_ENV = "development";
-    delete process.env.TAWEED_ENABLE_DEV_AUTH;
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", undefined);
 
     // Act
     const { DEV_AUTH_ENABLED } = await import("../lib/auth");
@@ -102,8 +87,8 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
 
   it("enables dev auth under an explicit TAWEED_ENABLE_DEV_AUTH=1 opt-in even when NODE_ENV=production (matches the e2e webServer)", async () => {
     // Arrange
-    process.env.NODE_ENV = "production";
-    process.env.TAWEED_ENABLE_DEV_AUTH = "1";
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", "1");
 
     // Act
     const { DEV_AUTH_ENABLED } = await import("../lib/auth");
@@ -114,8 +99,8 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
 
   it("stays disabled in production without the explicit opt-in", async () => {
     // Arrange
-    process.env.NODE_ENV = "production";
-    delete process.env.TAWEED_ENABLE_DEV_AUTH;
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", undefined);
 
     // Act
     const { DEV_AUTH_ENABLED } = await import("../lib/auth");
@@ -127,9 +112,9 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
   it("falls back to the public dev secret only when DEV_AUTH_ENABLED is true, never merely because NODE_ENV isn't 'production'", async () => {
     // Arrange — the exact misconfiguration from the audit: no AUTH_SECRET, and
     // an NODE_ENV that is neither "production" nor "development".
-    process.env.NODE_ENV = "staging";
-    delete process.env.TAWEED_ENABLE_DEV_AUTH;
-    delete process.env.AUTH_SECRET;
+    vi.stubEnv("NODE_ENV", "staging");
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", undefined);
+    vi.stubEnv("AUTH_SECRET", undefined);
 
     // Act
     const { DEV_AUTH_ENABLED, RESOLVED_AUTH_SECRET } = await import("../lib/auth");
@@ -143,9 +128,9 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
 
   it("uses the public dev secret when DEV_AUTH_ENABLED is legitimately true and no real AUTH_SECRET is set", async () => {
     // Arrange
-    process.env.NODE_ENV = "development";
-    delete process.env.TAWEED_ENABLE_DEV_AUTH;
-    delete process.env.AUTH_SECRET;
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("TAWEED_ENABLE_DEV_AUTH", undefined);
+    vi.stubEnv("AUTH_SECRET", undefined);
 
     // Act
     const { RESOLVED_AUTH_SECRET } = await import("../lib/auth");
@@ -157,8 +142,8 @@ describe("lib/auth — DEV_AUTH_ENABLED fail-closed gating", () => {
 
   it("prefers a real AUTH_SECRET from the environment even when dev auth is enabled", async () => {
     // Arrange
-    process.env.NODE_ENV = "development";
-    process.env.AUTH_SECRET = "a-real-production-secret";
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("AUTH_SECRET", "a-real-production-secret");
 
     // Act
     const { RESOLVED_AUTH_SECRET } = await import("../lib/auth");

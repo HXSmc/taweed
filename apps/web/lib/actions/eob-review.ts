@@ -20,6 +20,15 @@ import {
   rejectEobExtractionRow,
 } from "@/lib/eob-review-data";
 import { buildNormalizedClaimsFromEob } from "@/lib/eob-to-normalized";
+import { allowRequest } from "@/lib/rate-limit";
+
+// Per-tenant+actor throttle for these mutating review actions (common/security.md),
+// mirroring every sibling mutating action in this directory (eob-extract, ingest,
+// author-rule, assist-appeal, auth, explain-flag all call allowRequest). Without a
+// ceiling, approveEobExtractionAction's per-claim insertNormalizedClaim transaction
+// in particular can be looped to amplify DB load far beyond a single request.
+const EOB_REVIEW_RATE_LIMIT = 20;
+const EOB_REVIEW_WINDOW_MS = 60_000;
 
 // AI-4 review-queue approve/reject actions (plan 04 §9). A human reviews (and may
 // correct) every field before anything is written; nothing extracted ever reaches
@@ -122,7 +131,8 @@ export interface ApproveEobResult {
      *  field is edited, so this re-check is the ONLY thing standing between an
      *  arithmetic mistake and the claims/money path at exactly the point human
      *  error enters. Never silently approved past this. */
-    | "inconsistent";
+    | "inconsistent"
+    | "rate_limited";
 }
 
 /** Control-flow sentinel thrown INSIDE the transaction so a re-check failure or a
@@ -170,6 +180,17 @@ export async function approveEobExtractionAction(
   // edit itself introduced an inconsistency — block, don't silently approve.
   const recheckedReport = validateEobExtractionArithmetic(wire);
   if (!recheckedReport.passed) return { ok: false, error: "inconsistent" };
+
+  // Throttle before the expensive per-claim insert transaction below.
+  if (
+    !(await allowRequest(
+      `eob-review:${session.tenantId}:${session.userId}`,
+      EOB_REVIEW_RATE_LIMIT,
+      EOB_REVIEW_WINDOW_MS,
+    ))
+  ) {
+    return { ok: false, error: "rate_limited" };
+  }
 
   try {
     await withSession(session.tenantId, async (db) => {
@@ -263,7 +284,7 @@ export async function approveEobExtractionAction(
 
 export interface RejectEobResult {
   ok: boolean;
-  error?: "forbidden" | "invalid" | "not_pending";
+  error?: "forbidden" | "invalid" | "not_pending" | "rate_limited";
 }
 
 /** Reject a pending row (never executes). Server-enforced RBAC; audited. */
@@ -274,6 +295,16 @@ export async function rejectEobExtractionAction(
   if (!session) return { ok: false, error: "forbidden" };
   if (typeof rowId !== "string" || rowId.length === 0) {
     return { ok: false, error: "invalid" };
+  }
+
+  if (
+    !(await allowRequest(
+      `eob-review:${session.tenantId}:${session.userId}`,
+      EOB_REVIEW_RATE_LIMIT,
+      EOB_REVIEW_WINDOW_MS,
+    ))
+  ) {
+    return { ok: false, error: "rate_limited" };
   }
 
   const row = await getEobExtraction(session.tenantId, rowId);

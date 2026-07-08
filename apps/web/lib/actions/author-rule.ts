@@ -17,6 +17,7 @@ import { allowRequest } from "@/lib/rate-limit";
 import {
   authoredRowToScrubRule,
   getAuthoredRule,
+  getTenantPayers,
   loadApprovedAuthoredRules,
   persistDraftRule,
   setRuleStatus,
@@ -125,6 +126,17 @@ export async function draftRuleAction(
     payerId: parsed.data.scope === "payer" ? (parsed.data.payerId ?? null) : null,
   };
 
+  // Data-integrity gate: a payer-scoped rule must reference a payer that
+  // actually belongs to this tenant, not an arbitrary client-supplied id
+  // (payerId is otherwise accepted verbatim and would persist a rule scoped
+  // to a nonexistent/wrong payer). Membership is checked against the
+  // caller's own tenant via the same RLS-scoped lookup the UI picker uses.
+  if (ruleScope.scope === "payer") {
+    const tenantPayers = await getTenantPayers(session.tenantId);
+    const isKnownPayer = tenantPayers.some((p) => p.id === ruleScope.payerId);
+    if (!isKnownPayer) return { ok: false, error: "invalid" };
+  }
+
   let generated;
   try {
     generated = await authorRule({
@@ -208,6 +220,16 @@ export async function approveRuleAction(
     return { ok: false, error: "invalid" };
   }
 
+  if (
+    !(await allowRequest(
+      `author-approve:${session.tenantId}:${session.userId}`,
+      AUTHOR_RATE_LIMIT,
+      AUTHOR_WINDOW_MS,
+    ))
+  ) {
+    return { ok: false, error: "rate_limited" };
+  }
+
   const row = await getAuthoredRule(session.tenantId, rowId);
   if (!row || row.status !== "draft") return { ok: false, error: "not_draft" };
 
@@ -263,6 +285,17 @@ export async function rejectRuleAction(
   if (typeof rowId !== "string" || rowId.length === 0) {
     return { ok: false, error: "invalid" };
   }
+
+  if (
+    !(await allowRequest(
+      `author-reject:${session.tenantId}:${session.userId}`,
+      AUTHOR_RATE_LIMIT,
+      AUTHOR_WINDOW_MS,
+    ))
+  ) {
+    return { ok: false, error: "rate_limited" };
+  }
+
   const flipped = await setRuleStatus(session.tenantId, rowId, "rejected");
   if (!flipped) return { ok: false, error: "not_draft" };
   await withSession(session.tenantId, (db) =>

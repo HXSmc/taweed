@@ -23,6 +23,15 @@ const ASSIST_ROLES = ["full", "approve", "review", "evidence"] as const;
 const ASSIST_RATE_LIMIT = 8;
 const ASSIST_WINDOW_MS = 60_000;
 
+// recordSuggestionEditAction is a cheap metadata write (no billable model
+// call), but it is still an authenticated write path with no ceiling before
+// this fix -- an actor could loop it to spam the rate_limit_windows-backed
+// appPool with transactions. Give it its own, more generous budget than the
+// AI-generation throttle above rather than reusing ASSIST_RATE_LIMIT, since
+// legitimate use can call it once per suggestion (insert/edit/discard).
+const EDIT_OUTCOME_RATE_LIMIT = 20;
+const EDIT_OUTCOME_WINDOW_MS = 60_000;
+
 export interface AssistAppealActionResult {
   ok: boolean;
   suggestion?: AppealSuggestion;
@@ -135,6 +144,17 @@ export async function recordSuggestionEditAction(
 ): Promise<{ ok: boolean }> {
   const session = await authorizeAction("appeals", [...ASSIST_ROLES]);
   if (!session) return { ok: false };
+
+  if (
+    !(await allowRequest(
+      `assist-edit:${session.tenantId}:${session.userId}`,
+      EDIT_OUTCOME_RATE_LIMIT,
+      EDIT_OUTCOME_WINDOW_MS,
+    ))
+  ) {
+    return { ok: false };
+  }
+
   const parsed = OutcomeInput.safeParse({
     suggestionId,
     outcome,
