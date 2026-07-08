@@ -23,6 +23,15 @@ export interface ResolveRecoveryInput {
   appealedSar: string;
   /** Operator-stated recovered amount. Omitted → full recovery (the ceiling). */
   requestedRecoveredSar?: string | null;
+  /**
+   * SAR already recovered by sibling won appeals on the same denial_id, if
+   * any exist. The remaining ceiling for THIS appeal is appealedSar minus
+   * this amount — without it, a denial with more than one appeal (e.g. a
+   * resubmission) could have its full denied amount recovered more than
+   * once. Omitted → treated as 0 (single-appeal-per-denial case, unchanged
+   * behavior).
+   */
+  alreadyRecoveredSar?: string | null;
 }
 
 /**
@@ -40,9 +49,18 @@ export function resolveRecovery(
   // Floor the ceiling at zero so a bad upstream (negative) appealed amount can
   // never leak a negative recovered figure, independent of DB/CSV data quality.
   const rawAppealed = moneyToHalalas(input.appealedSar);
-  const appealed = Math.max(0, rawAppealed);
   const ceilingCorrected = rawAppealed < 0;
-  // A win with no stated amount defaults to full recovery of the appealed sum.
+  // Sibling appeals on the same denial may have already recovered part of the
+  // denied amount — the ceiling for THIS appeal is what's left, never less
+  // than zero, so the total recovered across all appeals on a denial can
+  // never exceed the denied amount.
+  const rawAlreadyRecovered =
+    input.alreadyRecoveredSar == null
+      ? 0
+      : moneyToHalalas(input.alreadyRecoveredSar);
+  const alreadyRecovered = Math.max(0, rawAlreadyRecovered);
+  const appealed = Math.max(0, Math.max(0, rawAppealed) - alreadyRecovered);
+  // A win with no stated amount defaults to full recovery of the remaining ceiling.
   const requested =
     input.requestedRecoveredSar == null
       ? appealed

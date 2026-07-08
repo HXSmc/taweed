@@ -115,6 +115,14 @@ export function normalize(
   const lines: ClaimLineRow[] = [];
   (claim.item ?? []).forEach((item, index) => {
     const lineNumber = item.sequence ?? index + 1;
+    if (lineByNumber.has(lineNumber)) {
+      throw new Error(
+        `duplicate line number ${lineNumber} on claim (Claim.item.sequence must be unique)`,
+      );
+    }
+    if (item.unitPrice?.value === undefined) {
+      throw new Error(`line ${lineNumber} unit price is missing`);
+    }
     const line: ClaimLineRow = {
       id: newId(),
       tenant_id: ctx.tenantId,
@@ -181,6 +189,12 @@ function explodeDenials(
         );
       }
 
+      if (adj.amount?.value === undefined) {
+        throw new Error(
+          `denial reason ${reasonCoding.code ?? "UNKNOWN"} on line ${String(item.itemSequence)} is missing an adjudication amount`,
+        );
+      }
+
       denials.push({
         id: newId(),
         tenant_id: tenantId,
@@ -188,7 +202,7 @@ function explodeDenials(
         reason_code: reasonCoding.code ?? "UNKNOWN",
         reason_text: reasonCoding.display ?? null,
         category: adj.category?.coding?.[0]?.code ?? null,
-        denied_amount: moneyStr(adj.amount?.value),
+        denied_amount: moneyStr(adj.amount.value),
       });
     }
   }

@@ -114,7 +114,9 @@ function isBlankRow(cells: string[]): boolean {
  * Parse delimited text into a header + row-objects table. `delimiter` defaults to
  * a comma; pass "\t" for TSV. Rows shorter than the header are padded with "";
  * fully-blank lines are dropped; duplicate headers are disambiguated so no column
- * is lost.
+ * is lost. Rows with MORE cells than headers (e.g. an unescaped delimiter inside
+ * a field that should have been quoted) throw instead of silently truncating the
+ * extra cell(s) and shifting every subsequent field under the wrong header.
  */
 export function parseDelimited(text: string, delimiter = ","): DelimitedTable {
   const matrix = toMatrix(text, delimiter);
@@ -122,8 +124,14 @@ export function parseDelimited(text: string, delimiter = ","): DelimitedTable {
   const headers = dedupeHeaders(matrix[0]!.map((h) => h.trim()));
   const rows = matrix
     .slice(1)
-    .filter((cells) => !isBlankRow(cells))
-    .map((cells) => {
+    .map((cells, i) => ({ cells, lineNumber: i + 2 }))
+    .filter(({ cells }) => !isBlankRow(cells))
+    .map(({ cells, lineNumber }) => {
+      if (cells.length > headers.length) {
+        throw new Error(
+          `Malformed row at line ${lineNumber}: expected ${headers.length} column(s) (${headers.join(", ")}) but found ${cells.length} — check for an unescaped delimiter inside a field that should have been quoted.`,
+        );
+      }
       const record: Record<string, string> = {};
       headers.forEach((h, idx) => {
         record[h] = cells[idx] ?? "";

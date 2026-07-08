@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildSystemBlocks,
   buildUserContent,
+  createAnthropicProvider,
   mapParseResponse,
   type ParseResponseLike,
 } from "../src/anthropic-1p.js";
@@ -53,6 +54,19 @@ describe("buildUserContent", () => {
       },
       { type: "text", text: "go" },
     ]);
+  });
+});
+
+describe("createAnthropicProvider capabilities", () => {
+  it("declares batches=false — Batches is not ZDR-eligible for this PHI-adjacent provider", () => {
+    // Arrange
+    const provider = createAnthropicProvider({ apiKey: "sk-test" });
+
+    // Act
+    const { capabilities } = provider;
+
+    // Assert
+    expect(capabilities).toEqual({ batches: false, files: true });
   });
 });
 

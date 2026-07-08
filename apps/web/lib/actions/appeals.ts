@@ -7,18 +7,30 @@ import { getAppealDraft, type AppealResult } from "@/lib/appeals-data";
 // appeals and cannot export a PHI letter.
 const APPEAL_ROLES = ["approve", "review", "full", "evidence"] as const;
 
-// Loading a draft reads the claim + patient context (PHI) → audit read.
+// Loading a draft reads the claim + patient context (PHI) → audit read. admin's
+// "read" capability is deliberately excluded here (not just from the export
+// gate below): admin is read-only for the appeals MODULE (e.g. status/queue
+// visibility), not entitled to the full bilingual PHI letter content
+// (pdfEn/pdfAr) that this returns.
 export async function loadAppealDraft(denialId: string): Promise<AppealResult | null> {
-  const session = await authorizeAction("appeals", [...APPEAL_ROLES, "read"]);
+  const session = await authorizeAction("appeals", [...APPEAL_ROLES]);
   if (!session) return null;
+  let result: AppealResult | null;
   try {
-    const result = await getAppealDraft(session.tenantId, denialId);
-    if (result) await recordPhiAccess("read", "appeal-draft", denialId);
-    return result;
+    result = await getAppealDraft(session.tenantId, denialId);
   } catch {
     // Surface as "no draft" rather than an unhandled rejection (spinner-forever).
     return null;
   }
+  if (result) {
+    try {
+      await recordPhiAccess("read", "appeal-draft", denialId);
+    } catch {
+      // The fetch already succeeded; an audit-write failure must not lose it
+      // (same tolerant posture as ingestBundle's own audit write).
+    }
+  }
+  return result;
 }
 
 // Exporting the letter is a PHI export → audit export. The human-in-the-loop

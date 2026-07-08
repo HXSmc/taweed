@@ -138,4 +138,20 @@ describe("B5 real projection — unknown signal drives 'unevaluable', not a fals
     );
     expect(facts.patientAgeYears).toBeNull();
   });
+
+  it("sums qty across multiple lines sharing the same sbs_code instead of overwriting", () => {
+    // Arrange: three claim_lines all billing the same SBS code, qty=4 each
+    // (12 units billed total — a common split/dated line-item pattern).
+    const splitLines: ProjectionLine[] = [
+      { sbs_code: "SBS-0002", icd10am_code: "K02.1", qty: 4 },
+      { sbs_code: "SBS-0002", icd10am_code: null, qty: 4 },
+      { sbs_code: "SBS-0002", icd10am_code: null, qty: 4 },
+    ];
+
+    // Act
+    const facts = claimToFactsReal(prodClaim(), splitLines, PATIENT, YEAR);
+
+    // Assert: the last line's qty must not clobber the earlier lines' qty.
+    expect(facts.lineUnits["SBS-0002"]).toBe(12);
+  });
 });

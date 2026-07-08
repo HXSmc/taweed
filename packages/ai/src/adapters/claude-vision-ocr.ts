@@ -79,7 +79,7 @@ function runValidation(
   extraction: EobExtraction,
   textLayer: string | undefined,
 ): ValidatorReport {
-  if (textLayer === undefined) return validateEobExtractionArithmetic(extraction);
+  if (!textLayer) return validateEobExtractionArithmetic(extraction);
   return validateEobExtraction(extraction, textLayer);
 }
 
@@ -124,15 +124,24 @@ function errorReport(error: unknown): ValidatorReport {
 // finding among many) still reads as moderately confident, while a mostly-
 // broken extraction reads as low-confidence, and neither case can ever
 // exceed what the model itself claimed.
+// overallConfidence is a model-emitted number with no server-side [0, 1]
+// guarantee (see schemas/eobExtraction.ts) — clamp it here the same way
+// assistAppeal.ts clamps its untrusted verify score, so a runaway or
+// out-of-range model value never reaches callers as `confidence`.
+function clamp0to1(n: number): number {
+  if (typeof n !== "number" || Number.isNaN(n)) return 0;
+  return Math.min(1, Math.max(0, n));
+}
+
 function deriveConfidence(
   extraction: EobExtraction,
   report: ValidatorReport,
 ): number {
-  if (report.passed) return extraction.overallConfidence;
+  if (report.passed) return clamp0to1(extraction.overallConfidence);
   const total = report.findings.length;
   const passedCount = report.findings.filter((f) => f.passed).length;
   const validatorRatio = total === 0 ? 0 : passedCount / total;
-  return Math.min(extraction.overallConfidence, validatorRatio);
+  return clamp0to1(Math.min(extraction.overallConfidence, validatorRatio));
 }
 
 /**
@@ -161,8 +170,15 @@ export function createClaudeVisionOcrAdapter(
         input: { pdfBase64, docId },
       });
 
+      // Hoisted out of the `if (sonnetOutcome.ok)` block below so its findings
+      // survive to the "opus also failed outright" branch further down — if
+      // it stayed block-scoped, a subsequent Opus throw would replace these
+      // (possibly the ONLY diagnostic detail available, e.g. a line-total
+      // arithmetic mismatch) with a bare "opus call failed" error report.
+      let sonnetReport: ValidatorReport | undefined;
+
       if (sonnetOutcome.ok) {
-        const sonnetReport = runValidation(sonnetOutcome.result.extraction, textLayer);
+        sonnetReport = runValidation(sonnetOutcome.result.extraction, textLayer);
         if (sonnetReport.passed) {
           return {
             data: sonnetOutcome.result.extraction,
@@ -193,6 +209,16 @@ export function createClaudeVisionOcrAdapter(
         // extraction if it at least resolved (better than nothing for a human
         // reviewer), otherwise there is no data at all. Either way this is
         // routed for review at the lowest confidence.
+        //
+        // If Sonnet resolved with a validator-failing report (sonnetReport is
+        // set), that report's findings describe the actual defect in the
+        // `data` being returned (e.g. a line-total mismatch) and must not be
+        // discarded in favor of the Opus error alone — merge both so a human
+        // reviewer sees why the data is flawed AND why no better data exists.
+        const opusErrorReport = errorReport(opusOutcome.error);
+        const validatorReport: ValidatorReport = sonnetReport
+          ? { passed: false, findings: [...sonnetReport.findings, ...opusErrorReport.findings] }
+          : opusErrorReport;
         return {
           data: sonnetOutcome.ok ? sonnetOutcome.result.extraction : null,
           modelTier: "opus",
@@ -200,7 +226,7 @@ export function createClaudeVisionOcrAdapter(
           confidence: 0,
           model: sonnetOutcome.ok ? sonnetOutcome.result.model : undefined,
           promptSha256: sonnetOutcome.ok ? sonnetOutcome.result.promptSha256 : undefined,
-          validatorReport: errorReport(opusOutcome.error),
+          validatorReport,
         };
       }
 

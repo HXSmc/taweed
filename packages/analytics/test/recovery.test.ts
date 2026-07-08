@@ -80,3 +80,43 @@ describe("resolveRecovery — recovered-exceeds-appealed guardrail (§8.5)", () 
     expect(r.corrected).toBe(true);
   });
 });
+
+describe("resolveRecovery — sibling-appeal ceiling (double-booking guardrail)", () => {
+  it("recovers nothing more for a win with no stated amount once a sibling appeal on the same denial already recovered the full denied amount", () => {
+    // Arrange: denial had denied_amount=1000.00, and a sibling appeal on the
+    // same denial_id already recovered the full 1000.00. Without accounting
+    // for this, a second won appeal with no stated amount would default to
+    // the full 1000.00 ceiling again, double-booking the recovery.
+    const r = resolveRecovery({
+      outcome: "won",
+      appealedSar: "1000.00",
+      alreadyRecoveredSar: "1000.00",
+    });
+
+    // Act/Assert: the remaining ceiling is 0, so this appeal recovers 0.
+    expect(r.recoveredSar).toBe("0.00");
+  });
+
+  it("caps a win with no stated amount to the remaining ceiling after a sibling appeal's partial recovery", () => {
+    const r = resolveRecovery({
+      outcome: "won",
+      appealedSar: "1000.00",
+      alreadyRecoveredSar: "600.00",
+    });
+
+    expect(r.recoveredSar).toBe("400.00");
+  });
+
+  it("clamps an operator-stated amount that exceeds the remaining (post-sibling) ceiling", () => {
+    const r = resolveRecovery({
+      outcome: "won",
+      appealedSar: "1000.00",
+      alreadyRecoveredSar: "600.00",
+      requestedRecoveredSar: "500.00",
+    });
+
+    expect(r.recoveredSar).toBe("400.00");
+    expect(r.corrected).toBe(true);
+    expect(r.reason).toBe("exceeds-appealed");
+  });
+});

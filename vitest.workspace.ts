@@ -12,19 +12,39 @@ import { fileURLToPath } from "node:url";
 const serverOnlyStub = fileURLToPath(
   new URL("./test/stubs/server-only.js", import.meta.url),
 );
-const alias = { "server-only": serverOnlyStub };
+// Regex-scoped to the "@/..." specifier apps/web's own source uses for its
+// internal path alias (tsconfig "paths": { "@/*": ["./*"] }) — it must not
+// shadow the "@taweed/*" package imports the rest of the unit suite relies on.
+const webDir = fileURLToPath(new URL("./apps/web", import.meta.url));
+const alias = [
+  { find: "server-only", replacement: serverOnlyStub },
+  { find: /^@\//, replacement: `${webDir}/` },
+];
 
 export default defineWorkspace([
   {
+    // Matches how Next.js/SWC actually compiles this app's .tsx source (the
+    // automatic JSX runtime) — several components (e.g. confidence-badge.tsx)
+    // rely on it and never import React explicitly, which is valid there but
+    // would otherwise throw "React is not defined" under esbuild's classic
+    // default when component tests render them here.
+    esbuild: { jsx: "automatic" },
     test: {
       name: "unit",
       alias,
       include: [
         "packages/*/test/**/*.test.ts",
+        "apps/web/test/**/*.test.ts",
+        "apps/web/test/**/*.test.tsx",
         "test/synthetic-fhir/test/**/*.test.ts",
         "test/synthetic-eob/test/**/*.test.ts",
       ],
       exclude: ["**/*.int.test.ts", "**/node_modules/**"],
+      // Component tests (*.test.tsx) render with React Testing Library and
+      // need a DOM; every other unit test stays on the default "node"
+      // environment (cheaper, and most of the suite has no DOM dependency).
+      environmentMatchGlobs: [["apps/web/test/**/*.test.tsx", "jsdom"]],
+      setupFiles: ["apps/web/test/setup.ts"],
     },
   },
   {

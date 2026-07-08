@@ -89,6 +89,14 @@ describe("parseDelimited — CSV", () => {
     });
   });
 
+  it("throws on an over-long row instead of silently truncating/shifting fields", () => {
+    // "Denied, pending review" should have been quoted; the stray comma produces
+    // a 4th cell (the true amount, "120.00") that the header can't address.
+    const text = 'claimId,reasonText,amount\nC1,Denied, pending review,120.00';
+    expect(() => parseDelimited(text)).toThrow(/line 2/i);
+    expect(() => parseDelimited(text)).toThrow(/3.*4|4.*3/);
+  });
+
   it("disambiguates a generated header that would collide with a distinct column", () => {
     const { headers, rows } = parseDelimited(
       "Amount,Amount_2,Amount\n100,200,300",

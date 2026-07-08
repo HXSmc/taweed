@@ -40,6 +40,16 @@ export function parseBundle(input: unknown): ParsedBundle {
   const claimsByKey = new Map<string, Claim>();
   const responses: ClaimResponse[] = [];
 
+  const addClaimKey = (key: string, claim: Claim) => {
+    if (claimsByKey.has(key)) {
+      issues.push(
+        `duplicate Claim entry for ${key}; keeping the first occurrence and discarding the duplicate`,
+      );
+      return;
+    }
+    claimsByKey.set(key, claim);
+  };
+
   for (const entry of bundle.entry ?? []) {
     const result = validateR4(entry.resource);
     if (!result.ok) {
@@ -48,8 +58,8 @@ export function parseBundle(input: unknown): ParsedBundle {
     }
     if (result.resource.resourceType === "Claim") {
       const claim = result.resource;
-      if (claim.id) claimsByKey.set(`Claim/${claim.id}`, claim);
-      if (entry.fullUrl) claimsByKey.set(entry.fullUrl, claim);
+      if (claim.id) addClaimKey(`Claim/${claim.id}`, claim);
+      if (entry.fullUrl) addClaimKey(entry.fullUrl, claim);
     } else {
       responses.push(result.resource);
     }

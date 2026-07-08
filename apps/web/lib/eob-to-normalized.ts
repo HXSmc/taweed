@@ -94,14 +94,25 @@ function buildOneClaim(
       unit_price: toSar(line.billedHalalas),
       line_amount: toSar(line.billedHalalas),
     });
-    if (line.denialCode && isDenialReasonCode(line.denialCode)) {
+    // Any rejected money must surface as a denials row — money-at-risk
+    // analytics (getMoneyScope/denialRateDim/reasonPareto in lib/data.ts) and
+    // the appeals pipeline (getAppealables in lib/appeals-data.ts) only see
+    // rejected halalas that landed here. A missing or unrecognized
+    // denialCode is a data-quality gap, not a reason to silently drop the
+    // money — fall back to an explicit "unknown reason" marker so the line
+    // stays visible instead of vanishing from both. Also still fires on a
+    // valid denialCode with zero rejected money (pre-existing behavior) in
+    // case a hand-edited payload names a reason without denied halalas.
+    const knownCode =
+      line.denialCode && isDenialReasonCode(line.denialCode) ? line.denialCode : null;
+    if (line.rejectedHalalas > 0 || knownCode) {
       denials.push({
         id: newId(),
         tenant_id: ctx.tenantId,
         claim_line_id: lineId,
-        reason_code: line.denialCode,
+        reason_code: knownCode ?? line.denialCode ?? "UNKNOWN",
         reason_text: null,
-        category: denialLabel(line.denialCode),
+        category: knownCode ? denialLabel(knownCode) : null,
         denied_amount: toSar(line.rejectedHalalas),
       });
     }

@@ -52,7 +52,10 @@ export function EobReviewQueue({ rows }: { rows: EobReviewRow[] }) {
         const res = await approveEobExtractionAction(rowId, edited);
         if (res.ok) {
           setAction({ status: "idle" });
-          setSelectedId(null);
+          // Only close the review form if the reviewer is still on this row —
+          // a background approve/reject for a row they've since navigated away
+          // from must not discard whatever they're now reviewing.
+          setSelectedId((prev) => (prev === rowId ? null : prev));
           router.refresh();
         } else {
           setAction({ status: "error", rowId, key: ERROR_KEY[res.error ?? "failed"] ?? "reviewFailed" });
@@ -74,7 +77,10 @@ export function EobReviewQueue({ rows }: { rows: EobReviewRow[] }) {
         const res = await rejectEobExtractionAction(rowId);
         if (res.ok) {
           setAction({ status: "idle" });
-          setSelectedId(null);
+          // Only close the review form if the reviewer is still on this row —
+          // a background approve/reject for a row they've since navigated away
+          // from must not discard whatever they're now reviewing.
+          setSelectedId((prev) => (prev === rowId ? null : prev));
           router.refresh();
         } else {
           setAction({ status: "error", rowId, key: ERROR_KEY[res.error ?? "invalid"] ?? "reviewInvalid" });

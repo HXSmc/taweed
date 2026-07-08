@@ -20,8 +20,11 @@ import type {
 //     (forwarded on the wire); bump the SDK to make it a typed field.
 //   - Zero Data Retention: an ORG/account-level posture, NOT a request field — it
 //     cannot be "set on the request". It is configured on the Anthropic account
-//     and, because Batches is not ZDR-eligible, capabilities.batches gates Batches
-//     off at the feature layer so a PHI-adjacent call never takes the Batches path.
+//     and, because Batches is not ZDR-eligible, this provider DECLARES
+//     capabilities.batches=false below. That is not an enforced runtime gate —
+//     no code path issues a Batches request today — it only means a future
+//     Batches-based feature must check this flag (and add an explicit ZDR
+//     gate) before routing a PHI-adjacent call through Batches.
 const INFERENCE_GEO = "us";
 //
 // The response→result mapping and system-block construction are extracted as
@@ -157,6 +160,6 @@ export function createAnthropicProvider(
     name: "anthropic-1p",
     client,
     mapModelId: mapTaweedModel,
-    capabilities: { batches: true, files: true },
+    capabilities: { batches: false, files: true },
   };
 }

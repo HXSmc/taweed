@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Sparkles, Loader2, ShieldCheck, ShieldAlert, Check, X } from "lucide-react";
 import {
-  draftRuleAction,
   approveRuleAction,
   rejectRuleAction,
   type DraftRuleResult,
 } from "@/lib/actions/author-rule";
+import { resolveDecideOutcome, resolveDraftOutcome } from "@/lib/rule-decide";
 import type { AuthoredRuleRow } from "@/lib/rules-data";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -103,13 +103,14 @@ export function RuleAuthoring({
     if (text.trim().length < 3) return;
     setResult(null);
     setActionErr(null);
+    // resolveDraftOutcome guards the RPC-rejection case (see rule-decide.ts):
+    // a thrown/rejected draftRuleAction promise still resolves to a
+    // displayable DraftRuleResult, never an unhandled rejection that would
+    // skip setResult entirely.
     start(async () => {
-      const r = await draftRuleAction(
-        text,
-        scope,
-        scope === "payer" ? payerId : undefined,
+      setResult(
+        await resolveDraftOutcome(text, scope, scope === "payer" ? payerId : undefined),
       );
-      setResult(r);
     });
   };
 
@@ -125,14 +126,18 @@ export function RuleAuthoring({
   ) => {
     setActing(rowId);
     setActionErr(null);
+    // resolveDecideOutcome guards the RPC-rejection case (see rule-decide.ts):
+    // without it, a thrown/rejected approve/reject promise would skip
+    // setActing(null) entirely, leaving that row's Approve/Reject buttons
+    // disabled with a stuck spinner forever.
     start(async () => {
-      const r = await fn(rowId);
+      const outcome = await resolveDecideOutcome(fn, rowId);
       setActing(null);
-      if (r.ok) {
+      if (outcome.ok) {
         setResult(null);
         router.refresh();
       } else {
-        setActionErr({ gate: r.gate, error: r.error });
+        setActionErr({ gate: outcome.gate, error: outcome.error });
       }
     });
   };

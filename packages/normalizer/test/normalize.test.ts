@@ -125,6 +125,77 @@ describe("normalize — field mapping", () => {
     } as unknown as ClaimPair;
     expect(() => normalize(broken, CTX)).toThrow(/line/i);
   });
+
+  it("throws instead of folding a missing denial adjudication amount to 0.00 (BLK-1)", () => {
+    const { pairs } = parseBundle(generateBundle("partialDenial", SEED));
+    const pair = pairs[0]!;
+    const firstLineNumber = pair.claim.item![0]!.sequence!;
+    const broken = {
+      ...pair,
+      claimResponse: {
+        ...pair.claimResponse,
+        item: [
+          {
+            itemSequence: firstLineNumber,
+            adjudication: [
+              {
+                category: { coding: [{ code: "denied" }] },
+                reason: { coding: [{ code: "TWD-D01" }] },
+                // amount intentionally omitted: an informational/enum-only denial line.
+              },
+            ],
+          },
+        ],
+      },
+    } as unknown as ClaimPair;
+    expect(() => normalize(broken, CTX)).toThrow(/amount/i);
+  });
+});
+
+describe("normalize — required line amounts (BLK-1)", () => {
+  function claimPair(claim: Record<string, unknown>): ClaimPair {
+    return {
+      claim: { resourceType: "Claim", status: "active", ...claim },
+      claimResponse: { resourceType: "ClaimResponse", outcome: "complete" },
+    } as unknown as ClaimPair;
+  }
+
+  it("throws instead of folding a missing item.unitPrice to 0.00", () => {
+    const pair = claimPair({
+      item: [
+        {
+          sequence: 1,
+          productOrService: { coding: [{ code: "SBS-0001" }] },
+          quantity: { value: 1 },
+          net: { value: 100 },
+          // unitPrice intentionally omitted, net present.
+        },
+      ],
+    });
+    expect(() => normalize(pair, CTX)).toThrow(/unit price/i);
+  });
+
+  it("throws when two claim items share the same sequence, instead of silently colliding", () => {
+    const pair = claimPair({
+      item: [
+        {
+          sequence: 1,
+          productOrService: { coding: [{ code: "SBS-0001" }] },
+          quantity: { value: 1 },
+          unitPrice: { value: 50 },
+          net: { value: 50 },
+        },
+        {
+          sequence: 1,
+          productOrService: { coding: [{ code: "SBS-0002" }] },
+          quantity: { value: 1 },
+          unitPrice: { value: 75 },
+          net: { value: 75 },
+        },
+      ],
+    });
+    expect(() => normalize(pair, CTX)).toThrow(/duplicate line number/i);
+  });
 });
 
 describe("normalize — EXECUTE B5 real signal columns", () => {

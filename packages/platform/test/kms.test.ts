@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { DevPassthroughKms } from "@taweed/platform";
 
 // EXECUTE C — per-tenant KMS envelope encryption is a typed swap. The dev stub is
@@ -18,5 +18,37 @@ describe("DevPassthroughKms", () => {
     const kms = new DevPassthroughKms();
     const ct = await kms.encrypt("t1", new TextEncoder().encode("secret"));
     await expect(kms.decrypt("t2", ct)).rejects.toThrow(/tenant/i);
+  });
+});
+
+describe("DevPassthroughKms production guard", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalDevKmsFlag = process.env.TAWEED_ENABLE_DEV_KMS;
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+    if (originalDevKmsFlag === undefined) {
+      delete process.env.TAWEED_ENABLE_DEV_KMS;
+    } else {
+      process.env.TAWEED_ENABLE_DEV_KMS = originalDevKmsFlag;
+    }
+  });
+
+  it("refuses to construct in production without the explicit override", () => {
+    process.env.NODE_ENV = "production";
+    delete process.env.TAWEED_ENABLE_DEV_KMS;
+    expect(() => new DevPassthroughKms()).toThrow(/reversible transform|not.*real encryption/i);
+  });
+
+  it("allows construction in production when TAWEED_ENABLE_DEV_KMS=1 is set", () => {
+    process.env.NODE_ENV = "production";
+    process.env.TAWEED_ENABLE_DEV_KMS = "1";
+    expect(() => new DevPassthroughKms()).not.toThrow();
+  });
+
+  it("allows construction outside production regardless of the override", () => {
+    process.env.NODE_ENV = "test";
+    delete process.env.TAWEED_ENABLE_DEV_KMS;
+    expect(() => new DevPassthroughKms()).not.toThrow();
   });
 });

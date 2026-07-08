@@ -41,9 +41,10 @@ export async function markAppealOutcome(
   if (!session) return { ok: false };
 
   const resolution = await withSession(session.tenantId, async (db) => {
-    // Look up the appealed amount (RLS-scoped) — the ceiling for recovery.
-    const rows = await db.execute<{ denied_amount: string }>(sql`
-      SELECT d.denied_amount FROM appeals a
+    // Look up the appealed amount + the owning denial (RLS-scoped) — the
+    // ceiling for recovery.
+    const rows = await db.execute<{ denied_amount: string; denial_id: string }>(sql`
+      SELECT d.denied_amount, d.id AS denial_id FROM appeals a
         JOIN denials d ON d.id = a.denial_id
        WHERE a.id = ${appealId} LIMIT 1`);
     const appeal = rows.rows[0];
@@ -53,11 +54,25 @@ export async function markAppealOutcome(
     if (!appeal) return null;
     const appealedSar = appeal.denied_amount;
 
-    // B8 guardrail: recovered can never exceed appealed, never go negative.
+    // Sum what sibling won appeals on the SAME denial have already recovered
+    // (excluding this appeal itself) — without this, a denial with more than
+    // one appeal (e.g. a resubmission) could recover its full denied amount
+    // more than once, breaking recovered + at_risk === total denied.
+    const siblingRows = await db.execute<{ already_recovered: string | null }>(sql`
+      SELECT COALESCE(SUM(a.recovered_amount), 0) AS already_recovered
+        FROM appeals a
+       WHERE a.denial_id = ${appeal.denial_id}
+         AND a.id != ${appealId}
+         AND a.status = 'won'`);
+    const alreadyRecoveredSar = siblingRows.rows[0]?.already_recovered ?? "0";
+
+    // B8 guardrail: recovered can never exceed appealed, never go negative,
+    // and never double-book a sibling appeal's already-recovered amount.
     const r = resolveRecovery({
       outcome,
       appealedSar,
       requestedRecoveredSar: recoveredSar,
+      alreadyRecoveredSar,
     });
 
     await db

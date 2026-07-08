@@ -2,11 +2,8 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { UploadCloud, FileJson, CheckCircle2, Loader2 } from "lucide-react";
-import { ingestBundle, type IngestResult } from "@/lib/actions/ingest";
-import {
-  extractEobPdfAction,
-  type ExtractEobPdfResult,
-} from "@/lib/actions/eob-extract";
+import { resolveUploadState, type UploadState } from "@/lib/ingest-submit";
+import type { ExtractEobPdfResult } from "@/lib/actions/eob-extract";
 import { formatMoney } from "@/lib/money";
 import { CountUp } from "@/components/money/count-up";
 import { Button } from "@/components/ui/button";
@@ -35,9 +32,6 @@ import { cn } from "@/lib/utils";
 // framing ("still throws the existing 'not wired' error ... whichever this
 // codebase already does today") rather than preserving the old accidental
 // JSON-parse error for a file type ingestBundle was never meant to handle.
-function isPdfFile(file: File): boolean {
-  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-}
 
 function pdfErrorMessageKey(error: ExtractEobPdfResult["error"]): string {
   switch (error) {
@@ -56,10 +50,6 @@ function pdfErrorMessageKey(error: ExtractEobPdfResult["error"]): string {
   }
 }
 
-type UploadState =
-  | { kind: "json"; result: IngestResult }
-  | { kind: "pdf"; result: ExtractEobPdfResult };
-
 // Split view (design-brief §8.1): inline-start dropzone, inline-end live run
 // ledger with tabular counters. Malformed rows are quarantined with a reason,
 // never silently dropped.
@@ -73,11 +63,7 @@ export function IngestPanel() {
   const submit = (file: File) => {
     const fd = new FormData();
     fd.set("file", file);
-    if (isPdfFile(file)) {
-      start(async () => setState({ kind: "pdf", result: await extractEobPdfAction(fd) }));
-    } else {
-      start(async () => setState({ kind: "json", result: await ingestBundle(fd) }));
-    }
+    start(async () => setState(await resolveUploadState(file, fd)));
   };
 
   const result = state?.kind === "json" ? state.result : null;

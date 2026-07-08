@@ -141,16 +141,18 @@ export function EobExtractionForm({
   const t = useTranslations("reviewQueue");
   const locale = useLocale();
   const findings = failingFindings(validatorReport);
+  // Seeded ONCE per mount, not re-synced via effect: the parent
+  // (EobReviewQueue) renders this component with `key={selected.id}`, so a
+  // genuinely new row selection remounts this component and the lazy
+  // initializer below re-seeds from scratch. A `useEffect` keyed on the
+  // `extraction` object's reference would ALSO fire on same-row re-renders
+  // that produce a new (but logically identical) `extraction` object — e.g. a
+  // future `rows` revalidation while this form stays open — silently
+  // clobbering in-progress edits. Resetting state on prop change belongs on
+  // the parent's `key`, not in an effect (react/hooks.md).
   const [edited, setEdited] = React.useState<EditedEobExtractionInput>(() =>
     toEditedInput(extraction),
   );
-
-  // Re-seed local edit state whenever a DIFFERENT extraction is selected (the
-  // parent remounts this component with a fresh `key` per row id, so this only
-  // ever runs for a genuinely new selection, never clobbering in-progress edits).
-  React.useEffect(() => {
-    setEdited(toEditedInput(extraction));
-  }, [extraction]);
 
   const updateTop = (patch: Partial<EditedEobExtractionInput>) =>
     setEdited((prev) => ({ ...prev, ...patch }));

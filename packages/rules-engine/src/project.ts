@@ -61,7 +61,8 @@ function realCodes(lines: ProjectionLine[]): string[] {
 
 function lineUnitsOf(lines: ProjectionLine[]): Record<string, number> {
   const units: Record<string, number> = {};
-  for (const l of lines) if (l.sbs_code) units[l.sbs_code] = l.qty;
+  for (const l of lines)
+    if (l.sbs_code) units[l.sbs_code] = (units[l.sbs_code] ?? 0) + l.qty;
   return units;
 }
 

@@ -11,6 +11,15 @@ import type {
   ExtractEobResult,
 } from "../src/features/extractEob.js";
 import type { EobExtraction } from "../src/schemas/eobExtraction.js";
+import type { ValidatorReport } from "../src/eob-validators.js";
+
+// The public EobExtractionAdapter seam types `validatorReport` as `unknown`
+// (packages/ingest's eob-extraction-adapter.ts) since ingest has no reason to
+// know eob-validators' shape. These tests DO know it (same package), so cast
+// at the assertion site rather than loosening the seam's public type.
+function asValidatorReport(report: unknown): ValidatorReport {
+  return report as ValidatorReport;
+}
 
 // AI-4 — ClaudeVisionOcrAdapter orchestrates extractEob (generation, Sonnet
 // first) + eob-validators (deterministic gate) behind packages/ingest's
@@ -229,6 +238,23 @@ describe("createClaudeVisionOcrAdapter", () => {
     expect(result.confidence).toBe(0);
     expect(result.data).toEqual(brokenExtraction(0.8));
     expect(result.model).toBe("stub-sonnet");
+    // BUG: the original Sonnet validator findings (the actual defect in the
+    // `data` being returned — a line-total arithmetic mismatch) must survive
+    // an outright-failing Opus retry, not be replaced entirely by the Opus
+    // error. A reviewer reading `validatorReport` needs both: why the
+    // returned data is flawed, AND why no better data exists.
+    const report = asValidatorReport(result.validatorReport);
+    expect(report.passed).toBe(false);
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          check: "line-total",
+          passed: false,
+          detail: expect.stringContaining("billed"),
+        }),
+        expect.objectContaining({ check: "extraction-error", passed: false }),
+      ]),
+    );
   });
 
   it("passes opts.textLayer through to validation, and a textLayer mismatch fails an otherwise-consistent extraction", async () => {
@@ -262,6 +288,41 @@ describe("createClaudeVisionOcrAdapter", () => {
 
     expect(calls).toHaveLength(1);
     expect(result.escalated).toBe(false);
+  });
+
+  it("BUG: treats an empty-string textLayer the same as no textLayer (arithmetic-only), instead of scoring against an empty haystack", async () => {
+    const { fn, calls } = stubExtractFn([
+      { extraction: CONSISTENT_EXTRACTION, model: "stub-sonnet", promptSha256: "h1" },
+    ]);
+    const adapter = createClaudeVisionOcrAdapter(baseOptions(fn));
+
+    // A caller passing textLayer: "" for a scanned document (a natural
+    // mistake, since "" also reads as "no text") must not make every
+    // text-layer-match finding fail spuriously and force an Opus escalation.
+    const result = await adapter.extract(PDF_BYTES, { textLayer: "" });
+
+    expect(calls).toHaveLength(1);
+    expect(result.escalated).toBe(false);
+    expect(asValidatorReport(result.validatorReport).passed).toBe(true);
+  });
+
+  it("BUG: clamps an out-of-range model-emitted overallConfidence into [0, 1] even on the passing-report path", async () => {
+    const runawayConfidenceExtraction: EobExtraction = {
+      ...CONSISTENT_EXTRACTION,
+      overallConfidence: 1.7, // model misbehaves; validator report still passes
+    };
+    const { fn, calls } = stubExtractFn([
+      { extraction: runawayConfidenceExtraction, model: "stub-sonnet", promptSha256: "h1" },
+    ]);
+    const adapter = createClaudeVisionOcrAdapter(baseOptions(fn));
+
+    const result = await adapter.extract(PDF_BYTES);
+
+    expect(calls).toHaveLength(1);
+    expect(result.escalated).toBe(false);
+    expect(asValidatorReport(result.validatorReport).passed).toBe(true);
+    expect(result.confidence).toBeLessThanOrEqual(1);
+    expect(result.confidence).toBeGreaterThanOrEqual(0);
   });
 });
 

@@ -93,4 +93,22 @@ describe("parseBundle", () => {
     const { issues } = parseBundle(bundle([claim, bad]));
     expect(issues.length).toBeGreaterThan(0);
   });
+
+  it("reports an issue and keeps the first claim when two entries share the same Claim.id", () => {
+    const firstClaim = { ...claim, id: "CL1" };
+    const duplicateClaim = {
+      ...claim,
+      id: "CL1",
+      provider: { reference: "Organization/o-duplicate" },
+    };
+    const response = { ...claimResponse, request: { reference: "Claim/CL1" } };
+
+    const { pairs, issues } = parseBundle(
+      bundle([firstClaim, duplicateClaim, response]),
+    );
+
+    expect(issues.join(" ")).toMatch(/duplicate Claim/i);
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0]!.claim.provider?.reference).toBe("Organization/o1");
+  });
 });

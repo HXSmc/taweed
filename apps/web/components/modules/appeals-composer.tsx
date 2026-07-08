@@ -7,6 +7,7 @@ import type { AppealSuggestion } from "@taweed/appeals";
 import type { AppealableRow } from "@/lib/appeals-data";
 import type { AppealResult } from "@/lib/appeals-data";
 import { loadAppealDraft, recordAppealExport } from "@/lib/actions/appeals";
+import { createRequestGuard } from "@/lib/request-guard";
 import {
   assistAppealAction,
   recordSuggestionEditAction,
@@ -53,6 +54,10 @@ export function AppealsComposer({
   const [name, setName] = React.useState(reviewerName);
   const [reviewed, setReviewed] = React.useState(false);
   const [pending, start] = React.useTransition();
+  // Guards select()'s async loadAppealDraft against out-of-order resolution:
+  // rapid clicks between rows must not let an earlier click's stale response
+  // overwrite the draft/bodies for whatever row is selected now.
+  const draftRequest = React.useRef(createRequestGuard()).current;
 
   // AI-2 assist state (additive; the deterministic body above always stands alone).
   type AssistState = "idle" | "loading" | "ready" | "suppressed" | "unavailable";
@@ -72,8 +77,13 @@ export function AppealsComposer({
     setSelected(denialId);
     setReviewed(false);
     resetAssist();
+    const token = draftRequest.issue();
     start(async () => {
       const r = await loadAppealDraft(denialId);
+      // Drop stale responses: if a later select() has issued a newer token
+      // since this request started, this result no longer belongs to the
+      // currently-selected row.
+      if (!draftRequest.isCurrent(token)) return;
       setDraft(r);
       // Seed BOTH language bodies from the deterministic template up front, so a
       // later language toggle swaps between working copies instead of re-deriving.

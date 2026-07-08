@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { scrub, SCRUBBER_RULES, type ClaimFacts } from "../src/index.js";
+import {
+  scrub,
+  SCRUBBER_RULES,
+  type ClaimFacts,
+  type ScrubRule,
+} from "../src/index.js";
 
 // A clean claim that trips NO rule. Every golden case is this base with a
 // minimal set of triggering overrides, so a firing is unambiguously attributable.
@@ -273,5 +278,63 @@ describe("scrub — risk scoring & ordering", () => {
         expect(rank[prev.severity]).toBeGreaterThanOrEqual(rank[cur.severity]);
       }
     }
+  });
+});
+
+// A rule with an authored `any` (OR) group whose two branches read different
+// facts — the shape AI-3 authoring supports (author.ts AuthoredGroup) that no
+// SHIPPED rule happens to use (SCRUBBER_RULES is all `all`). Regression for the
+// audit finding: unevaluableRuleIds used to flatten all/any into one flat set of
+// referenced facts and mark the rule unevaluable the moment ANY referenced fact
+// was null — even when the OTHER branch of the `any` was already known-true and
+// sufficient on its own to fire the rule.
+function orRule(): ScrubRule {
+  return {
+    id: "R-TEST-any-preauth-or-inactive",
+    name: "Missing pre-auth or inactive policy",
+    scope: "global",
+    version: 1,
+    severity: "high",
+    weight: 40,
+    field: "hasPreAuth",
+    message_en: "probe",
+    message_ar: "probe",
+    conditions: {
+      any: [
+        { fact: "hasPreAuth", operator: "equal", value: false },
+        { fact: "policyActive", operator: "equal", value: false },
+      ],
+    },
+    payerId: null,
+    tenantId: null,
+  };
+}
+
+describe("scrub — any/OR groups short-circuit on a known-true branch", () => {
+  it("fires via the known-false policyActive branch even though hasPreAuth is null", async () => {
+    const result = await scrub(
+      f({ hasPreAuth: null, policyActive: false }),
+      [orRule()],
+    );
+    expect(result.unevaluable).not.toContain(orRule().id);
+    expect(result.flags.map((fl) => fl.ruleId)).toContain(orRule().id);
+  });
+
+  it("stays unevaluable when NEITHER any-branch can be resolved", async () => {
+    const result = await scrub(
+      f({ hasPreAuth: null, policyActive: null }),
+      [orRule()],
+    );
+    expect(result.unevaluable).toContain(orRule().id);
+    expect(result.flags.map((fl) => fl.ruleId)).not.toContain(orRule().id);
+  });
+
+  it("stays unevaluable when the known branch is false and the other is null (OR not yet resolved true)", async () => {
+    const result = await scrub(
+      f({ hasPreAuth: null, policyActive: true }),
+      [orRule()],
+    );
+    expect(result.unevaluable).toContain(orRule().id);
+    expect(result.flags.map((fl) => fl.ruleId)).not.toContain(orRule().id);
   });
 });
