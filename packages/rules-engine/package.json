@@ -7,6 +7,6 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@taweed/shared": "workspace:*",
-    "json-rules-engine": "^6.5.0"
+    "json-rules-engine": "^7.3.1"
   }
 }
