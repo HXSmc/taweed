@@ -2,13 +2,20 @@
 
 > Entry point for a new Claude Code session picking up Taweed. Read this, then run the
 > next-step prompt (`docs/NEXT_STEP_PROMPT.md`). Blocker register + a per-blocker unblock prompt:
-> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-08 (**PROMPT 3 = AI-4 vision
-> EOB/PDF extraction now BUILT** on branch `ai-phase-4` — synthetic-only, dual-gated, additive,
-> fail-closed. This closes out `docs/04_agentic_retrofit_plan.md` §9 entirely: AI-0 through AI-4
-> are all built and merged. There is no PROMPT 4 in that plan. Next = the EXECUTE UI tail
-> (**A2 first-run corridor, A3 free-audit + owner report**), independently pending since before
-> the AI phase started — see `docs/NEXT_STEP_PROMPT.md`. The real-data headline (BLK-1/2/9)
-> remains independently pending too).
+> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-10 (**a full 6-pass code-quality
+> audit sweep now done and merged to local `main`** — bug hunt, security, API/action auth-checks,
+> dependency CVEs/abandonment, WCAG AA accessibility, and a codebase-minimap weakness sweep; see
+> `docs/audit.md` for the consolidated runbook + all findings/fixes. This was an orthogonal
+> code-quality initiative, NOT product work — it does not change what's next for the product.
+> **PROMPT 3 = AI-4 vision EOB/PDF extraction remains BUILT** on branch `ai-phase-4` (merged to
+> `main` before the audit sweep) — synthetic-only, dual-gated, additive, fail-closed. This closes
+> out `docs/04_agentic_retrofit_plan.md` §9 entirely: AI-0 through AI-4 are all built and merged,
+> confirmed again 2026-07-10 — **there is no PROMPT 4 in that plan and none was added.** Next
+> product unit = the EXECUTE UI tail (**A2 first-run corridor, A3 free-audit + owner report**),
+> independently pending since before the AI phase started — see `docs/NEXT_STEP_PROMPT.md`. The
+> real-data headline (BLK-1/2/9) remains independently pending too. **A Claude API key was added
+> to `apps/web/.env.local` 2026-07-10 for manual testing — `TAWEED_AI_ENABLED` and all per-feature
+> AI flags remain OFF; the user wants to test manually before enabling anything.**
 
 ## Where the project stands
 
@@ -84,11 +91,23 @@
   (billed/paid/patient-share/rejected) has no adjustment/withholding case, so a real remittance with
   a contractual write-off wouldn't cross-total and could get stuck permanently un-approvable. See
   `docs/review.md` §2.11 and the AI-4 row in `docs/04_agentic_retrofit_plan.md` §6.
+- **Code-quality audit sweep — DONE, merged to local `main` (2026-07-10), orthogonal to product
+  work.** 6 passes, each: parallel finder/mapper agents by area → adversarial verify (default-to-
+  refute) → every CONFIRMED finding fixed with a regression test → full typecheck+lint+unit+
+  integration+build re-run before commit. See `docs/audit.md`'s "Audit history at a glance" table
+  for the full index. Summary: **bug hunt** (21 fixed, `docs/bugs.md`) → **security** (10 fixed,
+  `docs/secure.md`) → **API/server-action auth-checks** (15 fixed, inline) → **dependencies** (10
+  CVE advisories → 0, `docs/deps.md`) → **WCAG AA accessibility** (25 fixed across all 9 routes ×
+  EN/AR × light/dark, `docs/a11y.md`) → **codebase minimap** (14 of 30 candidate weaknesses fixed,
+  `docs/minimap.md` — gitignored/local-only, the only pass whose doc isn't committed). Current
+  totals after all 6 passes: unit **708/708**, integration **42/42**, root+web typecheck clean,
+  lint 0 errors, `apps/web` production build green.
 - **Next up:** `docs/04_agentic_retrofit_plan.md` §9 (PROMPT 1–3) is now fully built — there is no
-  PROMPT 4. The next concrete unit is the EXECUTE UI tail (**A2 first-run corridor**, **A3
-  free-audit + owner report**), independently pending since before the AI phase started. The
-  **real-data headline** stays gated on BLK-1/2/9 as always, and AI-4's production route is a
-  separate legal/ops track (BLK-AI-1/3/4). Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
+  PROMPT 4, re-confirmed 2026-07-10. The next concrete PRODUCT unit is the EXECUTE UI tail (**A2
+  first-run corridor**, **A3 free-audit + owner report**), independently pending since before the
+  AI phase started — the audit sweep above did not touch this. The **real-data headline** stays
+  gated on BLK-1/2/9 as always, and AI-4's production route is a separate legal/ops track
+  (BLK-AI-1/3/4). Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
 - Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 pending · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
@@ -177,7 +196,7 @@ IMPLEMENT:
 
 ## Git workflow & safety
 
-- **The app lives on `main` in this dir** (`~/Desktop/web apps/taweed`). IMPLEMENT was built in a worktree (`worktree-create-data-pipeline`, merged to `44e0e13` + deleted). The **EXECUTE buildable pass** was built on branch `execute-phase` and **merged to `main`**. **AI-4 (PROMPT 3)** was built in-place on branch `ai-phase-4` and has been **merged to local `main`** (merge commit `78b7801`, 2026-07-08) — **not yet pushed to `origin`** as of this writing; local `main` is several commits ahead of `origin/main` (last pushed tip `9813fc6`). Push only after the user explicitly confirms — this repo's session rules treat the push + `back-up` ritual as a hard stop-and-confirm gate, not a silent step.
+- **The app lives on `main` in this dir** (`~/Desktop/web apps/taweed`). IMPLEMENT was built in a worktree (`worktree-create-data-pipeline`, merged to `44e0e13` + deleted). The **EXECUTE buildable pass** was built on branch `execute-phase` and **merged to `main`**. **AI-4 (PROMPT 3)** was built in-place on branch `ai-phase-4` and has been **merged to local `main`** (merge commit `78b7801`, 2026-07-08). The 6-pass **audit sweep** (2026-07-08 through 2026-07-10) was committed directly on `main` in-place, 12 commits (6 fix + 6 docs-learnings pairs, plus one final audit.md polish commit). **None of this has been pushed to `origin`** as of this writing; local `main` is **12 commits ahead of `origin/main`** (last pushed tip still `9813fc6`, same as `back-up`). Push only after the user explicitly confirms — this repo's session rules treat the push + `back-up` ritual as a hard stop-and-confirm gate, not a silent step.
 - **Backup-branch rule — `back-up` is the pre-advance `main` tip (restore point).** Before any push that advances `main`, snapshot the current (soon-to-be-previous) **pushed** `main` tip onto `back-up`. As of this writing (before the AI-4 push), `back-up` = `2d0e1bb` (one behind the last-pushed `origin/main` tip `9813fc6`, per the prior session's hotfix push). Once AI-4 is pushed, `back-up` should become `9813fc6` (the pre-AI-4-push `origin/main` tip) and `main` carries AI-4.
 
   ```bash
