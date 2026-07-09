@@ -83,41 +83,59 @@ const inputCls =
   "w-full rounded-sm border border-hairline bg-surface-1 px-2 py-1 text-label focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 const moneyInputCls = cn(inputCls, "num text-end");
 
+// `label` is REQUIRED (not optional) on purpose: every call site renders this
+// input either inside a visible <Field> wrapper (top-level/claim-level rows —
+// see `Field` below) or bare inside a <TD> (per-line-item table rows, which
+// have no per-row wrapper). A visible <label> text node covers the former;
+// the latter has no visible label at all unless this component supplies one
+// itself, so the sr-only span here is the only accessible name a per-line
+// input ever gets (docs/review.md WCAG 4.1.2 finding). Making it required
+// stops a future per-line usage from silently regressing to unlabeled.
 function TextField({
   value,
   onChange,
   placeholder,
+  label,
 }: {
   value: string | null;
   onChange: (v: string | null) => void;
   placeholder?: string;
+  label: string;
 }) {
   return (
-    <input
-      type="text"
-      value={value ?? ""}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value.length > 0 ? e.target.value : null)}
-      className={inputCls}
-    />
+    <label className="block">
+      <span className="sr-only">{label}</span>
+      <input
+        type="text"
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value.length > 0 ? e.target.value : null)}
+        className={inputCls}
+      />
+    </label>
   );
 }
 
 function MoneyField({
   value,
   onChange,
+  label,
 }: {
   value: string;
   onChange: (v: string) => void;
+  label: string;
 }) {
   return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={moneyInputCls}
-    />
+    <label className="block">
+      <span className="sr-only">{label}</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={moneyInputCls}
+      />
+    </label>
   );
 }
 
@@ -190,7 +208,11 @@ export function EobExtractionForm({
       <Card className="flex min-h-[10rem] flex-col items-center justify-center gap-2 border-dashed p-6 text-center">
         <FileWarning className="size-6 text-muted" aria-hidden="true" />
         <p className="text-label text-muted">{t("pagePreviewPending")}</p>
-        <p className="mono text-label text-faint">{sourceFilename}</p>
+        {/* Contrast fix (WCAG AA finding): text-faint is 3.42:1 (light) / 3.68:1
+         * (dark), below the 4.5:1 normal-text minimum. text-muted is the next
+         * step up in the token scale and clears AA in both themes. Same
+         * regression previously fixed in ingest-panel.tsx and landing.tsx. */}
+        <p className="mono text-label text-muted">{sourceFilename}</p>
       </Card>
 
       {escalated && (
@@ -209,10 +231,10 @@ export function EobExtractionForm({
           aria-label={t("validatorFindingsHeading")}
           className="border-[color:var(--at-risk)] bg-[color:var(--at-risk-bg)] p-4"
         >
-          <h3 className="mb-2 flex items-center gap-2 text-label font-medium text-[color:var(--at-risk-text)]">
+          <h2 className="mb-2 flex items-center gap-2 text-label font-medium text-[color:var(--at-risk-text)]">
             <FileWarning className="size-4" aria-hidden="true" />
             {t("validatorFindingsHeading")}
-          </h3>
+          </h2>
           <ul className="flex flex-col gap-1">
             {findings.map((f, i) => (
               <li key={i} className="mono text-label text-[color:var(--at-risk-text)]">
@@ -223,10 +245,17 @@ export function EobExtractionForm({
         </Card>
       )}
 
-      {/* Remittance-level fields */}
+      {/* Remittance-level fields.
+          Heading-order fix (WCAG best-practice finding, docs/review.md): the page's
+          only h1 is PageHeader's title, and neither the Tabs nor EobReviewQueue's
+          table render a heading of their own — so this Card's heading is the first
+          one inside the Review tab's content and must not skip a level. It and
+          validatorFindingsHeading above are heading-order-equal top-level sections
+          of the review form, hence both h2; claimHeading below is one level under
+          this section, hence h3 (not h4). */}
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-h3 font-medium">{t("remittanceHeading")}</h3>
+          <h2 className="text-h3 font-medium">{t("remittanceHeading")}</h2>
           <ConfidenceBadge value={edited.overallConfidence} />
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -234,24 +263,28 @@ export function EobExtractionForm({
             <TextField
               value={edited.payerName}
               onChange={(v) => updateTop({ payerName: v })}
+              label={t("payerName")}
             />
           </Field>
           <Field label={t("payerNphiesId")}>
             <TextField
               value={edited.payerNphiesId}
               onChange={(v) => updateTop({ payerNphiesId: v })}
+              label={t("payerNphiesId")}
             />
           </Field>
           <Field label={t("remittanceDate")}>
             <TextField
               value={edited.remittanceDate}
               onChange={(v) => updateTop({ remittanceDate: v })}
+              label={t("remittanceDate")}
             />
           </Field>
           <Field label={t("remittanceTotalPaid")}>
             <MoneyField
               value={edited.remittanceTotalPaidSar}
               onChange={(v) => updateTop({ remittanceTotalPaidSar: v })}
+              label={t("remittanceTotalPaid")}
             />
           </Field>
         </div>
@@ -261,9 +294,9 @@ export function EobExtractionForm({
       {edited.claims.map((claim, ci) => (
         <Card key={ci} className="p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-body font-medium">
+            <h3 className="text-body font-medium">
               {t("claimHeading", { n: ci + 1 })}
-            </h4>
+            </h3>
             <ConfidenceBadge value={claim.confidence} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -271,42 +304,49 @@ export function EobExtractionForm({
               <TextField
                 value={claim.claimId}
                 onChange={(v) => updateClaim(ci, { claimId: v ?? "" })}
+                label={t("claimId")}
               />
             </Field>
             <Field label={t("nphiesClaimId")}>
               <TextField
                 value={claim.nphiesClaimId}
                 onChange={(v) => updateClaim(ci, { nphiesClaimId: v })}
+                label={t("nphiesClaimId")}
               />
             </Field>
             <Field label={t("patientRef")}>
               <TextField
                 value={claim.patientRef}
                 onChange={(v) => updateClaim(ci, { patientRef: v })}
+                label={t("patientRef")}
               />
             </Field>
             <Field label={t("serviceDate")}>
               <TextField
                 value={claim.serviceDate}
                 onChange={(v) => updateClaim(ci, { serviceDate: v })}
+                label={t("serviceDate")}
               />
             </Field>
             <Field label={t("totalBilled")}>
               <MoneyField
                 value={claim.totalBilledSar}
                 onChange={(v) => updateClaim(ci, { totalBilledSar: v })}
+                label={t("totalBilled")}
               />
             </Field>
             <Field label={t("totalPaid")}>
               <MoneyField
                 value={claim.totalPaidSar}
                 onChange={(v) => updateClaim(ci, { totalPaidSar: v })}
+                label={t("totalPaid")}
               />
             </Field>
             <Field label={t("totalRejected")}>
               <MoneyField
                 value={claim.totalRejectedSar}
                 onChange={(v) => updateClaim(ci, { totalRejectedSar: v })}
+                label={t("totalRejected")}
               />
             </Field>
           </div>
@@ -333,65 +373,74 @@ export function EobExtractionForm({
                       <TextField
                         value={line.claimLineRef}
                         onChange={(v) => updateLine(ci, li, { claimLineRef: v ?? "" })}
+                        label={t("lineRef")}
                       />
                     </TD>
                     <TD className="w-24">
                       <TextField
                         value={line.sbsCode}
                         onChange={(v) => updateLine(ci, li, { sbsCode: v })}
+                        label={t("sbsCode")}
                       />
                     </TD>
                     <TD className="w-24">
                       <TextField
                         value={line.icd10amCode}
                         onChange={(v) => updateLine(ci, li, { icd10amCode: v })}
+                        label={t("icd10amCode")}
                       />
                     </TD>
                     <TD className="w-24">
                       <MoneyField
                         value={line.billedSar}
                         onChange={(v) => updateLine(ci, li, { billedSar: v })}
+                        label={t("billed")}
                       />
                     </TD>
                     <TD className="w-24">
                       <MoneyField
                         value={line.paidSar}
                         onChange={(v) => updateLine(ci, li, { paidSar: v })}
+                        label={t("paid")}
                       />
                     </TD>
                     <TD className="w-24">
                       <MoneyField
                         value={line.patientShareSar}
                         onChange={(v) => updateLine(ci, li, { patientShareSar: v })}
+                        label={t("patientShare")}
                       />
                     </TD>
                     <TD className="w-24">
                       <MoneyField
                         value={line.rejectedSar}
                         onChange={(v) => updateLine(ci, li, { rejectedSar: v })}
+                        label={t("rejected")}
                       />
                     </TD>
                     <TD className="w-40">
-                      <label className="sr-only">{t("denialCode")}</label>
-                      <select
-                        value={line.denialCode ?? ""}
-                        onChange={(e) =>
-                          updateLine(ci, li, {
-                            denialCode:
-                              e.target.value.length > 0
-                                ? (e.target.value as (typeof DENIAL_REASON_CODES)[number]["code"])
-                                : null,
-                          })
-                        }
-                        className={inputCls}
-                      >
-                        <option value="">{t("noDenial")}</option>
-                        {DENIAL_REASON_CODES.map((d) => (
-                          <option key={d.code} value={d.code}>
-                            {d.code} — {d.label}
-                          </option>
-                        ))}
-                      </select>
+                      <label className="block">
+                        <span className="sr-only">{t("denialCode")}</span>
+                        <select
+                          value={line.denialCode ?? ""}
+                          onChange={(e) =>
+                            updateLine(ci, li, {
+                              denialCode:
+                                e.target.value.length > 0
+                                  ? (e.target.value as (typeof DENIAL_REASON_CODES)[number]["code"])
+                                  : null,
+                            })
+                          }
+                          className={inputCls}
+                        >
+                          <option value="">{t("noDenial")}</option>
+                          {DENIAL_REASON_CODES.map((d) => (
+                            <option key={d.code} value={d.code}>
+                              {d.code} — {d.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     </TD>
                     <TD>
                       <ConfidenceBadge value={line.confidence} />
@@ -422,11 +471,17 @@ export function EobExtractionForm({
   );
 }
 
+// Visible-text wrapper only — NOT a <label> element. The actual label/control
+// association now lives inside TextField/MoneyField's own wrapping <label>
+// (each takes the same `label` string as a prop), so nesting this in a
+// second outer <label> would produce invalid nested <label> elements. The
+// visible text here and the input's accessible name (sr-only, inside the
+// input's own label) are the same string by construction at every call site.
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-label text-muted">
-      {label}
+    <div className="flex flex-col gap-1 text-label text-muted">
+      <span aria-hidden="true">{label}</span>
       {children}
-    </label>
+    </div>
   );
 }

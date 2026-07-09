@@ -81,10 +81,13 @@ function ForwardCard({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between rounded-lg border border-hairline bg-surface-1 p-5 transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="focus-ring group flex items-center justify-between rounded-lg border border-hairline bg-surface-1 p-5 transition-colors hover:bg-surface-2"
     >
       <span className="text-h3 font-medium">{label}</span>
-      <ArrowRight className="size-5 text-accent transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180" />
+      <ArrowRight
+        className="size-5 text-accent transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180"
+        aria-hidden
+      />
     </Link>
   );
 }

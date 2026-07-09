@@ -16,7 +16,7 @@ export function AccountMenu({ email, tenant }: { email: string; tenant: string }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="grid size-8 place-items-center rounded-full border border-hairline bg-surface-1 text-muted hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="focus-ring grid size-8 place-items-center rounded-full border border-hairline bg-surface-1 text-muted hover:bg-surface-2"
         aria-label={email}
       >
         <UserCircle className="size-5" />

@@ -1,9 +1,23 @@
 "use client";
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 
-export const Tabs = TabsPrimitive.Root;
+// Radix's TabsPrimitive.Root defaults arrow-key roving focus to LTR order
+// unless given an explicit `dir` (there's no DirectionProvider ancestor in
+// this app), so ArrowLeft/ArrowRight ignore document.dir="rtl" and move focus
+// backwards for Arabic. The app's own RTL detection lives on locale (see
+// app/[locale]/layout.tsx: dir = locale === "ar" ? "rtl" : "ltr") — mirror
+// that here so keyboard tab navigation is mirrored for RTL locales too.
+export const Tabs = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>
+>(({ dir, ...props }, ref) => {
+  const locale = useLocale();
+  return <TabsPrimitive.Root ref={ref} dir={dir ?? (locale === "ar" ? "rtl" : "ltr")} {...props} />;
+});
+Tabs.displayName = TabsPrimitive.Root.displayName;
 
 export const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,

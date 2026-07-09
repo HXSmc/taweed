@@ -50,7 +50,7 @@ export default async function LoginPage({
                 <form action={signInWithEmail.bind(null, a.email)}>
                   <button
                     type="submit"
-                    className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-start transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="focus-ring flex w-full items-center justify-between rounded-md px-3 py-2.5 text-start transition-colors hover:bg-surface-2"
                   >
                     <span className="flex flex-col">
                       <span className="text-body font-medium">

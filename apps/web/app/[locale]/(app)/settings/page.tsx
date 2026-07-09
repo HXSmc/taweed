@@ -68,7 +68,7 @@ export default async function SettingsPage({
                   <TR>
                     <TH>{ts("ruleLabel")}</TH>
                     <TH>{ts("severity")}</TH>
-                    <TH>Scope</TH>
+                    <TH>{ts("scope")}</TH>
                     <TH className="text-end">{ts("version")}</TH>
                   </TR>
                 </THead>

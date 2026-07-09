@@ -35,3 +35,5 @@ docs/NEXT_STEP_PROMPT.md
 docs/STEP_SUMMARY.md
 docs/blocker.md
 docs/screenshots/
+# temp: injected for live a11y audits, never commit
+apps/web/public/axe-core-audit.min.js

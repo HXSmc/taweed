@@ -2,6 +2,7 @@
 import { TrendingUp, ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CountUp } from "@/components/money/count-up";
+import { cn } from "@/lib/utils";
 
 // The signature element (design-brief §7): a dual figure, always current for the
 // active tenant + branch scope. Recovered counts up (goal-gradient); at-risk
@@ -57,7 +58,7 @@ function Figure({
       <span className={`flex items-center gap-1 ${color}`}>
         <span className="text-label text-muted">SAR</span>
         <CountUp value={value} durationMs={duration} className="text-h3 font-medium num" />
-        <Icon className="size-3.5" aria-hidden />
+        <Icon className={cn("size-3.5", tone === "atRisk" && "rtl:rotate-180")} aria-hidden />
       </span>
     </div>
   );

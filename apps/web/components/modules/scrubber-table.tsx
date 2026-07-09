@@ -51,20 +51,7 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
             {rows.map((r) => {
               const top = r.result.flags[0];
               return (
-                <TR
-                  key={r.claimId}
-                  className="cursor-pointer focus-ring"
-                  onClick={() => setSelected(r)}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Claim ${r.nphiesClaimId ?? r.claimId}, risk ${r.result.riskScore}`}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelected(r);
-                    }
-                  }}
-                >
+                <TR key={r.claimId}>
                   <TD>
                     <div className="flex items-center gap-2">
                       <span className="num w-7 text-end text-body font-medium tabular-nums">
@@ -89,7 +76,17 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
                     </div>
                   </TD>
                   <TD className="mono text-label">
-                    {r.nphiesClaimId ?? r.claimId.slice(0, 8)}
+                    <button
+                      type="button"
+                      className="focus-ring rounded-sm text-start"
+                      aria-label={t("rowAriaLabel", {
+                        claimId: r.nphiesClaimId ?? r.claimId,
+                        risk: r.result.riskScore,
+                      })}
+                      onClick={() => setSelected(r)}
+                    >
+                      {r.nphiesClaimId ?? r.claimId.slice(0, 8)}
+                    </button>
                   </TD>
                   <TD className="mono text-label text-muted">
                     {r.patientLabel}
@@ -110,7 +107,7 @@ export function ScrubberTable({ rows }: { rows: ScrubRow[] }) {
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         {selected && (
-          <SheetContent title={t("detailTitle")}>
+          <SheetContent title={t("detailTitle")} closeLabel={tc("close")}>
             <div className="mb-4 flex items-center justify-between rounded-md bg-surface-2 p-3">
               <span className="mono text-label">
                 {selected.nphiesClaimId ?? selected.claimId.slice(0, 8)}

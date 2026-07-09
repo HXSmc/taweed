@@ -4,14 +4,15 @@ import { MoneyIndicator } from "./money-indicator";
 import { TenantSwitcher } from "./tenant-switcher";
 import { LocaleToggle } from "./locale-toggle";
 import { ThemeToggle } from "./theme-toggle";
-import { ResidencyBadge } from "./residency-badge";
 import { RoleChip } from "./role-chip";
 import { AccountMenu } from "./account-menu";
 import type { Role } from "@/lib/rbac";
 
 // Top command bar (design-brief §7), 56px sticky. Inline-start = tenant/branch
 // scope; center = global search; inline-end = the persistent money indicator,
-// trust, locale + theme, role chip, account.
+// locale + theme, role chip, account. The data-residency statement moved to
+// Settings > Data residency (freed up bar space; was crowding the search box
+// at common desktop widths).
 export function CommandBar({
   tenantName,
   role,
@@ -40,7 +41,7 @@ export function CommandBar({
           type="search"
           aria-label={t("search")}
           placeholder={t("search")}
-          className="h-9 w-full max-w-md rounded-md border border-hairline bg-surface-1 ps-8 pe-3 text-body placeholder:text-faint focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="focus-ring h-9 w-full max-w-md rounded-md border border-hairline bg-surface-1 ps-8 pe-3 text-body placeholder:text-faint"
         />
       </div>
 
@@ -48,7 +49,6 @@ export function CommandBar({
         <div className="hidden lg:block">
           <MoneyIndicator recovered={recovered} atRisk={atRisk} scopeLabel={scopeLabel} />
         </div>
-        <ResidencyBadge />
         <LocaleToggle />
         <ThemeToggle />
         <RoleChip role={role} />

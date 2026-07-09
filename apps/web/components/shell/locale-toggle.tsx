@@ -18,6 +18,12 @@ export function LocaleToggle() {
       size="sm"
       onClick={() => router.replace(pathname, { locale: next })}
       aria-label={`Switch to ${next === "ar" ? "Arabic" : "English"}`}
+      // The accessible name above is a hardcoded English phrase (never
+      // localized) — on /ar (html lang="ar") that would announce English
+      // text with no language marker (WCAG 3.1.2). `lang="en"` tells
+      // assistive tech to switch pronunciation rules for this element's
+      // accessible name regardless of the surrounding page locale.
+      lang="en"
       className="gap-1.5"
     >
       <Languages className="size-4" />

@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/session";
 import { getAnalytics } from "@/lib/data";
-import { formatPct, toNumber } from "@/lib/money";
+import { formatMoney, formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,44 @@ export default async function AnalyticsPage({
   const { money, overallRate, byPayer, byBranch, pareto, trend } =
     await getAnalytics(session.tenantId);
   const rate = overallRate;
+
+  // Text alternative for the trend chart (WCAG 1.1.1): describe what the two
+  // series actually show, since the SVG itself carries no accessible content.
+  const trendChartTitleId = "trend-chart-title";
+  const trendSummary =
+    trend.length > 0
+      ? t("trendChartSummary", {
+          start: trend[0].period,
+          end: trend[trend.length - 1].period,
+          deniedStart: formatMoney(toNumber(trend[0].deniedSar)),
+          deniedEnd: formatMoney(toNumber(trend[trend.length - 1].deniedSar)),
+          recoveredStart: formatMoney(toNumber(trend[0].recoveredSar)),
+          recoveredEnd: formatMoney(
+            toNumber(trend[trend.length - 1].recoveredSar),
+          ),
+        })
+      : t("trend");
+
+  // Text alternative for the Pareto chart (WCAG 1.1.1): the adjacent visible
+  // list only shows code/label/count, so the summary carries the SAR amount
+  // and cumulative-% per reason — the actual analytical point of the chart.
+  const paretoChartTitleId = "pareto-chart-title";
+  const paretoSummary =
+    pareto.length > 0
+      ? t("paretoChartSummary", {
+          list: pareto
+            .slice(0, 4)
+            .map((r) =>
+              t("paretoReasonItem", {
+                code: r.code.replace("TWD-", ""),
+                label: isDenialReasonCode(r.code) ? denialLabel(r.code) : r.label,
+                sar: formatMoney(toNumber(r.sar)),
+                cumulativePct: Math.round(r.cumulativePct),
+              }),
+            )
+            .join(", "),
+        })
+      : t("byReason");
 
   return (
     <div>
@@ -65,19 +103,23 @@ export default async function AnalyticsPage({
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>{t("trend")}</CardTitle>
+            <CardTitle id={trendChartTitleId}>{t("trend")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendLine points={trend} />
+            <TrendLine
+              points={trend}
+              titleId={trendChartTitleId}
+              summary={trendSummary}
+            />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("byReason")}</CardTitle>
+            <CardTitle id={paretoChartTitleId}>{t("byReason")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Pareto rows={pareto} />
+            <Pareto rows={pareto} titleId={paretoChartTitleId} summary={paretoSummary} />
             <ul className="mt-3 flex flex-col gap-1.5">
               {pareto.slice(0, 4).map((r) => (
                 <li key={r.code} className="flex items-center justify-between text-label">

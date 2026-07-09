@@ -41,7 +41,7 @@ export default async function IngestPage({
           <TabsTrigger value="review">
             {tr("tabTitle")}
             {pending.length > 0 && (
-              <span className="ms-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-accent-subtle px-1 text-label text-accent">
+              <span className="ms-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-accent-subtle px-1 text-label text-accent dark:bg-accent dark:text-accent-fg">
                 {pending.length}
               </span>
             )}

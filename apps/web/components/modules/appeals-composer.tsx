@@ -53,7 +53,56 @@ export function AppealsComposer({
   );
   const [name, setName] = React.useState(reviewerName);
   const [reviewed, setReviewed] = React.useState(false);
-  const [pending, start] = React.useTransition();
+  const [, start] = React.useTransition();
+  // Tracks the loadAppealDraft round-trip explicitly rather than relying on
+  // useTransition's own `isPending`: React 18 only keeps a transition
+  // "pending" for the synchronous portion of an async callback, so it flips
+  // back to false right after `select()` fires and well before
+  // loadAppealDraft's promise actually settles — leaving no reliable signal
+  // to gate the loading UI/announcement on.
+  const [isLoadingDraft, setIsLoadingDraft] = React.useState(false);
+
+  // Roving tabindex for the queue (WCAG 2.1.1/2.4.3): only ONE row is a Tab
+  // stop at a time (`queueFocusIdx`); Up/Down/Home/End move focus between
+  // rows without consuming a Tab press. With up to 100 rows in a seeded
+  // tenant, without this a keyboard user had to Tab through every remaining
+  // row to reach the composer — this collapses the whole queue to a single
+  // Tab stop, same as any standard listbox/toolbar composite widget.
+  const [queueFocusIdx, setQueueFocusIdx] = React.useState(0);
+  const queueRowRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
+
+  const moveQueueFocus = (nextIdx: number) => {
+    if (queue.length === 0) return;
+    const clamped = Math.max(0, Math.min(queue.length - 1, nextIdx));
+    setQueueFocusIdx(clamped);
+    queueRowRefs.current[clamped]?.focus();
+  };
+
+  const handleQueueRowKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    idx: number,
+  ) => {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        moveQueueFocus(idx + 1);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        moveQueueFocus(idx - 1);
+        break;
+      case "Home":
+        e.preventDefault();
+        moveQueueFocus(0);
+        break;
+      case "End":
+        e.preventDefault();
+        moveQueueFocus(queue.length - 1);
+        break;
+      default:
+        break;
+    }
+  };
   // Guards select()'s async loadAppealDraft against out-of-order resolution:
   // rapid clicks between rows must not let an earlier click's stale response
   // overwrite the draft/bodies for whatever row is selected now.
@@ -78,6 +127,7 @@ export function AppealsComposer({
     setReviewed(false);
     resetAssist();
     const token = draftRequest.issue();
+    setIsLoadingDraft(true);
     start(async () => {
       const r = await loadAppealDraft(denialId);
       // Drop stale responses: if a later select() has issued a newer token
@@ -85,6 +135,7 @@ export function AppealsComposer({
       // currently-selected row.
       if (!draftRequest.isCurrent(token)) return;
       setDraft(r);
+      setIsLoadingDraft(false);
       // Seed BOTH language bodies from the deterministic template up front, so a
       // later language toggle swaps between working copies instead of re-deriving.
       if (r) setBodies({ en: r.draft.body_en, ar: r.draft.body_ar });
@@ -182,6 +233,21 @@ export function AppealsComposer({
 
   const canExport = reviewed && name.trim().length > 0 && !!draft;
 
+  // WCAG 4.1.3 Status Messages: select() swaps the whole composer panel
+  // (empty -> pending -> loaded) via conditional JSX with no visual page
+  // navigation, so a screen-reader user gets no other signal the click
+  // registered or that new content arrived. This mirrors the always-mounted
+  // role="status" convention in ingest-panel.tsx / eob-review-queue.tsx —
+  // the node must exist before its text changes for assistive tech to
+  // pick up the mutation.
+  const composerStatusMessage = !selected
+    ? ""
+    : isLoadingDraft
+      ? t("loadingDraft")
+      : draft
+        ? t("draftLoaded", { payer: draft.context.payerName, amount: formatMoney(draft.deniedSar) })
+        : t("emptyBody");
+
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[22rem_1fr]">
       {/* Queue, sorted by SAR */}
@@ -190,10 +256,17 @@ export function AppealsComposer({
           <h2 className="text-h3 font-medium">{t("queue")}</h2>
         </div>
         <ul className="max-h-[36rem] divide-y divide-hairline overflow-y-auto">
-          {queue.map((d) => (
+          {queue.map((d, idx) => (
             <li key={d.denialId}>
               <button
+                ref={(el) => {
+                  queueRowRefs.current[idx] = el;
+                }}
                 onClick={() => select(d.denialId)}
+                onFocus={() => setQueueFocusIdx(idx)}
+                onKeyDown={(e) => handleQueueRowKeyDown(e, idx)}
+                tabIndex={idx === queueFocusIdx ? 0 : -1}
+                aria-current={selected === d.denialId ? "true" : undefined}
                 className={cn(
                   "flex w-full flex-col gap-1 p-3 text-start transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   selected === d.denialId && "bg-accent-subtle",
@@ -204,7 +277,15 @@ export function AppealsComposer({
                   <span className="num text-at-risk-text">SAR {formatMoney(d.deniedSar)}</span>
                 </div>
                 <div className="flex items-center justify-between text-label text-muted">
-                  <span className="truncate">{d.reasonLabel}</span>
+                  {/* reasonLabel is always the hardcoded English DENIAL_REASON_CODES
+                      label (packages/shared/src/denial-codes.ts) — no Arabic variant
+                      exists yet. On /ar (html lang="ar") that would announce English
+                      text with no language marker (WCAG 3.1.2). `lang="en"` tells
+                      assistive tech to switch pronunciation rules for this span
+                      regardless of the surrounding page locale. */}
+                  <span className="truncate" lang="en">
+                    {d.reasonLabel}
+                  </span>
                   <span className="num">{d.deadlineDays}d</span>
                 </div>
               </button>
@@ -218,6 +299,13 @@ export function AppealsComposer({
 
       {/* Composer */}
       <Card className="p-5">
+        {/* Always-mounted live region: announces the select() -> loadAppealDraft
+            lifecycle (loading, then loaded-with-context, or empty) since the
+            panel below swaps entirely via conditional JSX with no other
+            assistive-tech signal. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {composerStatusMessage}
+        </p>
         {!selected ? (
           <div className="grid h-full min-h-[24rem] place-items-center text-center">
             <div>
@@ -225,7 +313,7 @@ export function AppealsComposer({
               <p className="mt-2 text-body text-muted">{t("lead")}</p>
             </div>
           </div>
-        ) : pending ? (
+        ) : isLoadingDraft ? (
           <div className="grid h-full min-h-[24rem] place-items-center">
             <Loader2 className="size-6 animate-spin text-muted" />
           </div>
@@ -250,7 +338,11 @@ export function AppealsComposer({
                   {draft.context.nphiesClaimId ?? draft.context.claimId.slice(0, 8)}
                 </span>
                 <p className="text-body font-medium">
-                  {draft.context.payerName} · {draft.reasonLabel}
+                  {draft.context.payerName} ·{" "}
+                  {/* Same hardcoded-English denial reasonLabel as the queue row
+                      above — tag it lang="en" so Arabic screen-reader voices
+                      don't attempt Arabic phonetics on it (WCAG 3.1.2). */}
+                  <span lang="en">{draft.reasonLabel}</span>
                 </p>
               </div>
               <div className="text-end">
@@ -266,9 +358,11 @@ export function AppealsComposer({
               {(["en", "ar"] as const).map((l) => (
                 <button
                   key={l}
+                  type="button"
+                  aria-pressed={lang === l}
                   onClick={() => switchLang(l)}
                   className={cn(
-                    "rounded-md px-3 py-1.5 text-label font-medium",
+                    "rounded-md px-3 py-1.5 text-label font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                     lang === l ? "bg-accent text-accent-fg" : "text-muted hover:bg-surface-2",
                   )}
                 >
@@ -288,6 +382,7 @@ export function AppealsComposer({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={12}
+              aria-label={t("draft")}
               className="w-full rounded-md border border-hairline bg-surface-1 p-3 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             />
 
@@ -342,7 +437,14 @@ export function AppealsComposer({
                         className="rounded-md border border-hairline bg-surface-1 p-3"
                       >
                         <div className="mb-1 flex items-center gap-2">
-                          <Badge variant="mock">{t("aiDraftLabel")}</Badge>
+                          {/* Numbered so 2+ suggestion paragraphs don't share one
+                              indistinguishable accessible name (WCAG 4.1.2): a
+                              screen-reader user tabbing between these textareas
+                              needs "AI draft 1" vs "AI draft 2", not "AI draft"
+                              repeated for every paragraph. */}
+                          <Badge variant="mock" id={`${key}-label`}>
+                            {t("aiDraftLabelNumbered", { n: idx + 1 })}
+                          </Badge>
                         </div>
                         <textarea
                           dir={lang === "ar" ? "rtl" : "ltr"}
@@ -351,12 +453,23 @@ export function AppealsComposer({
                             setEdited((m) => ({ ...m, [key]: e.target.value }))
                           }
                           rows={3}
+                          aria-labelledby={`${key}-label`}
                           className="w-full rounded-md border border-hairline bg-surface-1 p-2 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         />
                         <div className="mt-2 flex items-center gap-2">
+                          {/* Numbered accessible name (WCAG 4.1.2): with 2+
+                              suggestion paragraphs, every "Insert" button
+                              otherwise shares the identical accessible name,
+                              so a screen-reader user browsing by button
+                              cannot tell which paragraph a given button
+                              targets without reading surrounding context.
+                              aria-label overrides the visible "Insert" text
+                              with "Insert AI draft {n}" while the label
+                              itself stays unchanged for sighted users. */}
                           <Button
                             variant="ghost"
                             onClick={() => void insertParagraph(idx, p)}
+                            aria-label={t("insertNumbered", { n: idx + 1 })}
                           >
                             <Plus className="size-4" aria-hidden="true" />
                             {t("insert")}
@@ -407,7 +520,7 @@ export function AppealsComposer({
                     type="checkbox"
                     checked={reviewed}
                     onChange={(e) => setReviewed(e.target.checked)}
-                    className="size-4 accent-[var(--accent)]"
+                    className="size-4 rounded accent-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   />
                   {t("confirmReview")}
                 </label>

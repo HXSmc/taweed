@@ -22,7 +22,7 @@ export function TenantSwitcher({
   const t = useTranslations("common");
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-body hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+      <DropdownMenuTrigger className="focus-ring flex items-center gap-2 rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-body hover:bg-surface-2">
         <Building2 className="size-4 text-muted" aria-hidden />
         <span className="max-w-[10rem] truncate font-medium">{tenantName}</span>
         <span className="hidden text-muted sm:inline">· {t("allBranches")}</span>

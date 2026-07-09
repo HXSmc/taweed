@@ -114,7 +114,9 @@ export default async function RecoveryPage({
                         <TH className="text-end">{t("appealedSar")}</TH>
                         <TH className="text-end">{t("recoveredSar")}</TH>
                         <TH className="text-end">{t("daysOpen")}</TH>
-                        <TH className="text-end" />
+                        <TH className="text-end">
+                          <span className="sr-only">{t("actions")}</span>
+                        </TH>
                       </TR>
                     </THead>
                     <TBody>
@@ -124,6 +126,14 @@ export default async function RecoveryPage({
                           row={r}
                           markWon={t("markWon")}
                           markLost={t("markLost")}
+                          markWonLabel={t("markWonAriaLabel", {
+                            payer: r.payerName,
+                            amount: formatMoney(r.appealedSar),
+                          })}
+                          markLostLabel={t("markLostAriaLabel", {
+                            payer: r.payerName,
+                            amount: formatMoney(r.appealedSar),
+                          })}
                         />
                       ))}
                     </TBody>
@@ -153,10 +163,14 @@ function PipelineRow({
   row,
   markWon,
   markLost,
+  markWonLabel,
+  markLostLabel,
 }: {
   row: AppealPipelineRow;
   markWon: string;
   markLost: string;
+  markWonLabel: string;
+  markLostLabel: string;
 }) {
   const terminal = row.status === "won" || row.status === "lost";
   return (
@@ -174,14 +188,26 @@ function PipelineRow({
             <form action={markAppealOutcomeForm}>
               <input type="hidden" name="appealId" value={row.appealId} />
               <input type="hidden" name="outcome" value="won" />
-              <Button type="submit" variant="secondary" size="sm" className="gap-1">
+              <Button
+                type="submit"
+                variant="secondary"
+                size="sm"
+                className="gap-1"
+                aria-label={markWonLabel}
+              >
                 <Check className="size-3.5 text-recovered" /> {markWon}
               </Button>
             </form>
             <form action={markAppealOutcomeForm}>
               <input type="hidden" name="appealId" value={row.appealId} />
               <input type="hidden" name="outcome" value="lost" />
-              <Button type="submit" variant="ghost" size="sm" className="gap-1">
+              <Button
+                type="submit"
+                variant="ghost"
+                size="sm"
+                className="gap-1"
+                aria-label={markLostLabel}
+              >
                 <X className="size-3.5" /> {markLost}
               </Button>
             </form>

@@ -40,7 +40,10 @@ export function MoneyFigure({
           toneText[tone],
         )}
       />
-      <Arrow className={cn("mb-2 size-5", toneText[tone])} aria-hidden />
+      <Arrow
+        className={cn("mb-2 size-5", toneText[tone], tone !== "recovered" && "rtl:rotate-180")}
+        aria-hidden
+      />
       {deltaPct !== undefined && (
         <span
           className={cn(

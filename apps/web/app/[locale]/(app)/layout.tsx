@@ -5,6 +5,7 @@ import { getBranches, getMoneyScope } from "@/lib/data";
 import { toNumber } from "@/lib/money";
 import { Rail } from "@/components/shell/rail";
 import { CommandBar } from "@/components/shell/command-bar";
+import { SkipLink } from "@/components/shell/skip-link";
 
 // Every authenticated surface is per-request dynamic: the data is tenant-scoped
 // and session-derived, so it must NEVER be statically prerendered and shared
@@ -33,6 +34,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen bg-bg">
+      <SkipLink label={t("skipToContent")} />
       <Rail role={session.role} />
       <div className="flex min-w-0 flex-1 flex-col">
         <CommandBar
@@ -44,7 +46,11 @@ export default async function AppLayout({
           scopeLabel={scopeLabel}
           branches={branches}
         />
-        <main className="mx-auto w-full max-w-[1400px] flex-1 p-5 md:p-6">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1400px] flex-1 p-5 md:p-6 focus:outline-none"
+        >
           {children}
         </main>
       </div>

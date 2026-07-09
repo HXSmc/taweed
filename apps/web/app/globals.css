@@ -81,6 +81,16 @@
   --accent-subtle: #16233f;
   --at-risk-bg: #2a1710;
   --recovered-bg: #0c2620;
+  /* Contrast fix (WCAG AA finding, axe:color-contrast): the light-theme
+   * --at-risk-text (#9a3208) and --recovered-text (#07734f) were never
+   * retuned for `.dark`, so every money-figure/badge/table cell using these
+   * "-text" tokens inherited the light values against dark surfaces —
+   * ~2.5:1 and ~3.15:1, both under the 4.5:1 normal-text minimum. These
+   * tokens are text-only (never a background elsewhere), so retuning them
+   * carries no regression risk to the at-risk/recovered *base* or *-bg*
+   * tokens used for buttons, bars, and chip fills. */
+  --at-risk-text: #f0a277;
+  --recovered-text: #58d6ac;
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.4);
   --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.5);
   --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.55);

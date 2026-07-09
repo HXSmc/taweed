@@ -91,7 +91,11 @@ export function IngestPanel() {
       >
         <UploadCloud className="size-8 text-muted" />
         <p className="max-w-xs text-body text-muted">{t("dropzone")}</p>
-        <p className="mono text-label text-faint">{t("dropzoneHint")}</p>
+        {/* Contrast fix (WCAG AA finding): text-faint is 3.42:1 (light) / 3.67:1
+         * (dark), below the 4.5:1 normal-text minimum. text-muted is the next
+         * token up the scale and clears AA in both themes (see the same fix in
+         * marketing/landing.tsx). */}
+        <p className="mono text-label text-muted">{t("dropzoneHint")}</p>
         <input
           ref={inputRef}
           type="file"
@@ -141,7 +145,7 @@ export function IngestPanel() {
 
         {state?.kind !== "pdf" && (
           <>
-            <div className="grid grid-cols-3 gap-3">
+            <div role="status" aria-live="polite" className="grid grid-cols-3 gap-3">
               <Counter label={t("claimsCreated")} value={result?.claims ?? 0} tone="text" />
               <Counter
                 label={t("denialsDetected")}
@@ -156,7 +160,11 @@ export function IngestPanel() {
             </div>
 
             {result?.ok && (
-              <p className="mt-4 border-t border-hairline pt-4 text-body">
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-4 border-t border-hairline pt-4 text-body"
+              >
                 {t("resultLead", {
                   claims: result.claims,
                   denials: result.denials,
@@ -165,7 +173,11 @@ export function IngestPanel() {
               </p>
             )}
             {result?.error && (
-              <p className="mt-4 rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text">
+              <p
+                role="alert"
+                aria-live="assertive"
+                className="mt-4 rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text"
+              >
                 {result.error}
               </p>
             )}
@@ -208,7 +220,7 @@ export function IngestPanel() {
             <Table>
               <THead>
                 <TR>
-                  <TH className="w-40">Ref</TH>
+                  <TH className="w-40">{t("quarantineRef")}</TH>
                   <TH>{t("quarantineReason")}</TH>
                 </TR>
               </THead>

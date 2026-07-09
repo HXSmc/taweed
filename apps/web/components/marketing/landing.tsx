@@ -54,20 +54,31 @@ export async function Landing() {
 
       {/* Attention — the number is the hero. */}
       <section className="mx-auto max-w-5xl px-6 pb-20 pt-16 sm:pt-24">
-        <p className="text-label font-medium uppercase tracking-wide text-accent">
+        {/* Contrast fix (WCAG AA finding): `--accent` is locked to the same
+         * hex in both themes (design-brief §4.2), which clears AA on the
+         * light `--bg` (~5.7:1, per §4.2's own recomputation) but drops to
+         * ~3.35:1 on the dark `--bg` — below the 4.5:1 minimum for this
+         * 12.5px label. Dark theme falls back to the existing `--text-muted`
+         * token (~7.7:1 on dark `--bg`), already used for supporting copy on
+         * this page, instead of touching the locked accent token globally. */}
+        <p className="text-label font-medium uppercase tracking-wide text-accent dark:text-muted">
           {t("eyebrow")}
         </p>
-        <div className="mt-6 space-y-3">
-          <p className="text-display font-display font-medium leading-tight">
+        <h1 className="mt-6 space-y-3">
+          <span className="block text-display font-display font-medium leading-tight">
             {t("heroLead")}
-          </p>
+          </span>
           <MoneyFigure value={ILLUSTRATIVE_ANNUAL_AT_RISK} tone="atRisk" size="hero" />
-          <p className="text-display font-display font-medium leading-tight">
+          <span className="block text-display font-display font-medium leading-tight">
             {t("heroTrail")}
-          </p>
-        </div>
+          </span>
+        </h1>
         <p className="mt-6 max-w-2xl text-h3 text-muted">{t("heroSub")}</p>
-        <p className="mt-3 text-label text-faint">{t("illustrative")}</p>
+        {/* Contrast fix (WCAG AA finding): text-faint is 3.3:1 (light) / 3.92:1
+         * (dark), below the 4.5:1 normal-text minimum. text-muted is the next
+         * token up the scale (6.5:1 / 7.7:1) and keeps this a secondary caption
+         * relative to heroSub above it. */}
+        <p className="mt-3 text-label text-muted">{t("illustrative")}</p>
         <div className="mt-8">
           <Link
             href="/login"
@@ -90,7 +101,7 @@ export async function Landing() {
                 key={b.n}
                 className="grid grid-cols-[auto_1fr] items-baseline gap-x-6 gap-y-1 py-6"
               >
-                <span className="num font-display text-display font-medium text-hairline-strong">
+                <span className="num font-display text-display font-medium text-muted">
                   {b.n}
                 </span>
                 <div>

@@ -53,14 +53,21 @@ export function Rail({ role }: { role: Role }) {
             href={`/${m}`}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex h-10 items-center gap-3 rounded-md px-2.5 text-body font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              "focus-ring flex h-10 items-center gap-3 rounded-md px-2.5 text-body font-medium transition-colors",
               active
-                ? "bg-accent-subtle text-accent"
+                ? // Contrast fix (WCAG AA finding, axe:color-contrast): `--accent`
+                  // is locked to the same hex in both themes while `--accent-subtle`
+                  // is retuned darker for `.dark`, so this pairing dropped to
+                  // ~2.64:1 — under the 4.5:1 minimum. `.dark` swaps to the solid
+                  // accent fill (`bg-accent` + `text-accent-fg`, ~5.9:1), the same
+                  // pairing already used for buttons/the brand mark and for the
+                  // Badge `accent` variant's dark override.
+                  "bg-accent-subtle text-accent dark:bg-accent dark:text-accent-fg"
                 : "text-muted hover:bg-surface-2 hover:text-text",
             )}
           >
             <Icon className="size-4 shrink-0" aria-hidden />
-            <span className="hidden lg:inline">{t(m)}</span>
+            <span className="sr-only lg:not-sr-only lg:inline">{t(m)}</span>
           </Link>
         );
       })}

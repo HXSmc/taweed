@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import * as React from "react";
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { EobExtraction } from "@taweed/ai";
 import { EobExtractionForm } from "@/components/modules/eob-review/eob-extraction-form";
@@ -73,6 +73,149 @@ function renderForm(extraction: EobExtraction) {
     </NextIntlClientProvider>,
   );
 }
+
+// This suite's setup does not register RTL's afterEach auto-cleanup (see
+// ingest-panel-contrast-and-i18n.test.tsx's note on the same convention), so
+// each test's DOM must be torn down explicitly or the next render()'s
+// queries see the previous test's leftover markup too.
+afterEach(cleanup);
+
+describe("EobExtractionForm — page-preview source filename contrast", () => {
+  // Regression test for a CONFIRMED WCAG AA finding: the source-filename
+  // caption in the page-preview placeholder card used `text-faint`
+  // (3.42:1 light / 3.68:1 dark), below the 4.5:1 normal-text AA minimum.
+  // Fixed by switching to `text-muted`, the same token swap already applied
+  // for the identical finding type in ingest-panel.tsx and landing.tsx.
+  it("renders the source filename with an AA-contrast token, never text-faint", () => {
+    renderForm(makeExtraction("Original Payer"));
+
+    const filename = screen.getByText("remit.pdf");
+    expect(filename).toHaveClass("text-muted");
+    expect(filename).not.toHaveClass("text-faint");
+  });
+});
+
+function makeExtractionWithTwoLines(): EobExtraction {
+  const base = makeExtraction("Original Payer");
+  const line = base.claims[0].lines[0];
+  return {
+    ...base,
+    claims: [
+      {
+        ...base.claims[0],
+        lines: [
+          { ...line, claimLineRef: "1", sbsCode: null },
+          { ...line, claimLineRef: "2", sbsCode: "99213" },
+        ],
+      },
+    ],
+  };
+}
+
+describe("EobExtractionForm — per-claim-line accessible names", () => {
+  // Regression test for a CONFIRMED WCAG AA finding (4.1.2 Name, Role, Value):
+  // every editable control in a claim-line row (claimLineRef, sbsCode,
+  // icd10amCode, the four money fields, and the denial-code <select>) had no
+  // accessible name — the column header text lived once in a <TH>, not
+  // associated with any single row's controls, and the denial-code <select>'s
+  // <label> was a DOM sibling rather than a wrapping parent (no real
+  // label/control association). Fixed by giving TextField/MoneyField their
+  // own wrapping <label> (visually hidden text, same string as the column
+  // header) and wrapping the <select> in a real <label> too.
+  it("gives every per-line text/money field and the denial-code select an accessible name", () => {
+    renderForm(makeExtractionWithTwoLines());
+
+    const lineRefInputs = screen.getAllByLabelText(enMessages.reviewQueue.lineRef);
+    const sbsInputs = screen.getAllByLabelText(enMessages.reviewQueue.sbsCode);
+    const icdInputs = screen.getAllByLabelText(enMessages.reviewQueue.icd10amCode);
+    const billedInputs = screen.getAllByLabelText(enMessages.reviewQueue.billed);
+    const paidInputs = screen.getAllByLabelText(enMessages.reviewQueue.paid);
+    const patientShareInputs = screen.getAllByLabelText(
+      enMessages.reviewQueue.patientShare,
+    );
+    const rejectedInputs = screen.getAllByLabelText(enMessages.reviewQueue.rejected);
+    const denialSelects = screen.getAllByLabelText(enMessages.reviewQueue.denialCode);
+
+    // One labeled control per line (2 lines seeded above).
+    for (const inputs of [
+      lineRefInputs,
+      sbsInputs,
+      icdInputs,
+      billedInputs,
+      paidInputs,
+      patientShareInputs,
+      rejectedInputs,
+      denialSelects,
+    ]) {
+      expect(inputs).toHaveLength(2);
+    }
+
+    // Each labeled control is genuinely the per-row input, not a decoy —
+    // editing the second row's SBS-code field only changes that field.
+    const secondSbsInput = sbsInputs[1] as HTMLInputElement;
+    expect(secondSbsInput.value).toBe("99213");
+    fireEvent.change(secondSbsInput, { target: { value: "99214" } });
+    expect(secondSbsInput.value).toBe("99214");
+    expect((sbsInputs[0] as HTMLInputElement).value).toBe("");
+  });
+});
+
+describe("EobExtractionForm — Review tab heading order", () => {
+  // Regression test for a CONFIRMED best-practice/heading-order finding
+  // (docs/review.md): the page's only h1/h2 come from PageHeader and
+  // EobReviewQueue's own section headings (it has none), so this form's own
+  // headings are the only ones inside the Review tab's content once a row is
+  // selected. They used to jump straight to h3 (remittanceHeading) then h4
+  // (claimHeading) with no h2 in between — a level skip a screen-reader
+  // user navigating by heading level (NVDA/JAWS "H" key) would see as a
+  // broken outline. Fixed by making remittanceHeading (and
+  // validatorFindingsHeading, a same-level sibling section) h2, and
+  // claimHeading — one level under the remittance section — h3.
+  it("renders remittanceHeading as h2 and claimHeading as h3, with no skipped level", () => {
+    renderForm(makeExtraction("Original Payer"));
+
+    const remittanceHeading = screen.getByRole("heading", {
+      level: 2,
+      name: enMessages.reviewQueue.remittanceHeading,
+    });
+    expect(remittanceHeading).toBeInTheDocument();
+
+    const claimHeading = screen.getByRole("heading", {
+      level: 3,
+      name: "Claim 1",
+    });
+    expect(claimHeading).toBeInTheDocument();
+
+    // No h4 (or deeper) anywhere in the form now that claimHeading moved to h3.
+    expect(screen.queryByRole("heading", { level: 4 })).not.toBeInTheDocument();
+  });
+
+  it("renders validatorFindingsHeading as h2 too, so a findings-present row never puts an h3 before the form's first h2", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={{ reviewQueue: enMessages.reviewQueue }}>
+        <EobExtractionForm
+          extraction={makeExtraction("Original Payer")}
+          sourceFilename="remit.pdf"
+          escalated={false}
+          validatorReport={{
+            findings: [{ check: "totals_match", passed: false, detail: "Totals disagree" }],
+          }}
+          onApprove={() => {}}
+          onReject={() => {}}
+          pending={false}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const headings = screen.getAllByRole("heading");
+    // The findings card renders before the remittance Card in this component's
+    // JSX, so it must be the SAME level (h2) as remittanceHeading — otherwise it
+    // would be the first heading after the page's h1 and reintroduce a skip.
+    expect(headings[0]).toHaveProperty("tagName", "H2");
+    expect(headings[0]).toHaveTextContent(enMessages.reviewQueue.validatorFindingsHeading);
+    expect(screen.queryByRole("heading", { level: 4 })).not.toBeInTheDocument();
+  });
+});
 
 describe("EobExtractionForm — reseed on rerender", () => {
   it("keeps an in-progress edit when the same row's extraction object is a fresh reference (no key change)", () => {
