@@ -66,6 +66,70 @@
 
 ## Learnings (append after each pass — newest on top)
 
+### WCAG AA accessibility audit (2026-07-09/10)
+
+- **Real automated scanning beats code-only inference.** Copy the installed axe-core UMD build
+  (`node_modules/.pnpm/axe-core@<ver>/node_modules/axe-core/axe.min.js`) into
+  `apps/web/public/axe-core-audit.min.js` (gitignore it — temp, never commit), inject it into a live
+  page via chrome-devtools `evaluate_script` (`<script src="/axe-core-audit.min.js">` + await load),
+  then `window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a','wcag2aa','wcag21aa'] } })`.
+  Gets real violation data (rule id, impact, target selector, failureSummary) instead of a
+  subjective read of the JSX. Combine with manual keyboard-nav (`press_key` + check
+  `document.activeElement`) and a screenshot per page — axe catches contrast/labels/roles, not
+  focus order or visual truncation.
+- **A shared browser session across many parallel agents has a real race condition.**
+  `mcp__chrome-devtools__select_page` sets a GLOBAL "current context" — with 10+ concurrently-running
+  audit/verify/fix agents all calling `select_page` on the same default-context browser, the pointer
+  gets stolen between almost every tool call, even when batched in one message. Isolated-context
+  tabs (`new_page`/`select_page` with a unique `isolatedContext` name per agent) are meaningfully
+  more resistant, since sibling agents' `select_page` calls mostly contend over which DEFAULT-context
+  tab is selected, not isolated ones — give every agent its own isolated context when the workflow
+  needs real browser interaction, not just axe injection. Even so, one page (`/ar/overview`) never
+  got a clean live re-check this session — documented as a tooling limitation in `docs/a11y.md`, not
+  a fabricated pass.
+- **Tab-budget discipline matters for real, not just token cost — a laptop can actually start
+  lagging from 15-17 concurrent chrome-devtools tabs.** Baked a `TAB_BUDGET` instruction block into
+  every agent prompt: `list_pages` first, reuse an existing tab via `select_page`+`navigate_page`
+  if at/over budget rather than always `new_page`, leave your tab open for the next agent to reuse
+  rather than closing it. Still needed manual heartbeat-driven trimming on top (closing duplicate
+  default-context tabs) — the in-prompt instruction reduces growth, it doesn't fully self-cap.
+- **`resumeFromRunId` really does mean "only re-run what's missing/failed," proven repeatedly.** This
+  workflow got interrupted **5 separate times** (3 harness-process restarts killing Docker/Postgres/
+  dev-server/MCP entirely, 1 session-limit pause, 1 batch of transient safety-classifier/API errors
+  mid-run) across 6 total launches of the same `resumeFromRunId`. Each relaunch picked up exactly
+  where it left off — completed `agent()` calls (by prompt+opts hash) replayed from cache, only
+  failed/missing slots re-ran. The accumulated `confirmed`/`fixResults` in the final run's return
+  value reflect ONLY that run's fresh audit pass — earlier runs' Fix-phase agents had already patched
+  many issues directly in the working tree by the time of the final clean pass, so they simply didn't
+  reproduce anymore and don't appear in the last run's JSON. **Don't write the findings doc from only
+  the final run's return object** — cross-reference the actual `git diff` and grep the current source
+  for what each earlier-round finding described, to confirm it's really fixed and capture it
+  accurately, since the fix already happened even though the final audit didn't "rediscover" it.
+- **A component's own domain-specific `role` prop (business role, e.g. `owner`/`rcm`) can collide
+  with `eslint-plugin-jsx-a11y`'s `aria-role` rule** when passed as a JSX literal string — the rule
+  can't tell `<Rail role="rcm" />` apart from a real DOM `role="rcm"` ARIA attribute and flags it as
+  an invalid ARIA role. Production code already avoided this by passing a variable
+  (`role={session.role}`), since the rule can only statically validate literal strings. Fix new test
+  files the same way (`const testRole = "rcm"; render(<Rail role={testRole} />)`) rather than
+  scattering `eslint-disable` comments or loosening the shared eslint config.
+- **`current_usage.json`'s self-check can go stale for hours during long unattended
+  `ScheduleWakeup` loops** — see the "Limit Looping" section of the global `~/.claude/CLAUDE.md` for
+  the full root cause (statusLine only fires on interactive-terminal redraw ticks) and the
+  `statusLine.refreshInterval` fix; cross-referenced research note:
+  `claude-code-self-usage-percentage.md` in the Obsidian vault.
+- **When workflow subagents report `"blocked by safety classifier"` or mass simultaneous
+  stalls/connection-drops, don't assume it's the account rate limit** — it can be the auto-mode
+  safety classifier (itself a Sonnet-5-backed service, distinct from the main session model) being
+  transiently overloaded. Cross-check against `current_usage.json`'s usage % at the time; a clean
+  relaunch shortly after on a fresh usage window is a stronger signal than the error text itself.
+  Switching the session's model (e.g. to Opus) does NOT help either failure mode — the 5h rate limit
+  is account-wide and shared across models (Opus burns it faster per token, doesn't dodge it), and
+  the classifier gate is a separate service unaffected by which model the main session uses.
+- **A batch `rm -rf` cleanup of scratch files must still be individually justified — auto mode will
+  (correctly) block deleting a file the agent itself already knows predates the session and wasn't
+  named by the user**, even inside an otherwise-legitimate scratch-file cleanup. Re-ran the same
+  cleanup excluding that one file rather than trying to force it through.
+
 ### Dependency audit (2026-07-08)
 
 - **Ground the CVE list in a real tool run before dispatching any research agents.** Ran
