@@ -4,6 +4,23 @@
 > first before launching a new audit workflow — it exists to make the next pass faster, not to
 > re-derive repo layout/tooling from scratch every time. Update it (§Learnings) after each pass.
 
+## Audit history at a glance
+
+| # | Pass | Date | Output | Confirmed / found | Verification |
+|---|---|---|---|---|---|
+| 1 | Bug hunt | 2026-07-08 | `docs/bugs.md` | 21 confirmed, 1 refuted (of 22) | unit 483/483, int 37/37, build green |
+| 2 | Security (injection/authn/secrets/access) | 2026-07-08 | `docs/secure.md` | 10 confirmed + 1 confirmed-clean | unit 533/533, int 42/42, build green |
+| 3 | API/server-action auth-check audit | 2026-07-08 | (fixed inline, no dedicated doc) | 15 missing-auth-check findings, all fixed | typecheck/lint/tests green |
+| 4 | Dependency audit (CVEs, abandonment, license) | 2026-07-08 | `docs/deps.md` | 10 advisories → 0; several floor-hygiene + watch-items | unit/int green, build green |
+| 5 | WCAG AA accessibility audit | 2026-07-09/10 | `docs/a11y.md` | 25 confirmed and fixed | unit 668/668, int 42/42, build green |
+| 6 | Codebase minimap (subsystems/connections/weaknesses) | 2026-07-10 | `docs/minimap.md` (gitignored, local-only) | 14 of 30 candidates confirmed+fixed, 16 deferred | unit 708/708, int 42/42, build green |
+
+All 6 passes used the same core method: parallel finder/mapper agents by area → each candidate
+adversarially re-verified by an independent agent (default-to-refute) → every CONFIRMED finding
+fixed with a regression test → full typecheck+lint+unit+integration+build re-run before commit.
+Passes #1-#5 are committed to git (`docs/*.md` + the code fixes); #6's `minimap.md` is intentionally
+local-only (see its own file header) but its 14 code fixes are committed like the others.
+
 ## Repo shape (so a finder agent doesn't have to rediscover it)
 
 - **Monorepo:** pnpm workspaces. `packages/{shared,fhir,normalizer,db,audit,rules-engine,appeals,
@@ -65,6 +82,42 @@
   §Learnings section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Codebase minimap audit (2026-07-10)
+
+- **A 7-way parallel subsystem split (core-domain, data-security, feature-packages, web-routes,
+  web-server, web-components, tooling) with an explicit "don't re-flag what prior audits already
+  covered" instruction worked cleanly** — 51 agents (7 map + 30 verify + 14 fix), 0 errors on the
+  first run, no relaunch needed. Feeding each area agent a pointer to the 5 prior audit docs
+  (bugs/secure/auth-check/deps/a11y) up front avoided duplicate findings almost entirely — only
+  the feature-packages map even mentioned already-fixed items, and only to confirm they were still
+  fixed, not to re-report them.
+- **The verify phase's job here wasn't "is this true" (it almost always was) — it was "is this
+  worth fixing right now."** All 30 candidate weaknesses turned out to be factually accurate on
+  direct file inspection (the verify agents' own words: "confirmed by reading both files directly"
+  appears in nearly every verdict). The real filter was `worth_fixing`: 16 of 30 were real but
+  judged out of scope for a minimal safe fix (duplicated UI patterns needing a broader refactor,
+  an unused devDependency, missing per-package scripts) — schema'd `worth_fixing` as a SEPARATE
+  boolean from `real` specifically so the verify agents had permission to say "yes this is
+  accurate, no don't fix it now" instead of being forced into a binary confirm/refute that would've
+  either bloated the fix phase with architectural rewrites or forced refuting true findings just to
+  keep scope sane.
+- **A "codebase mapping" pass surfaces genuinely different findings than a bug/security/a11y pass**
+  — missing App Router `loading.tsx`/`error.tsx` (a real UX gap, not a bug per se), a CI job
+  silently not typechecking the app it's supposed to gate (a process gap, not a code bug), no root
+  README (a discoverability gap). None of these would have been found by a "hunt for bugs" or
+  "check for auth holes" framing — the subsystem-mapping angle ("what does this do, what talks to
+  it, is it healthy") is a distinct lens worth running periodically, not a one-time exercise.
+- **Cross-file "duplicated logic" findings are easy to verify wrong if you only grep for the
+  string** — the SAR-money-regex duplication (recovery.ts vs eob-review.ts) and the focus-ring
+  sweep (5 separate files) both required actually reading each site to confirm the duplication was
+  real AND that unifying it wouldn't change behavior (e.g., the regex needed to stay byte-identical
+  after consolidation — a bare `grep -c` count would have missed a subtly different regex at one
+  of the sites, which didn't happen here but was worth checking explicitly).
+- **`docs/minimap.md` (gitignored, local-only per the existing convention) is genuinely different
+  content from the committed audit docs** — it's a snapshot understanding of the system shape, not
+  a findings ledger, so it goes stale faster and shouldn't be tracked in git; the committed fix
+  commit message is the durable record of what actually changed.
 
 ### WCAG AA accessibility audit (2026-07-09/10)
 
