@@ -9,6 +9,7 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:web": "pnpm --filter @taweed/web typecheck",
     "test": "vitest run --project unit",
     "test:int": "vitest run --project integration",
     "build": "pnpm typecheck",

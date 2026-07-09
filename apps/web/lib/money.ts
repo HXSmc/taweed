@@ -2,6 +2,14 @@
 // content (design-brief §4.3 digit law). Grouped, tabular. Values arrive as
 // Postgres numeric strings; format without float drift for display only.
 
+/**
+ * Canonical SAR amount validator: a non-negative integer or decimal string with
+ * at most 2 fractional digits (e.g. "120", "120.5", "120.50"). Single source of
+ * truth for every Server Action that accepts a SAR amount as a string — keep any
+ * precision-rule change (e.g. allowing 3 decimals) confined to this one place.
+ */
+export const SAR_MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
+
 /** Format a numeric string / number as grouped digits (no currency word). */
 export function formatMoney(value: string | number): string {
   const n = typeof value === "string" ? Number(value) : value;

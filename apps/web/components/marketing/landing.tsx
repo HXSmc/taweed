@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { LocaleToggle } from "@/components/shell/locale-toggle";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { MoneyFigure } from "@/components/money/money-figure";
+import { Button } from "@/components/ui/button";
 
 // EXECUTE A4 — marketing landing (design-brief §12, AIDA). The number is the hero:
 // the illustrative at-risk figure counts up once on scroll into view (MoneyFigure /
@@ -43,12 +44,9 @@ export async function Landing() {
         <div className="flex items-center gap-1">
           <LocaleToggle />
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="ms-1 rounded-md px-3 py-1.5 text-label font-medium text-muted transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {t("signIn")}
-          </Link>
+          <Button asChild variant="ghost" size="sm" className="ms-1">
+            <Link href="/login">{t("signIn")}</Link>
+          </Button>
         </div>
       </header>
 
@@ -80,13 +78,12 @@ export async function Landing() {
          * relative to heroSub above it. */}
         <p className="mt-3 text-label text-muted">{t("illustrative")}</p>
         <div className="mt-8">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-3 text-body font-medium text-accent-fg transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-          >
-            {t("cta")}
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
+          <Button asChild className="h-auto px-5 py-3">
+            <Link href="/login">
+              {t("cta")}
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          </Button>
           <p className="mt-2 text-label text-muted">{t("ctaNote")}</p>
         </div>
       </section>
@@ -142,13 +139,12 @@ export async function Landing() {
             <h2 className="text-h1 font-display font-medium">{t("actionTitle")}</h2>
             <p className="mt-2 max-w-xl text-body text-muted">{t("actionBody")}</p>
           </div>
-          <Link
-            href="/login"
-            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-accent px-5 py-3 text-body font-medium text-accent-fg transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-          >
-            {t("cta")}
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
+          <Button asChild className="h-auto shrink-0 px-5 py-3">
+            <Link href="/login">
+              {t("cta")}
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          </Button>
         </div>
       </section>
 

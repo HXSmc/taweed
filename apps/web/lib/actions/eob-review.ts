@@ -21,6 +21,8 @@ import {
 } from "@/lib/eob-review-data";
 import { buildNormalizedClaimsFromEob } from "@/lib/eob-to-normalized";
 import { allowRequest } from "@/lib/rate-limit";
+import { SAR_MONEY_REGEX } from "@/lib/money";
+import { describeErrorForLog } from "@/lib/error-log";
 
 // Per-tenant+actor throttle for these mutating review actions (common/security.md),
 // mirroring every sibling mutating action in this directory (eob-extract, ingest,
@@ -44,7 +46,7 @@ const REVIEW_ROLES = ["full", "upload"] as const;
 // pulls in @taweed/db and must not enter the client bundle). Every other field
 // mirrors EobExtractionSchema (packages/ai/src/schemas/eobExtraction.ts) exactly;
 // only the four *Halalas number fields become *Sar strings here.
-const MoneySar = z.string().regex(/^\d+(\.\d{1,2})?$/, "invalid amount");
+const MoneySar = z.string().regex(SAR_MONEY_REGEX, "invalid amount");
 const DENIAL_CODES = DENIAL_REASON_CODES.map((c) => c.code) as [
   (typeof DENIAL_REASON_CODES)[number]["code"],
   ...(typeof DENIAL_REASON_CODES)[number]["code"][],
@@ -274,7 +276,14 @@ export async function approveEobExtractionAction(
     });
   } catch (err) {
     if (err instanceof EobApproveAbort) return { ok: false, error: err.reason };
-    console.error("approveEobExtractionAction failed", err);
+    // This transaction writes the (possibly human-edited) claimId/patientRef/
+    // money values straight to Postgres — not PHI-free-by-construction any
+    // more than the sibling eob-extract.ts model call is (see lib/error-log.ts
+    // for the full rationale). A constraint-violation message here can embed
+    // those values, so `err` must never be logged verbatim.
+    console.error(
+      `approveEobExtractionAction failed (${describeErrorForLog(err)})`,
+    );
     return { ok: false, error: "failed" };
   }
 

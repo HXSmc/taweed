@@ -147,6 +147,18 @@
   .focus-ring:focus-visible {
     box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
   }
+  /* Same ring as .focus-ring, plus the border-color swap bordered form
+   * fields (Input/textarea/select) already used on focus. Kept as its own
+   * class rather than folded into .focus-ring so the many non-field
+   * .focus-ring consumers (buttons, nav links, triggers) don't pick up an
+   * unintended border-color rule (docs/a11y.md #20 follow-up). */
+  .focus-ring-field {
+    outline: none;
+  }
+  .focus-ring-field:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  }
 }
 
 /* Reduced motion: collapse every motion (count-up + reveals) to an instant final

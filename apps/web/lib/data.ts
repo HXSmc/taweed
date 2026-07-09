@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { schema, type Database } from "@taweed/db";
 import {
@@ -37,9 +38,15 @@ export interface AnalyticsBundle {
   trend: TrendPoint[];
 }
 
-export function getMoneyScope(tenantId: string): Promise<MoneyScope> {
-  return withSession(tenantId, (db) => moneyScope(db));
-}
+// Wrapped in React's cache() so the layout's CommandBar read and a page's own
+// getAnalytics/getRecovery call (same tenantId, same request) share ONE query
+// instead of each opening an independent RLS transaction for the same
+// MoneyScope. cache() memoizes per server-render request, so this is safe
+// across the request lifetime and never leaks between requests/tenants.
+export const getMoneyScope = cache(
+  (tenantId: string): Promise<MoneyScope> =>
+    withSession(tenantId, (db) => moneyScope(db)),
+);
 
 /**
  * TRUE denial rate by claim dimension: denied claims / TOTAL claims (0..1), so
@@ -86,7 +93,7 @@ async function denialRateDim(
 export function getAnalytics(tenantId: string): Promise<AnalyticsBundle> {
   return withSession(tenantId, async (db) => {
     const [money, byPayer, byBranch, pareto, trendPts] = await Promise.all([
-      moneyScope(db),
+      getMoneyScope(tenantId),
       denialRateDim(db, "payer"),
       denialRateDim(db, "branch"),
       reasonPareto(db),
@@ -228,7 +235,7 @@ export interface RecoveryBundle {
 export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
   return withSession(tenantId, async (db) => {
     const [money, baseline] = await Promise.all([
-      moneyScope(db),
+      getMoneyScope(tenantId),
       getLatestBaseline(db),
     ]);
     const rows = await db.execute<{

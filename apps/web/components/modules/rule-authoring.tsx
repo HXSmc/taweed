@@ -186,7 +186,7 @@ export function RuleAuthoring({
           onChange={(e) => setText(e.target.value)}
           rows={3}
           placeholder={t("authorPlaceholder")}
-          className="w-full rounded-md border border-hairline bg-surface-1 p-3 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="focus-ring-field w-full rounded-md border border-hairline bg-surface-1 p-3 text-body leading-relaxed"
         />
 
         <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -199,7 +199,7 @@ export function RuleAuthoring({
                 aria-pressed={scope === s}
                 onClick={() => setScope(s)}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-label font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  "focus-ring rounded-md px-3 py-1.5 text-label font-medium",
                   scope === s
                     ? "bg-accent text-accent-fg"
                     : "text-muted hover:bg-surface-2",
@@ -216,7 +216,7 @@ export function RuleAuthoring({
               <select
                 value={payerId}
                 onChange={(e) => setPayerId(e.target.value)}
-                className="rounded-md border border-hairline bg-surface-1 px-2 py-1.5 text-body focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="focus-ring-field rounded-md border border-hairline bg-surface-1 px-2 py-1.5 text-body"
               >
                 {payers.map((p) => (
                   <option key={p.id} value={p.id}>

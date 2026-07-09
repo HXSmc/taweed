@@ -26,8 +26,10 @@ import type { AppealSuggestion } from "@taweed/appeals";
 // 4. [manual-keyboard] The language toggle conveyed the active language via
 //    background color only, with no `aria-pressed` and no focus-visible
 //    ring — unlike every other toggle in this file (e.g. rule-authoring.tsx's
-//    scope toggle). Fixed: both buttons now carry `aria-pressed` and the same
-//    `focus-visible:ring-2 focus-visible:ring-accent` utility used throughout.
+//    scope toggle). Fixed: both buttons now carry `aria-pressed` and (per the
+//    docs/a11y.md #20 follow-up sweep) the shared `.focus-ring` utility used
+//    throughout the shell, instead of a hand-rolled
+//    `focus-visible:ring-2 focus-visible:ring-accent` pair.
 // 5. [manual-visual] Queue rows marked the loaded denial via background color
 //    (`bg-accent-subtle`) only, with no `aria-current`. Fixed: the selected
 //    row's button now carries `aria-current="true"`.
@@ -252,7 +254,7 @@ describe("AppealsComposer — accessible names, toggle state, selected-row state
     expect(new Set(accessibleNames).size).toBe(accessibleNames.length);
   });
 
-  it("marks the active language button with aria-pressed and a focus-visible ring utility", async () => {
+  it("marks the active language button with aria-pressed and the shared focus-ring utility", async () => {
     renderComposer();
     fireEvent.click(screen.getByRole("button", { name: /MedGulf.*1,437/ }));
     await screen.findByRole("textbox", { name: enMessages.appeals.draft });
@@ -262,8 +264,12 @@ describe("AppealsComposer — accessible names, toggle state, selected-row state
 
     expect(englishBtn).toHaveAttribute("aria-pressed", "true");
     expect(arabicBtn).toHaveAttribute("aria-pressed", "false");
-    expect(englishBtn.className).toMatch(/focus-visible:ring-2/);
-    expect(englishBtn.className).toMatch(/focus-visible:ring-accent/);
+    // docs/a11y.md #20 follow-up: this toggle used to hand-roll
+    // `focus-visible:ring-2 focus-visible:ring-accent` instead of the shared
+    // `.focus-ring` utility every other control in the shell uses.
+    expect(englishBtn).toHaveClass("focus-ring");
+    expect(englishBtn.className).not.toMatch(/focus-visible:ring-2/);
+    expect(englishBtn.className).not.toMatch(/focus-visible:ring-accent/);
 
     fireEvent.click(arabicBtn);
     await waitFor(() => expect(arabicBtn).toHaveAttribute("aria-pressed", "true"));

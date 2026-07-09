@@ -6,7 +6,6 @@
   "exports": { ".": "./src/index.ts" },
   "types": "./src/index.ts",
   "dependencies": {
-    "@medplum/fhirtypes": "^5.1.23",
-    "@taweed/shared": "workspace:*"
+    "@medplum/fhirtypes": "^5.1.23"
   }
 }

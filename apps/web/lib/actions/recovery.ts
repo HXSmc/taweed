@@ -7,8 +7,10 @@ import { resolveRecovery } from "@taweed/analytics";
 import { logAudit } from "@taweed/audit";
 import { authorizeAction } from "@/lib/authz";
 import { withSession } from "@/lib/db";
+import { allowRequest } from "@/lib/rate-limit";
+import { SAR_MONEY_REGEX } from "@/lib/money";
 
-const MONEY = /^\d+(\.\d{1,2})?$/;
+const MONEY = SAR_MONEY_REGEX;
 const Input = z.object({
   appealId: z.string().uuid(),
   outcome: z.enum(["won", "lost", "submitted"]),
@@ -16,6 +18,14 @@ const Input = z.object({
   // full recovery of the appealed amount. Clamped to the appealed ceiling (§8.5).
   recoveredSar: z.string().regex(MONEY).optional(),
 });
+
+// Per-tenant+actor throttle for this mutating action (common/security.md),
+// mirroring every sibling mutating action in lib/actions/ (appeals.ts,
+// eob-review.ts, assist-appeal.ts, author-rule.ts, eob-extract.ts, ingest.ts
+// all call allowRequest). Without a ceiling, an already-authorized actor could
+// loop this read + UPDATE + logAudit write with no limit.
+const RECOVERY_RATE_LIMIT = 20;
+const RECOVERY_WINDOW_MS = 60_000;
 
 export interface RecoveryOutcomeResult {
   ok: boolean;
@@ -34,11 +44,26 @@ export async function markAppealOutcome(
   outcome: "won" | "lost" | "submitted",
   recoveredSar?: string,
 ): Promise<RecoveryOutcomeResult> {
-  const parsed = Input.safeParse({ appealId, outcome, recoveredSar });
-  if (!parsed.success) return { ok: false };
-  // RBAC: only owner/finance/rcm (full) may change recovery outcomes.
+  // RBAC: only owner/finance/rcm (full) may change recovery outcomes. Checked
+  // before input validation, matching every sibling action in lib/actions/
+  // (e.g. eob-review.ts) — an unauthorized caller is turned away before
+  // learning anything about expected input shape.
   const session = await authorizeAction("recovery", ["full"]);
   if (!session) return { ok: false };
+
+  const parsed = Input.safeParse({ appealId, outcome, recoveredSar });
+  if (!parsed.success) return { ok: false };
+
+  // Throttle before the read + UPDATE + audit-write transaction below.
+  if (
+    !(await allowRequest(
+      `recovery:${session.tenantId}:${session.userId}`,
+      RECOVERY_RATE_LIMIT,
+      RECOVERY_WINDOW_MS,
+    ))
+  ) {
+    return { ok: false };
+  }
 
   const resolution = await withSession(session.tenantId, async (db) => {
     // Look up the appealed amount + the owning denial (RLS-scoped) — the

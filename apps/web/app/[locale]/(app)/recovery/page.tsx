@@ -16,6 +16,12 @@ import { TableWrap, Table, THead, TBody, TR, TH, TD } from "@/components/ui/tabl
 export const dynamic = "force-dynamic";
 
 const STAGE_ORDER = ["submitted", "under_review", "won", "lost"];
+// Rows rendered per stage group. getRecovery() itself caps at 200 rows total
+// (see lib/data.ts); this is a second, client-render-side cap so a single
+// busy stage can't blow out the page with an enormous table. When a stage
+// has more rows than this, the count Badge switches to "shown of total" so
+// the truncation is visible instead of silent.
+const ROWS_PER_STAGE = 25;
 
 export default async function RecoveryPage({
   params,
@@ -85,6 +91,8 @@ export default async function RecoveryPage({
       <div className="mt-6 space-y-6">
         {stages.map((stage) => {
           const group = rows.filter((r) => r.status === stage);
+          const shown = group.slice(0, ROWS_PER_STAGE);
+          const isTruncated = group.length > ROWS_PER_STAGE;
           const appealed = group.reduce((a, r) => a + toNumber(r.appealedSar), 0);
           const recovered = group.reduce((a, r) => a + toNumber(r.recoveredSar), 0);
           return (
@@ -92,7 +100,11 @@ export default async function RecoveryPage({
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-h3 font-medium">
                   {stageLabel[stage]}
-                  <Badge variant="neutral">{group.length}</Badge>
+                  <Badge variant="neutral">
+                    {isTruncated
+                      ? t("shownOfTotal", { shown: shown.length, total: group.length })
+                      : group.length}
+                  </Badge>
                 </h2>
                 <span className="num text-label text-muted">
                   {t("appealedSar")} {formatMoney(appealed)}
@@ -120,7 +132,7 @@ export default async function RecoveryPage({
                       </TR>
                     </THead>
                     <TBody>
-                      {group.slice(0, 25).map((r) => (
+                      {shown.map((r) => (
                         <PipelineRow
                           key={r.appealId}
                           row={r}

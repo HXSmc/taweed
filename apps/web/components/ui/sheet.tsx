@@ -34,7 +34,7 @@ export const SheetContent = React.forwardRef<
         </DialogPrimitive.Title>
         <DialogPrimitive.Close
           aria-label={closeLabel}
-          className="rounded-md p-1 text-muted hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="focus-ring rounded-md p-1 text-muted hover:bg-surface-2"
         >
           <X className="size-4" aria-hidden="true" />
         </DialogPrimitive.Close>

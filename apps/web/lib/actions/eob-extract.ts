@@ -12,6 +12,7 @@ import { authorizeAction } from "@/lib/authz";
 import { appPool, withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
 import { insertPendingEobExtraction } from "@/lib/eob-review-data";
+import { describeErrorForLog } from "@/lib/error-log";
 
 // AI-4 — the PDF-drop ingest path (plan 04 §9): a payer EOB/remittance PDF
 // goes through resolveEobExtractionAdapter (the isFeatureEnabled("extractEob")
@@ -77,15 +78,10 @@ function hasPdfMagicBytes(bytes: Uint8Array): boolean {
 
 // This action sends real (non-pseudonymized) PDF page content to the model by
 // design (docs/blocker.md BLK-AI-1) — unlike AI-1/2/3, there is no PHI-free
-// construction here. That means the caught `err` below is NOT safe to log
-// verbatim: a future Anthropic SDK or Zod error could echo request/response
-// content into `.message`/`.stack`, which would land in plaintext server logs
-// instead of the hash-only `llm_calls` audit trail (packages/ai/src/run.ts)
-// that this system otherwise relies on for PHI minimization. Log only a
-// stable, content-free error signal; never the error object itself.
-function describeErrorForLog(err: unknown): string {
-  return err instanceof Error ? err.name : typeof err;
-}
+// construction here, so the caught `err` below is NOT safe to log verbatim.
+// See lib/error-log.ts (describeErrorForLog) for the full rationale — shared
+// with the sibling approve/reject action in eob-review.ts, which writes to
+// Postgres on this same non-PHI-free path.
 
 /**
  * Extract a candidate EOB from an uploaded PDF and file it as a new

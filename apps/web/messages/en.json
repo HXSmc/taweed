@@ -54,7 +54,13 @@
     "light": "Light",
     "dark": "Dark",
     "skipToContent": "Skip to main content",
-    "close": "Close"
+    "close": "Close",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We hit a problem loading this page. Your data is safe — try again.",
+    "tryAgain": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you're looking for doesn't exist or you don't have access to it.",
+    "backToOverview": "Back to overview"
   },
   "trust": {
     "residency": "In-Kingdom data, Riyadh (Oracle Cloud) · PDPL",
@@ -267,6 +273,7 @@
     "markLost": "Mark lost",
     "markWonAriaLabel": "Mark won, {payer}, SAR {amount}",
     "markLostAriaLabel": "Mark lost, {payer}, SAR {amount}",
+    "shownOfTotal": "{shown} of {total}",
     "wonToast": "Won. SAR {amount} recovered from {payer}. Moved from at-risk to recovered.",
     "emptyTitle": "No appeals yet",
     "emptyBody": "Generate an appeal to start the recovery loop."

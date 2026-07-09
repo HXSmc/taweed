@@ -196,6 +196,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.5.2(postcss@8.5.16)
+      axe-core:
+        specifier: 4.12.1
+        version: 4.12.1
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1
@@ -344,9 +347,6 @@ importers:
       '@medplum/fhirtypes':
         specifier: ^5.1.23
         version: 5.1.23
-      '@taweed/shared':
-        specifier: workspace:*
-        version: link:../shared
 
   packages/ingest:
     dependencies:
@@ -380,9 +380,6 @@ importers:
 
   packages/rules-engine:
     dependencies:
-      '@taweed/shared':
-        specifier: workspace:*
-        version: link:../shared
       json-rules-engine:
         specifier: ^7.3.1
         version: 7.3.1

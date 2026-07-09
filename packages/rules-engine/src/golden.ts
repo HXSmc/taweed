@@ -66,6 +66,20 @@ export const PAYER_GOLDEN_CASES: GoldenCase[] = [
     expectFired: ["R-D01-payer-excluded-service"],
     expectNotFired: ["R-D02-preauth-payer-units"],
   },
+  {
+    name: "all-preauth payer flags any missing pre-authorization; a generic payer does not",
+    payerId: "PAYER-ALL-PREAUTH",
+    facts: goldenFacts({ payerId: "PAYER-ALL-PREAUTH", hasPreAuth: false }),
+    expectFired: ["R-D02-preauth-payer-all"],
+    expectNotFired: ["R-D02-preauth-payer-units", "R-D01-payer-excluded-service"],
+  },
+  {
+    name: "a payer without the all-preauth requirement does not fire the payer-wide preauth rule",
+    payerId: "PAYER-NARROW-NET",
+    facts: goldenFacts({ payerId: "PAYER-NARROW-NET", hasPreAuth: false }),
+    expectFired: [],
+    expectNotFired: ["R-D02-preauth-payer-all"],
+  },
   // --- global: a clean claim trips nothing ---
   {
     name: "clean claim fires no global rule",

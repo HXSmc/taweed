@@ -268,7 +268,7 @@ export function AppealsComposer({
                 tabIndex={idx === queueFocusIdx ? 0 : -1}
                 aria-current={selected === d.denialId ? "true" : undefined}
                 className={cn(
-                  "flex w-full flex-col gap-1 p-3 text-start transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  "focus-ring flex w-full flex-col gap-1 p-3 text-start transition-colors hover:bg-surface-2",
                   selected === d.denialId && "bg-accent-subtle",
                 )}
               >
@@ -362,7 +362,7 @@ export function AppealsComposer({
                   aria-pressed={lang === l}
                   onClick={() => switchLang(l)}
                   className={cn(
-                    "rounded-md px-3 py-1.5 text-label font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    "focus-ring rounded-md px-3 py-1.5 text-label font-medium",
                     lang === l ? "bg-accent text-accent-fg" : "text-muted hover:bg-surface-2",
                   )}
                 >
@@ -383,7 +383,7 @@ export function AppealsComposer({
               onChange={(e) => setBody(e.target.value)}
               rows={12}
               aria-label={t("draft")}
-              className="w-full rounded-md border border-hairline bg-surface-1 p-3 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="focus-ring-field w-full rounded-md border border-hairline bg-surface-1 p-3 text-body leading-relaxed"
             />
 
             {/* AI-2 — additive suggestion panel. The letter above is complete on
@@ -454,7 +454,7 @@ export function AppealsComposer({
                           }
                           rows={3}
                           aria-labelledby={`${key}-label`}
-                          className="w-full rounded-md border border-hairline bg-surface-1 p-2 text-body leading-relaxed focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          className="focus-ring-field w-full rounded-md border border-hairline bg-surface-1 p-2 text-body leading-relaxed"
                         />
                         <div className="mt-2 flex items-center gap-2">
                           {/* Numbered accessible name (WCAG 4.1.2): with 2+

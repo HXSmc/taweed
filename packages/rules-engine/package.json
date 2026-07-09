@@ -6,7 +6,6 @@
   "exports": { ".": "./src/index.ts" },
   "types": "./src/index.ts",
   "dependencies": {
-    "@taweed/shared": "workspace:*",
     "json-rules-engine": "^7.3.1"
   }
 }
