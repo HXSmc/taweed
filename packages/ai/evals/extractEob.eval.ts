@@ -4,7 +4,11 @@ import { newId } from "@taweed/shared";
 import { getPool, withTenant, schema, type Pool } from "@taweed/db";
 import { appConnectionString } from "../../db/test/migrate.js";
 import { extractEob } from "@taweed/ai";
-import { generateAllEob, type GeneratedEobItem } from "@taweed/synthetic-eob";
+import {
+  generateAllEob,
+  renderEobItemToPdfBase64,
+  type GeneratedEobItem,
+} from "@taweed/synthetic-eob";
 import { EobExtractionSchema } from "../src/schemas/eobExtraction.js";
 import {
   scoreEobExtraction,
@@ -23,15 +27,13 @@ import {
 // --project integration only, never `evals`), AND is additionally skipped
 // unless AI_EVALS_LIVE=1 + ANTHROPIC_API_KEY + DATABASE_URL are all present.
 //
-// THIS FILE HAS NEVER RUN A LIVE SCORED PASS. It cannot: the synthetic corpus
-// (test/synthetic-eob) only produces `htmlTemplate` strings, and rasterizing
-// that HTML into PDF bytes is an explicit, not-yet-built TODO(ai-route) seam
-// (see test/synthetic-eob/src/generate.ts's buildHtmlTemplate). The
-// `renderEobToPdfBase64` hook below is injectable for exactly that reason —
-// once a rasterizer lands, inject it here and this harness runs unchanged.
-// Until then, the default renderer throws a clear, actionable error rather
-// than fabricating PDF bytes from raw HTML (which a vision model would not
-// treat as a real PDF) or silently skipping with a fake passing report.
+// This harness can now run a live scored pass: the synthetic corpus's
+// `htmlTemplate` (test/synthetic-eob/src/generate.ts's buildHtmlTemplate) is
+// rasterized into real PDF bytes via test/synthetic-eob/src/rasterize.ts
+// (headless Chromium, Playwright's page.pdf()) before being handed to
+// extractEob(). See that module's header for why a real browser engine (not
+// a PDF-generation library) is used — RTL shaping and mixed digit scripts
+// need real layout, not synthesized PDF primitives.
 //
 // EVAL_TARGET_THRESHOLDS (>=98% amounts, >=95% overall — plan 04 §9 step 6,
 // "suggest ... tune with the golden data") are printed in the report for
@@ -57,17 +59,6 @@ const REPORT_DIR = new URL("./.output/", import.meta.url);
 
 type PdfRenderer = (item: GeneratedEobItem) => Promise<string>;
 
-// TODO(ai-route): inject a real HTML->PDF/PNG rasterizer once one exists; see
-// the file header. Deliberately throws rather than faking PDF bytes.
-const notWiredRenderer: PdfRenderer = async () => {
-  throw new Error(
-    "EOB corpus rasterization not wired: this eval needs a PdfRenderer " +
-      "(HTML->PDF/PNG) injected to produce real PDF bytes from the synthetic " +
-      "corpus's htmlTemplate before it can call extractEob(). TODO(ai-route) " +
-      "— see test/synthetic-eob/src/generate.ts's buildHtmlTemplate.",
-  );
-};
-
 function writeJsonReport(fileName: string, report: unknown): void {
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(new URL(fileName, REPORT_DIR), JSON.stringify(report, null, 2));
@@ -79,7 +70,7 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
     let adminPool: Pool;
     let appPool: Pool;
     const tenant = newId();
-    const renderer: PdfRenderer = notWiredRenderer;
+    const renderer: PdfRenderer = renderEobItemToPdfBase64;
 
     beforeAll(async () => {
       adminPool = getPool(adminUrl);
@@ -122,10 +113,9 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
 
         for (const item of corpus) {
           const expected = EobExtractionSchema.parse(item.extraction);
-          // Throws today (see notWiredRenderer) — this is the intended,
-          // honest failure mode until rasterization exists. It surfaces
-          // immediately on the FIRST corpus item, before any model/network
-          // call is attempted.
+          // Rasterizes this item's htmlTemplate into real PDF bytes via
+          // headless Chromium (test/synthetic-eob/src/rasterize.ts) before
+          // handing it to extractEob().
           const pdfBase64 = await renderer(item);
 
           const result = await extractEob({

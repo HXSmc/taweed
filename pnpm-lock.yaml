@@ -395,6 +395,9 @@ importers:
         specifier: workspace:*
         version: link:../synthetic-fhir
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.49.1
+        version: 1.61.1
       '@taweed/ai':
         specifier: workspace:*
         version: link:../../packages/ai

@@ -17,3 +17,4 @@ export {
   type EobClaimLine,
 } from "./types.js";
 export { toArabicIndicDigits, formatDigits } from "./digits.js";
+export { renderHtmlToPdfBase64, renderEobItemToPdfBase64 } from "./rasterize.js";

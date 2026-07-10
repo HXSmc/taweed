@@ -10,6 +10,7 @@
     "@taweed/synthetic-fhir": "workspace:*"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@taweed/ai": "workspace:*"
   }
 }
