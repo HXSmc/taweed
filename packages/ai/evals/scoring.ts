@@ -70,6 +70,7 @@ function scoreLine(expected: EobLine, actual: EobLine | undefined): LineScore {
     scoreField(expected.paidHalalas, actual?.paidHalalas),
     scoreField(expected.patientShareHalalas, actual?.patientShareHalalas),
     scoreField(expected.rejectedHalalas, actual?.rejectedHalalas),
+    scoreField(expected.adjustmentHalalas, actual?.adjustmentHalalas),
   );
   const codes = combine(
     scoreField(expected.sbsCode, actual?.sbsCode),
@@ -97,6 +98,7 @@ function scoreClaim(expected: EobClaim, actual: EobClaim | undefined): ClaimScor
     scoreField(expected.totalBilledHalalas, actual?.totalBilledHalalas),
     scoreField(expected.totalPaidHalalas, actual?.totalPaidHalalas),
     scoreField(expected.totalRejectedHalalas, actual?.totalRejectedHalalas),
+    scoreField(expected.totalAdjustmentHalalas, actual?.totalAdjustmentHalalas),
   );
 
   const actualLinesByRef = new Map(

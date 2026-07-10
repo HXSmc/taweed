@@ -152,6 +152,41 @@ describe("generateEobGroundTruth — per-scenario semantics", () => {
     expect(codes).toContain("TWD-D07");
   });
 
+  it("contractualAdjustment carries a nonzero write-off on the adjusted line, cross-totals with billed, and coexists with an ordinary denial", () => {
+    const { extraction, textLayer } = generateEobGroundTruth("contractualAdjustment", SEED);
+    const claim = extraction.claims[0]!;
+    const adjustedLine = claim.lines[0]!;
+    const deniedLine = claim.lines[2]!;
+
+    // Gap 2's whole point: a genuine write-off > 0 on a non-denied line, and
+    // the 5-bucket cross-total identity still holds exactly.
+    expect(adjustedLine.adjustmentHalalas).toBeGreaterThan(0);
+    expect(adjustedLine.denialCode).toBeNull();
+    expect(
+      adjustedLine.paidHalalas +
+        adjustedLine.rejectedHalalas +
+        adjustedLine.patientShareHalalas +
+        adjustedLine.adjustmentHalalas,
+    ).toBe(adjustedLine.billedHalalas);
+
+    // A denied line never carries an adjustment (nothing left to write off).
+    expect(deniedLine.denialCode).not.toBeNull();
+    expect(deniedLine.adjustmentHalalas).toBe(0);
+
+    // Claim-level total cross-totals against the sum of its lines' adjustments.
+    const sumOfLineAdjustments = claim.lines.reduce(
+      (sum, l) => sum + l.adjustmentHalalas,
+      0,
+    );
+    expect(claim.totalAdjustmentHalalas).toBe(sumOfLineAdjustments);
+    expect(claim.totalAdjustmentHalalas).toBeGreaterThan(0);
+
+    // The write-off amount must actually be rendered into the text layer
+    // (Gap 2's validator text-layer-match candidate depends on this), not
+    // just carried in the structured extraction.
+    expect(textLayer).toContain("Adjustment");
+  });
+
   it("every scenario's htmlTemplate is a minimal valid bilingual RTL-aware document", () => {
     for (const scenario of EOB_SCENARIOS) {
       const { htmlTemplate } = generateEobGroundTruth(scenario, SEED);

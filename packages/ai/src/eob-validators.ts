@@ -90,15 +90,16 @@ function mixedDigitFinding(fieldPath: string, value: string): ValidatorFinding {
 // --- cross-total checks -------------------------------------------------------
 
 function lineTotalFinding(claimId: string, line: EobLine): ValidatorFinding {
-  const sum = line.paidHalalas + line.rejectedHalalas + line.patientShareHalalas;
+  const sum =
+    line.paidHalalas + line.rejectedHalalas + line.patientShareHalalas + line.adjustmentHalalas;
   const ok = sum === line.billedHalalas;
   const path = `${claimId}/${line.claimLineRef}`;
   return {
     check: "line-total",
     passed: ok,
     detail: ok
-      ? `${path}: billed ${line.billedHalalas} == paid+rejected+patientShare (${sum})`
-      : `${path}: billed ${line.billedHalalas} != paid(${line.paidHalalas})+rejected(${line.rejectedHalalas})+patientShare(${line.patientShareHalalas})=${sum}`,
+      ? `${path}: billed ${line.billedHalalas} == paid+rejected+patientShare+adjustment (${sum})`
+      : `${path}: billed ${line.billedHalalas} != paid(${line.paidHalalas})+rejected(${line.rejectedHalalas})+patientShare(${line.patientShareHalalas})+adjustment(${line.adjustmentHalalas})=${sum}`,
   };
 }
 
@@ -108,14 +109,16 @@ function claimTotalFindings(claim: EobClaim): ValidatorFinding[] {
       billed: acc.billed + l.billedHalalas,
       paid: acc.paid + l.paidHalalas,
       rejected: acc.rejected + l.rejectedHalalas,
+      adjustment: acc.adjustment + l.adjustmentHalalas,
     }),
-    { billed: 0, paid: 0, rejected: 0 },
+    { billed: 0, paid: 0, rejected: 0, adjustment: 0 },
   );
 
   const checks: Array<[string, number, number]> = [
     ["totalBilledHalalas", claim.totalBilledHalalas, sums.billed],
     ["totalPaidHalalas", claim.totalPaidHalalas, sums.paid],
     ["totalRejectedHalalas", claim.totalRejectedHalalas, sums.rejected],
+    ["totalAdjustmentHalalas", claim.totalAdjustmentHalalas, sums.adjustment],
   ];
 
   return checks.map(([field, declared, computed]) => {
@@ -177,6 +180,7 @@ function lineTextFindings(
     [`${path}.paidHalalas`, toSar(line.paidHalalas)],
     [`${path}.patientShareHalalas`, toSar(line.patientShareHalalas)],
     [`${path}.rejectedHalalas`, toSar(line.rejectedHalalas)],
+    [`${path}.adjustmentHalalas`, toSar(line.adjustmentHalalas)],
     [`${path}.denialCode`, line.denialCode],
   ];
   return candidates

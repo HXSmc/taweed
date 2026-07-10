@@ -13,7 +13,7 @@ import { DENIAL_REASON_CODES } from "@taweed/shared";
 //      the SDK client-side only (see scrubRuleDraft.ts comment) — so halalas
 //      fields are plain z.number(), not z.number().int(). Money is carried as
 //      INTEGER HALALAS on the wire so the model does exact integer arithmetic
-//      (billed - paid - rejected = patientShare, etc.) instead of lossy
+//      (billed = paid + rejected + patientShare + adjustment) instead of lossy
 //      decimal SAR strings. @taweed/shared/ClaimRow (and friends) store money
 //      as SAR strings (Postgres numeric) — NOT halalas — so any caller
 //      persisting this extraction MUST convert at the boundary via
@@ -52,6 +52,13 @@ export const EobLineSchema = z.strictObject({
   paidHalalas: z.number(),
   patientShareHalalas: z.number(),
   rejectedHalalas: z.number(),
+  // Contractual write-off / withholding (Gap 2): money that is neither paid
+  // to the provider, billed to the patient, nor formally rejected/denied —
+  // e.g. a payer-contract adjustment. Without this 5th bucket, a real
+  // remittance carrying a write-off can never cross-total (billed !=
+  // paid+rejected+patientShare) and would be permanently stuck failing the
+  // arithmetic gate even when every extracted value is accurate.
+  adjustmentHalalas: z.number(),
   denialCode: z.enum(DENIAL_CODES).nullable(),
   confidence: z.number(),
 });
@@ -65,6 +72,7 @@ export const EobClaimSchema = z.strictObject({
   totalBilledHalalas: z.number(),
   totalPaidHalalas: z.number(),
   totalRejectedHalalas: z.number(),
+  totalAdjustmentHalalas: z.number(),
   confidence: z.number(),
 });
 

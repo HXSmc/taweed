@@ -20,6 +20,11 @@ import type { DenialReasonCode } from "@taweed/shared";
 //     the schema landed; see generate.ts buildClaim for how they're derived
 //     from the claim's own lines.
 //
+// Re-reconciled for Gap 2 (5th "adjustment/withholding" money bucket): every
+// EobClaimLine now carries adjustmentHalalas and every EobClaim carries
+// totalAdjustmentHalalas, mirroring EobLineSchema/EobClaimSchema's own
+// adjustmentHalalas/totalAdjustmentHalalas fields exactly.
+//
 // Money: all amounts are integer halalas (1/100 SAR), per the brief's
 // correction that EOB wire-schema fields use integer halalas internally for
 // exact model arithmetic — NOT the SAR-string convention @taweed/shared uses
@@ -33,6 +38,9 @@ export interface EobClaimLine {
   paidHalalas: number;
   patientShareHalalas: number;
   rejectedHalalas: number;
+  /** Gap 2 — contractual write-off/withholding: money neither paid, patient-
+   *  owed, nor formally rejected/denied. 0 on every line that carries none. */
+  adjustmentHalalas: number;
   /** Null when the line was not denied. */
   denialCode: DenialReasonCode | null;
   /** Model's per-line extraction confidence, 0..1. */
@@ -48,6 +56,8 @@ export interface EobClaim {
   totalBilledHalalas: number;
   totalPaidHalalas: number;
   totalRejectedHalalas: number;
+  /** Sum of this claim's lines' adjustmentHalalas — see EobClaimLine. */
+  totalAdjustmentHalalas: number;
   /** Model's per-claim extraction confidence, 0..1. */
   confidence: number;
 }

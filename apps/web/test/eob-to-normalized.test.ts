@@ -29,6 +29,7 @@ function makeLine(overrides: Partial<EobLine>): EobLine {
     paidHalalas: 0,
     patientShareHalalas: 0,
     rejectedHalalas: 10_000,
+    adjustmentHalalas: 0,
     denialCode: null,
     confidence: 0.9,
     ...overrides,
@@ -39,6 +40,7 @@ function makeClaim(lines: EobLine[]): EobClaim {
   const totalBilledHalalas = lines.reduce((s, l) => s + l.billedHalalas, 0);
   const totalPaidHalalas = lines.reduce((s, l) => s + l.paidHalalas, 0);
   const totalRejectedHalalas = lines.reduce((s, l) => s + l.rejectedHalalas, 0);
+  const totalAdjustmentHalalas = lines.reduce((s, l) => s + l.adjustmentHalalas, 0);
   return {
     claimId: "CLM-1",
     nphiesClaimId: null,
@@ -48,6 +50,7 @@ function makeClaim(lines: EobLine[]): EobClaim {
     totalBilledHalalas,
     totalPaidHalalas,
     totalRejectedHalalas,
+    totalAdjustmentHalalas,
     confidence: 0.9,
   };
 }

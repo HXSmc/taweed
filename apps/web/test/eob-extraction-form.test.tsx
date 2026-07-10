@@ -40,6 +40,7 @@ function makeExtraction(payerName: string): EobExtraction {
         totalBilledHalalas: 10_000,
         totalPaidHalalas: 10_000,
         totalRejectedHalalas: 0,
+        totalAdjustmentHalalas: 0,
         lines: [
           {
             claimLineRef: "1",
@@ -49,6 +50,7 @@ function makeExtraction(payerName: string): EobExtraction {
             paidHalalas: 10_000,
             patientShareHalalas: 0,
             rejectedHalalas: 0,
+            adjustmentHalalas: 0,
             denialCode: null,
             confidence: 0.9,
           },
@@ -134,6 +136,7 @@ describe("EobExtractionForm — per-claim-line accessible names", () => {
       enMessages.reviewQueue.patientShare,
     );
     const rejectedInputs = screen.getAllByLabelText(enMessages.reviewQueue.rejected);
+    const adjustmentInputs = screen.getAllByLabelText(enMessages.reviewQueue.adjustment);
     const denialSelects = screen.getAllByLabelText(enMessages.reviewQueue.denialCode);
 
     // One labeled control per line (2 lines seeded above).
@@ -145,6 +148,7 @@ describe("EobExtractionForm — per-claim-line accessible names", () => {
       paidInputs,
       patientShareInputs,
       rejectedInputs,
+      adjustmentInputs,
       denialSelects,
     ]) {
       expect(inputs).toHaveLength(2);

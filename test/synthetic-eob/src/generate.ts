@@ -35,8 +35,15 @@ function buildLine(
 ): EobClaimLine {
   const billedHalalas = rng.int(5, 50) * 100;
   const denialCode = spec.denials[claimIdx]?.[lineIdx] ?? null;
+  // Gap 2 — only a non-denied line can carry a contractual write-off: a
+  // denied line's paidHalalas is already 0 and rejectedHalalas already
+  // absorbs the full billed amount, so there is nothing left for an
+  // adjustment to subtract from.
+  const adjustmentHalalas = denialCode ? 0 : (spec.adjustments[claimIdx]?.[lineIdx] ?? 0);
   const patientShareHalalas = denialCode ? 0 : Math.round(billedHalalas * 0.1);
-  const paidHalalas = denialCode ? 0 : billedHalalas - patientShareHalalas;
+  const paidHalalas = denialCode
+    ? 0
+    : billedHalalas - patientShareHalalas - adjustmentHalalas;
   const rejectedHalalas = denialCode ? billedHalalas : 0;
 
   return {
@@ -47,6 +54,7 @@ function buildLine(
     paidHalalas,
     patientShareHalalas,
     rejectedHalalas,
+    adjustmentHalalas,
     denialCode,
     confidence: draftConfidence(rng, spec.lowQualityScan),
   };
@@ -66,6 +74,7 @@ function buildClaim(
   const totalBilledHalalas = lines.reduce((sum, l) => sum + l.billedHalalas, 0);
   const totalPaidHalalas = lines.reduce((sum, l) => sum + l.paidHalalas, 0);
   const totalRejectedHalalas = lines.reduce((sum, l) => sum + l.rejectedHalalas, 0);
+  const totalAdjustmentHalalas = lines.reduce((sum, l) => sum + l.adjustmentHalalas, 0);
   return {
     claimId: `claim-${scenario}-${seed}-${claimIdx}`,
     nphiesClaimId: `NPHIES-CLM-${scenario}-${seed}-${claimIdx}`,
@@ -75,6 +84,7 @@ function buildClaim(
     totalBilledHalalas,
     totalPaidHalalas,
     totalRejectedHalalas,
+    totalAdjustmentHalalas,
     confidence: draftConfidence(rng, spec.lowQualityScan),
   };
 }
@@ -152,6 +162,7 @@ function buildTextLayer(spec: EobScenarioSpec, extraction: EobExtraction): strin
         `${isAr ? "المسدد" : "Paid"} ${sar(line.paidHalalas)}`,
         `${isAr ? "تحمل المريض" : "Patient Share"} ${sar(line.patientShareHalalas)}`,
         `${isAr ? "المرفوض" : "Rejected"} ${sar(line.rejectedHalalas)}`,
+        `${isAr ? "التسوية التعاقدية" : "Adjustment"} ${sar(line.adjustmentHalalas)}`,
       ];
       if (line.denialCode) {
         parts.push(`${isAr ? "سبب الرفض" : "Denial"} ${line.denialCode}`);
@@ -187,6 +198,7 @@ function buildHtmlTemplate(spec: EobScenarioSpec, extraction: EobExtraction): st
           <td>${sar(line.paidHalalas)}</td>
           <td>${sar(line.patientShareHalalas)}</td>
           <td>${sar(line.rejectedHalalas)}</td>
+          <td>${sar(line.adjustmentHalalas)}</td>
           <td>${line.denialCode ?? ""}</td>
         </tr>`,
       ),
@@ -215,6 +227,7 @@ function buildHtmlTemplate(spec: EobScenarioSpec, extraction: EobExtraction): st
         <th>Paid / المسدد</th>
         <th>Patient Share / تحمل المريض</th>
         <th>Rejected / المرفوض</th>
+        <th>Adjustment / التسوية التعاقدية</th>
         <th>Denial / الرفض</th>
       </tr>
     </thead>

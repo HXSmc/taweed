@@ -9,6 +9,7 @@ export const EOB_SCENARIOS = [
   "lowQualityScan",
   "arabicHeavy",
   "bundledLines",
+  "contractualAdjustment",
 ] as const;
 
 export type EobScenarioName = (typeof EOB_SCENARIOS)[number];
@@ -25,6 +26,14 @@ export interface EobScenarioSpec {
    * accepted lines (paidHalalas > 0, denialCode null).
    */
   denials: Record<number, Record<number, DenialReasonCode>>;
+  /**
+   * claim-index -> line-index -> contractual write-off/withholding amount
+   * (halalas), Gap 2's 5th money bucket. Absent entries carry no adjustment
+   * (adjustmentHalalas: 0). Mirrors `denials`' shape exactly. Only ever
+   * applied to a non-denied line (see generate.ts buildLine) — a denied
+   * line's paidHalalas is already 0 and cannot absorb a write-off too.
+   */
+  adjustments: Record<number, Record<number, number>>;
   /** Header/table language — drives payer name + textLayer/htmlTemplate copy. */
   language: "en" | "ar";
   /** Digit script used when rendering numbers into textLayer/htmlTemplate. */
@@ -46,6 +55,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 1,
     linesPerClaim: 2,
     denials: {},
+    adjustments: {},
     language: "en",
     digitSet: "western",
     lowQualityScan: false,
@@ -55,6 +65,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 1,
     linesPerClaim: 2,
     denials: { 0: { 0: "TWD-D01", 1: "TWD-D05" } },
+    adjustments: {},
     language: "en",
     digitSet: "western",
     lowQualityScan: false,
@@ -64,6 +75,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 1,
     linesPerClaim: 3,
     denials: { 0: { 1: "TWD-D03" } },
+    adjustments: {},
     language: "en",
     digitSet: "western",
     lowQualityScan: false,
@@ -73,6 +85,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 3,
     linesPerClaim: 2,
     denials: { 1: { 0: "TWD-D02" } },
+    adjustments: {},
     language: "en",
     digitSet: "western",
     lowQualityScan: false,
@@ -82,6 +95,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 1,
     linesPerClaim: 2,
     denials: {},
+    adjustments: {},
     language: "en",
     digitSet: "mixed",
     lowQualityScan: false,
@@ -91,6 +105,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 1,
     linesPerClaim: 2,
     denials: {},
+    adjustments: {},
     language: "en",
     digitSet: "western",
     lowQualityScan: true,
@@ -100,6 +115,7 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 2,
     linesPerClaim: 2,
     denials: { 0: { 0: "TWD-D06" } },
+    adjustments: {},
     language: "ar",
     digitSet: "arabicIndic",
     lowQualityScan: false,
@@ -109,6 +125,22 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     claimCount: 1,
     linesPerClaim: 4,
     denials: { 0: { 2: "TWD-D07" } },
+    adjustments: {},
+    language: "en",
+    digitSet: "western",
+    lowQualityScan: false,
+    payer: PAYER_DEFAULT,
+  },
+  // Gap 2 — a real remittance carrying a contractual write-off/withholding
+  // (5th money bucket) alongside an ordinary denial, so the corpus exercises
+  // both a non-denied adjusted line (line 0, generate.ts's buildLine
+  // subtracts the write-off from paidHalalas) and a denied line (line 2,
+  // paidHalalas already 0 and never adjusted) in the same claim.
+  contractualAdjustment: {
+    claimCount: 1,
+    linesPerClaim: 3,
+    denials: { 0: { 2: "TWD-D01" } },
+    adjustments: { 0: { 0: 150 } },
     language: "en",
     digitSet: "western",
     lowQualityScan: false,

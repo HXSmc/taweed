@@ -35,6 +35,27 @@ describe("scoreEobExtraction", () => {
     expect(score.overall.total - score.overall.correct).toBe(1);
   });
 
+  // Gap 2 — proves the 5th "adjustment/withholding" bucket is actually
+  // SCORED by scoreLine/scoreClaim's amounts category, not merely present on
+  // the type. A candidate extraction that gets the write-off amount wrong
+  // (line-level adjustmentHalalas, claim-level totalAdjustmentHalalas) must
+  // be counted as a miss the same way every other money field is.
+  it("counts a wrong line-level adjustmentHalalas as exactly one amounts miss", () => {
+    const actual = clone(GROUND_TRUTH);
+    actual.claims[0]!.lines[0]!.adjustmentHalalas += 1;
+    const score = scoreEobExtraction(GROUND_TRUTH, actual);
+    expect(score.amounts.total - score.amounts.correct).toBe(1);
+    expect(score.overall.total - score.overall.correct).toBe(1);
+  });
+
+  it("counts a wrong claim-level totalAdjustmentHalalas as exactly one amounts miss", () => {
+    const actual = clone(GROUND_TRUTH);
+    actual.claims[0]!.totalAdjustmentHalalas += 1;
+    const score = scoreEobExtraction(GROUND_TRUTH, actual);
+    expect(score.amounts.total - score.amounts.correct).toBe(1);
+    expect(score.overall.total - score.overall.correct).toBe(1);
+  });
+
   it("matches claims and lines by identifier, not array position", () => {
     const actual = clone(GROUND_TRUTH);
     // Reverse claim order AND reverse each claim's line order — a positional

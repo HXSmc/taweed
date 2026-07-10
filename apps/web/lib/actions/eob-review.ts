@@ -45,7 +45,8 @@ const REVIEW_ROLES = ["full", "upload"] as const;
 // in SAR, and this also means the client never needs @taweed/analytics, which
 // pulls in @taweed/db and must not enter the client bundle). Every other field
 // mirrors EobExtractionSchema (packages/ai/src/schemas/eobExtraction.ts) exactly;
-// only the four *Halalas number fields become *Sar strings here.
+// only the five *Halalas number fields (including Gap 2's adjustmentHalalas /
+// totalAdjustmentHalalas write-off bucket) become *Sar strings here.
 const MoneySar = z.string().regex(SAR_MONEY_REGEX, "invalid amount");
 const DENIAL_CODES = DENIAL_REASON_CODES.map((c) => c.code) as [
   (typeof DENIAL_REASON_CODES)[number]["code"],
@@ -60,6 +61,7 @@ const EditedLine = z.object({
   paidSar: MoneySar,
   patientShareSar: MoneySar,
   rejectedSar: MoneySar,
+  adjustmentSar: MoneySar,
   denialCode: z.enum(DENIAL_CODES).nullable(),
   confidence: z.number().min(0).max(1),
 }).strict();
@@ -73,6 +75,7 @@ const EditedClaim = z.object({
   totalBilledSar: MoneySar,
   totalPaidSar: MoneySar,
   totalRejectedSar: MoneySar,
+  totalAdjustmentSar: MoneySar,
   confidence: z.number().min(0).max(1),
 }).strict();
 
@@ -105,6 +108,7 @@ function toWireExtraction(input: EditedEobExtractionInput): EobExtraction {
       totalBilledHalalas: moneyToHalalas(c.totalBilledSar),
       totalPaidHalalas: moneyToHalalas(c.totalPaidSar),
       totalRejectedHalalas: moneyToHalalas(c.totalRejectedSar),
+      totalAdjustmentHalalas: moneyToHalalas(c.totalAdjustmentSar),
       lines: c.lines.map((l) => ({
         claimLineRef: l.claimLineRef,
         sbsCode: l.sbsCode,
@@ -115,6 +119,7 @@ function toWireExtraction(input: EditedEobExtractionInput): EobExtraction {
         paidHalalas: moneyToHalalas(l.paidSar),
         patientShareHalalas: moneyToHalalas(l.patientShareSar),
         rejectedHalalas: moneyToHalalas(l.rejectedSar),
+        adjustmentHalalas: moneyToHalalas(l.adjustmentSar),
       })),
     })),
   };

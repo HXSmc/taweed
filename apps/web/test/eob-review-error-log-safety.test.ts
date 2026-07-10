@@ -92,6 +92,7 @@ const VALID_EDITED: EditedEobExtractionInput = {
       totalBilledSar: "100.00",
       totalPaidSar: "100.00",
       totalRejectedSar: "0.00",
+      totalAdjustmentSar: "0.00",
       lines: [
         {
           claimLineRef: "line-1",
@@ -101,6 +102,7 @@ const VALID_EDITED: EditedEobExtractionInput = {
           paidSar: "100.00",
           patientShareSar: "0.00",
           rejectedSar: "0.00",
+          adjustmentSar: "0.00",
           denialCode: null,
           confidence: 1,
         },

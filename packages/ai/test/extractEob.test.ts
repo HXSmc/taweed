@@ -56,6 +56,7 @@ const VALID_LINE = {
   paidHalalas: 8000,
   patientShareHalalas: 1000,
   rejectedHalalas: 1000,
+  adjustmentHalalas: 0,
   denialCode: null,
   confidence: 0.9,
 };
@@ -69,6 +70,7 @@ const VALID_CLAIM = {
   totalBilledHalalas: 10000,
   totalPaidHalalas: 8000,
   totalRejectedHalalas: 1000,
+  totalAdjustmentHalalas: 0,
   confidence: 0.9,
 };
 

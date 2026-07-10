@@ -64,6 +64,7 @@ function toEditedInput(extraction: EobExtraction): EditedEobExtractionInput {
       totalBilledSar: halalasToSarDisplay(c.totalBilledHalalas),
       totalPaidSar: halalasToSarDisplay(c.totalPaidHalalas),
       totalRejectedSar: halalasToSarDisplay(c.totalRejectedHalalas),
+      totalAdjustmentSar: halalasToSarDisplay(c.totalAdjustmentHalalas),
       lines: c.lines.map((l) => ({
         claimLineRef: l.claimLineRef,
         sbsCode: l.sbsCode,
@@ -74,6 +75,7 @@ function toEditedInput(extraction: EobExtraction): EditedEobExtractionInput {
         paidSar: halalasToSarDisplay(l.paidHalalas),
         patientShareSar: halalasToSarDisplay(l.patientShareHalalas),
         rejectedSar: halalasToSarDisplay(l.rejectedHalalas),
+        adjustmentSar: halalasToSarDisplay(l.adjustmentHalalas),
       })),
     })),
   };
@@ -349,6 +351,13 @@ export function EobExtractionForm({
                 label={t("totalRejected")}
               />
             </Field>
+            <Field label={t("totalAdjustment")}>
+              <MoneyField
+                value={claim.totalAdjustmentSar}
+                onChange={(v) => updateClaim(ci, { totalAdjustmentSar: v })}
+                label={t("totalAdjustment")}
+              />
+            </Field>
           </div>
 
           <TableWrap className="mt-4">
@@ -362,6 +371,7 @@ export function EobExtractionForm({
                   <TH className="text-end">{t("paid")}</TH>
                   <TH className="text-end">{t("patientShare")}</TH>
                   <TH className="text-end">{t("rejected")}</TH>
+                  <TH className="text-end">{t("adjustment")}</TH>
                   <TH>{t("denialCode")}</TH>
                   <TH>{t("confidence")}</TH>
                 </TR>
@@ -416,6 +426,13 @@ export function EobExtractionForm({
                         value={line.rejectedSar}
                         onChange={(v) => updateLine(ci, li, { rejectedSar: v })}
                         label={t("rejected")}
+                      />
+                    </TD>
+                    <TD className="w-24">
+                      <MoneyField
+                        value={line.adjustmentSar}
+                        onChange={(v) => updateLine(ci, li, { adjustmentSar: v })}
+                        label={t("adjustment")}
                       />
                     </TD>
                     <TD className="w-40">

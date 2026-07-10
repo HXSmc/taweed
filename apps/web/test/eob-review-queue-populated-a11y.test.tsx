@@ -58,6 +58,7 @@ function makeExtraction(payerName: string, confidence: number): EobExtraction {
         totalBilledHalalas: 10_000,
         totalPaidHalalas: 10_000,
         totalRejectedHalalas: 0,
+        totalAdjustmentHalalas: 0,
         lines: [
           {
             claimLineRef: "1",
@@ -67,6 +68,7 @@ function makeExtraction(payerName: string, confidence: number): EobExtraction {
             paidHalalas: 10_000,
             patientShareHalalas: 0,
             rejectedHalalas: 0,
+            adjustmentHalalas: 0,
             denialCode: null,
             confidence,
           },
@@ -78,6 +80,7 @@ function makeExtraction(payerName: string, confidence: number): EobExtraction {
             paidHalalas: 4_000,
             patientShareHalalas: 1_000,
             rejectedHalalas: 0,
+            adjustmentHalalas: 0,
             denialCode: null,
             confidence,
           },
@@ -157,6 +160,7 @@ describe("EobReviewQueue populated state — selected row renders a fully-labele
       enMessages.reviewQueue.paid,
       enMessages.reviewQueue.patientShare,
       enMessages.reviewQueue.rejected,
+      enMessages.reviewQueue.adjustment,
       enMessages.reviewQueue.denialCode,
     ]) {
       expect(await screen.findAllByLabelText(label)).toHaveLength(2);

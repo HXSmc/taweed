@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { toSar } from "@taweed/analytics";
-import { validateEobExtraction } from "../src/eob-validators.js";
+import {
+  validateEobExtraction,
+  validateEobExtractionArithmetic,
+} from "../src/eob-validators.js";
 import type { EobExtraction } from "../src/schemas/eobExtraction.js";
 
 // A clean, internally-consistent extraction: every cross-total identity holds
@@ -27,6 +30,7 @@ const CLEAN_EXTRACTION: EobExtraction = {
           paidHalalas: 1890,
           patientShareHalalas: 210,
           rejectedHalalas: 0,
+          adjustmentHalalas: 0,
           denialCode: null,
           confidence: 0.89,
         },
@@ -38,6 +42,7 @@ const CLEAN_EXTRACTION: EobExtraction = {
           paidHalalas: 0,
           patientShareHalalas: 0,
           rejectedHalalas: 4100,
+          adjustmentHalalas: 0,
           denialCode: "TWD-D03",
           confidence: 0.9,
         },
@@ -49,6 +54,7 @@ const CLEAN_EXTRACTION: EobExtraction = {
           paidHalalas: 1710,
           patientShareHalalas: 190,
           rejectedHalalas: 0,
+          adjustmentHalalas: 0,
           denialCode: null,
           confidence: 0.96,
         },
@@ -56,6 +62,7 @@ const CLEAN_EXTRACTION: EobExtraction = {
       totalBilledHalalas: 8100,
       totalPaidHalalas: 3600,
       totalRejectedHalalas: 4100,
+      totalAdjustmentHalalas: 0,
       confidence: 0.94,
     },
   ],
@@ -199,6 +206,83 @@ describe("validateEobExtraction — verbatim text-layer match", () => {
     const report = validateEobExtraction(clone(CLEAN_EXTRACTION), arabicText);
     const textFindings = report.findings.filter((f) => f.check === "text-layer-match");
     expect(textFindings.every((f) => f.passed)).toBe(true);
+  });
+});
+
+// Gap 2 — the 5th "adjustment/withholding" money bucket. A contractual
+// write-off is money that is neither paid, patient-owed, nor formally
+// rejected/denied — without this bucket, a real remittance carrying one can
+// never cross-total and is permanently stuck failing the arithmetic gate
+// even when every extracted value is accurate. Exercises BOTH
+// validateEobExtraction (the full report, including the text-layer-match
+// candidate added for this field) and validateEobExtractionArithmetic (the
+// no-text-layer variant approveEobExtractionAction actually re-runs on a
+// human-edited payload).
+describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment (5th) bucket", () => {
+  it("passes when billed == paid+rejected+patientShare+adjustment (a genuine contractual write-off)", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    // Move 100 halalas out of "paid" and into "adjustment" on line-0-0 — the
+    // line still balances (2100 == 1790+0+210+100), just with a 5th term.
+    e.claims[0]!.lines[0]!.paidHalalas = 1790;
+    e.claims[0]!.lines[0]!.adjustmentHalalas = 100;
+    e.claims[0]!.totalPaidHalalas -= 100;
+    e.claims[0]!.totalAdjustmentHalalas = 100;
+    e.remittanceTotalPaidHalalas -= 100; // validateEobExtractionArithmetic still
+    // checks the remittance-level cross-total (unchanged by this gap — see
+    // eob-validators.ts's remittanceTotalFinding comment), so it must move
+    // too, or this positive case would spuriously fail on an unrelated check.
+    const report = validateEobExtractionArithmetic(e);
+    expect(report.passed).toBe(true);
+  });
+
+  it("fails (line-total) when a line's adjustment is set but billed != paid+rejected+patientShare+adjustment", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    // adjustment added on top WITHOUT reducing paid — billed 2100 !=
+    // 1890+0+210+50 (=2150). A too-permissive 5-bucket validator would let
+    // this slide; it must still fail.
+    e.claims[0]!.lines[0]!.adjustmentHalalas = 50;
+    const report = validateEobExtractionArithmetic(e);
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(failing.some((f) => f.check === "line-total")).toBe(true);
+  });
+
+  it("fails (claim-total) when totalAdjustmentHalalas doesn't match the sum of line adjustments", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    e.claims[0]!.lines[0]!.paidHalalas = 1790;
+    e.claims[0]!.lines[0]!.adjustmentHalalas = 100; // line balances on its own
+    e.claims[0]!.totalPaidHalalas -= 100;
+    e.claims[0]!.totalAdjustmentHalalas = 999; // wrong — should be 100
+    e.remittanceTotalPaidHalalas -= 100; // keep remittance-total consistent
+    // so the ONLY failing check is the claim-total mismatch under test.
+    const report = validateEobExtractionArithmetic(e);
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(failing.some((f) => f.check === "claim-total")).toBe(true);
+    expect(failing.every((f) => f.check === "claim-total")).toBe(true);
+  });
+
+  it("fails when an adjustment amount in the extraction is missing from the text layer", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    // Move 733 halalas (7.33 SAR — distinctive, no substring collision with
+    // any amount already present in CLEAN_TEXT_LAYER) out of "paid" and into
+    // "adjustment" on line-0-0. Every cross-total identity stays intact (see
+    // the totals recomputed below), so ONLY the text-match checks for the
+    // (now-different) paid/adjustment amounts can fail — mirrors the existing
+    // "billed amount missing" test's approach.
+    e.claims[0]!.lines[0]!.paidHalalas = 1890 - 733;
+    e.claims[0]!.lines[0]!.adjustmentHalalas = 733;
+    e.claims[0]!.totalPaidHalalas -= 733;
+    e.claims[0]!.totalAdjustmentHalalas = 733;
+    e.remittanceTotalPaidHalalas -= 733;
+    const report = validateEobExtraction(e, CLEAN_TEXT_LAYER);
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter(
+      (f) => !f.passed && f.check === "text-layer-match",
+    );
+    expect(
+      failing.some((f) => f.detail.includes("adjustmentHalalas")),
+    ).toBe(true);
   });
 });
 
