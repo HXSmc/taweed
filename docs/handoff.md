@@ -18,11 +18,15 @@
 > added 2026-07-10) and ready to use — the key itself is not reproduced here since this file is
 > committed to git. `TAWEED_AI_ENABLED` and all per-feature AI flags remain OFF; the user wants to
 > test manually before enabling anything.**
-> **2026-07-10, later the same day: the B6 field-mapping panel is now BUILT** on branch
-> `b6-field-mapping-panel`, in this directory, not yet merged to `main`. This was the one remaining
-> buildable EXECUTE Tier 3 item (`docs/superpowers/plans/execute-phase.md`). See the new bullet in
+> **2026-07-10, later the same day: the B6 field-mapping panel is BUILT, MERGED, and PUSHED to
+> `origin/main`** (commit `80b1698` on `b6-field-mapping-panel`, merge `ff2e438` `--no-ff` into
+> `main`, feature branch deleted post-merge). This was the last remaining buildable EXECUTE Tier 3
+> item (`docs/superpowers/plans/execute-phase.md`) — the EXECUTE build plan's buildable scope is now
+> fully complete. `back-up` re-pointed to the pre-merge main tip (`a851d4d`) and force-pushed BEFORE
+> `main` was pushed; verified `back-up` sits exactly one commit behind `main` post-push. Full unit
+> suite (861/861) + typecheck re-verified on the merged `main` tip before pushing. See the bullet in
 > "Where the project stands" below, and the "⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED" callout
-> there before merging.
+> there for what shipped and why it got extra review.
 
 ## Where the project stands
 
@@ -168,8 +172,8 @@
   - **Verified after fixes:** unit **769/769** green (up from 708 pre-unit, 763 before the review
     fixes), root+web typecheck clean, lint clean, `apps/web` production build green (new routes
     confirmed in the build output: `/onboarding`, `/analytics/audit-report`, `/recovery/owner-report`).
-- **B6 field-mapping panel — DONE (synthetic data), built 2026-07-10 on branch
-  `b6-field-mapping-panel`, in this directory, NOT yet merged to `main`.** The last remaining
+- **B6 field-mapping panel — DONE (synthetic data), built 2026-07-10, MERGED + PUSHED to
+  `origin/main`** (commit `80b1698`, merge `ff2e438`, `back-up` ritual completed). The last remaining
   buildable EXECUTE Tier 3 item (`docs/superpowers/plans/execute-phase.md`): CSV/TSV drops now
   surface a mapping-review step (detected column → canonical field, confidence, per-row override
   `Select`, explicit Confirm required — no auto-proceed on high confidence) before anything is
