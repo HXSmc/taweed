@@ -62,4 +62,34 @@ describe("applyMappingOverrides", () => {
     expect(denied.sourceColumn).toBe("col2");
     expect(denied.confidence).toBe(1);
   });
+
+  it("forces a field to no column when the override is explicitly null, ignoring its auto-detected suggestion", () => {
+    // "Claim ID" auto-detects strongly for claimId — an explicit null
+    // override must NOT silently fall back to that detected column. This is
+    // the regression case: omitting a field means "keep auto-detected",
+    // while an explicit null means "the reviewer deliberately cleared this".
+    const base = detectFieldMapping(["Claim ID", "col2"]);
+    expect(base.find((s) => s.field === "claimId")!.sourceColumn).toBe("Claim ID");
+
+    const overridden = applyMappingOverrides(base, { claimId: null });
+    const claim = overridden.find((s) => s.field === "claimId")!;
+    expect(claim.sourceColumn).toBeNull();
+    expect(claim.confidence).toBe(0);
+  });
+
+  it("does not treat a null override's column as claimed/unavailable to other fields", () => {
+    const base = detectFieldMapping(["Claim ID", "col2"]);
+    const overridden = applyMappingOverrides(base, { claimId: null, deniedAmount: "Claim ID" });
+    const denied = overridden.find((s) => s.field === "deniedAmount")!;
+    expect(denied.sourceColumn).toBe("Claim ID");
+    expect(denied.confidence).toBe(1);
+  });
+
+  it("leaves a field unchanged (keeps its auto-detected suggestion) when it is absent from overrides", () => {
+    const base = detectFieldMapping(["Claim ID", "col2"]);
+    const overridden = applyMappingOverrides(base, { deniedAmount: "col2" });
+    const claim = overridden.find((s) => s.field === "claimId")!;
+    expect(claim.sourceColumn).toBe("Claim ID");
+    expect(claim.confidence).toBeGreaterThan(0.9);
+  });
 });

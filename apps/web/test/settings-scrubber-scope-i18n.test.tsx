@@ -31,7 +31,12 @@ vi.mock("next-intl/server", () => ({
   }),
   getTranslations: vi.fn(async (namespace: string) => {
     const messages = currentLocale === "ar" ? arMessages : enMessages;
-    const dict = (messages as Record<string, Record<string, string>>)[namespace] ?? {};
+    // Cast through `unknown` (TS's own suggestion): the "ingest" namespace now
+    // nests a "csvMapping" object (EXECUTE B6) alongside its flat string keys,
+    // so the direct cast to an all-string-valued Record no longer has
+    // sufficient overlap. This test only ever reads the "scrubber" namespace
+    // (a flat dict) at runtime — the widened cast changes no behavior here.
+    const dict = (messages as unknown as Record<string, Record<string, string>>)[namespace] ?? {};
     return (key: string) => dict[key] ?? key;
   }),
 }));

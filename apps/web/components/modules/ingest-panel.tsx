@@ -2,15 +2,32 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { UploadCloud, FileJson, CheckCircle2, Loader2 } from "lucide-react";
-import { resolveUploadState, type UploadState } from "@/lib/ingest-submit";
+import { resolveUploadState, isCsvLikeFile, type UploadState } from "@/lib/ingest-submit";
+import { resolveCsvPreview, resolveCsvCommit, type CsvMappingState } from "@/lib/csv-mapping-submit";
 import type { ExtractEobPdfResult } from "@/lib/actions/eob-extract";
 import type { IngestResult } from "@/lib/actions/ingest";
+import type { CanonicalField } from "@taweed/ingest";
 import { formatMoney } from "@/lib/money";
 import { CountUp } from "@/components/money/count-up";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TableWrap, Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { CsvMappingPanel } from "@/components/modules/csv-mapping-panel";
 import { cn } from "@/lib/utils";
+
+// EXECUTE B6 — maps a CSV-preview failure code to a translated message key
+// under "ingest.csvMapping". previewCsvMapping never forwards the raw parser
+// exception text (see ingest-csv.ts) — "xlsx_not_wired" is its own fixed
+// code for the XLSX seam's "not wired" throw (packages/ingest/src/xlsx.ts),
+// and any other parse failure is the generic "parse_error" code.
+function csvPreviewErrorMessageKey(error: string): string {
+  if (error === "not_authorized") return "csvMapping.notAuthorized";
+  if (error === "rate_limited") return "csvMapping.rateLimited";
+  if (error === "empty_file") return "csvMapping.emptyFile";
+  if (error === "file_too_large") return "csvMapping.fileTooLarge";
+  if (error === "xlsx_not_wired") return "csvMapping.xlsxNotWired";
+  return "csvMapping.previewFailed";
+}
 
 // A PDF drop routes to the AI-4 extraction path (extractEobPdfAction) instead
 // of the FHIR-bundle path (ingestBundle) — every JSON/FHIR-bundle upload is
@@ -68,12 +85,32 @@ export function IngestPanel({
   const t = useTranslations("ingest");
   const [pending, start] = React.useTransition();
   const [state, setState] = React.useState<UploadState | null>(null);
+  const [csvState, setCsvState] = React.useState<CsvMappingState | null>(null);
   const [dragging, setDragging] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const runLedgerHeadingRef = React.useRef<HTMLHeadingElement>(null);
+  // Tracks whether the mapping panel was showing on the previous render, so
+  // the focus effect below only fires on the actual preview -> committed/
+  // cancelled transition — never on this component's own initial mount
+  // (unlike a dedicated single-purpose wizard, IngestPanel is embedded in a
+  // larger page and must not steal focus just by rendering).
+  const wasShowingCsvMappingPanel = React.useRef(false);
 
   const submit = (file: File) => {
     const fd = new FormData();
     fd.set("file", file);
+    // A CSV/TSV/XLSX drop routes to the field-mapping panel (design-brief
+    // §8.1) instead of the FHIR-bundle JSON path — the operator confirms the
+    // mapping before anything is committed (see handleCsvConfirm below).
+    if (isCsvLikeFile(file)) {
+      setState(null);
+      start(async () => {
+        const next = await resolveCsvPreview(file, fd);
+        setCsvState(next);
+      });
+      return;
+    }
+    setCsvState(null);
     start(async () => {
       const next = await resolveUploadState(file, fd);
       setState(next);
@@ -84,11 +121,75 @@ export function IngestPanel({
     });
   };
 
-  const result = state?.kind === "json" ? state.result : null;
-  const stage = pending ? "parsing" : state ? "ready" : "idle";
+  const handleCsvConfirm = (overrides: Partial<Record<CanonicalField, string | null>>) => {
+    if (csvState?.kind !== "preview") return;
+    const { file } = csvState;
+    start(async () => {
+      const next = await resolveCsvCommit(file, overrides);
+      setCsvState(next);
+      if (next.kind === "committed" && next.result.ok) onIngestSuccess?.(next.result);
+    });
+  };
+
+  const handleCsvCancel = () => setCsvState(null);
+
+  const jsonResult = state?.kind === "json" ? state.result : null;
+  const csvResult = csvState?.kind === "committed" ? csvState.result : null;
+  const result = jsonResult ?? csvResult;
+  const showCsvMappingPanel = csvState?.kind === "preview";
+  const csvPreviewError = csvState?.kind === "previewFailed" ? csvState.error : null;
+  const stage = pending ? "parsing" : state || csvState ? "ready" : "idle";
+  // A stable identity for the file currently under mapping review — keyed on
+  // the <CsvMappingPanel> below so React remounts it (fresh `selections`
+  // state) whenever a new file replaces one already being reviewed, instead
+  // of reusing the first file's column selections against the second file's
+  // headers.
+  const csvMappingPanelKey =
+    csvState?.kind === "preview"
+      ? `${csvState.file.name}:${csvState.file.size}:${csvState.file.lastModified}`
+      : undefined;
+
+  // Moves focus to the run-ledger heading whenever the mapping panel just
+  // closed (Confirm succeeded, or Cancel) — otherwise focus is left on the
+  // now-unmounted Confirm/Cancel button and lands on <body>, giving a
+  // keyboard/screen-reader user no signal the transition happened.
+  React.useEffect(() => {
+    if (wasShowingCsvMappingPanel.current && !showCsvMappingPanel) {
+      runLedgerHeadingRef.current?.focus();
+    }
+    wasShowingCsvMappingPanel.current = showCsvMappingPanel;
+  }, [showCsvMappingPanel]);
+
+  // Always-mounted live region for the CSV mapping panel's lifecycle
+  // (same established idiom as appeals-composer.tsx's composerStatusMessage):
+  // the mapping panel and the run ledger are two different Card instances
+  // that swap via conditional JSX with no other page navigation, so a freshly
+  // (re)mounted, already-populated live region is never announced on its
+  // own — this node stays mounted the whole time and only its text changes.
+  const csvStatusMessage =
+    csvState?.kind === "preview"
+      ? t("csvMapping.rowsDetected", { n: csvState.rowCount })
+      : csvState?.kind === "committed"
+        ? csvState.result.ok
+          ? t("resultLead", {
+              claims: csvState.result.claims,
+              denials: csvState.result.denials,
+              atRisk: formatMoney(csvState.result.atRiskSar),
+            })
+          : (csvState.result.error ?? t("csvMapping.previewFailed"))
+        : "";
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <p
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        data-testid="csv-lifecycle-announcer"
+      >
+        {csvStatusMessage}
+      </p>
+
       {/* Dropzone */}
       <Card
         className={cn(
@@ -117,7 +218,7 @@ export function IngestPanel({
         <input
           ref={inputRef}
           type="file"
-          accept="application/json,.json,application/pdf,.pdf"
+          accept="application/json,.json,application/pdf,.pdf,.csv,text/csv,.tsv,text/tab-separated-values,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -141,89 +242,123 @@ export function IngestPanel({
         </div>
       </Card>
 
+      {/* CSV/TSV/XLSX field-mapping panel — replaces the run ledger while the
+          operator reviews the detected mapping. Nothing is committed until
+          they press Confirm (design-brief §8.1: no auto-proceed on high
+          confidence, this is a PHI-adjacent intake surface). */}
+      {showCsvMappingPanel && csvState.kind === "preview" && (
+        <CsvMappingPanel
+          key={csvMappingPanelKey}
+          headers={csvState.headers}
+          suggestions={csvState.suggestions}
+          rowCount={csvState.rowCount}
+          onConfirm={handleCsvConfirm}
+          onCancel={handleCsvCancel}
+          pending={pending}
+        />
+      )}
+
       {/* Run ledger */}
-      <Card className="p-5">
-        <h2 className="mb-4 text-h3 font-medium">{t("runLedger")}</h2>
-        <ol className="mb-5 flex flex-col gap-2">
-          {(["received", "parsing", "validating", "ready"] as const).map((s) => {
-            const done =
-              stage === "ready" || (stage === "parsing" && s !== "ready");
-            return (
-              <li key={s} className="flex items-center gap-2 text-body">
-                {done ? (
-                  <CheckCircle2 className="size-4 text-recovered" />
-                ) : (
-                  <span className="size-4 rounded-full border border-hairline-strong" />
-                )}
-                <span className={done ? "text-text" : "text-muted"}>{t(s)}</span>
-              </li>
-            );
-          })}
-        </ol>
+      {!showCsvMappingPanel && (
+        <Card className="p-5">
+          <h2
+            ref={runLedgerHeadingRef}
+            tabIndex={-1}
+            className="mb-4 text-h3 font-medium focus:outline-none"
+          >
+            {t("runLedger")}
+          </h2>
+          <ol className="mb-5 flex flex-col gap-2">
+            {(["received", "parsing", "validating", "ready"] as const).map((s) => {
+              const done =
+                stage === "ready" || (stage === "parsing" && s !== "ready");
+              return (
+                <li key={s} className="flex items-center gap-2 text-body">
+                  {done ? (
+                    <CheckCircle2 className="size-4 text-recovered" />
+                  ) : (
+                    <span className="size-4 rounded-full border border-hairline-strong" />
+                  )}
+                  <span className={done ? "text-text" : "text-muted"}>{t(s)}</span>
+                </li>
+              );
+            })}
+          </ol>
 
-        {state?.kind !== "pdf" && (
-          <>
-            <div role="status" aria-live="polite" className="grid grid-cols-3 gap-3">
-              <Counter label={t("claimsCreated")} value={result?.claims ?? 0} tone="text" />
-              <Counter
-                label={t("denialsDetected")}
-                value={result?.denials ?? 0}
-                tone="atRisk"
-              />
-              <Counter
-                label={t("quarantined")}
-                value={result?.quarantined.length ?? 0}
-                tone="muted"
-              />
+          {csvPreviewError && (
+            <p
+              role="alert"
+              aria-live="assertive"
+              className="rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text"
+            >
+              {t(csvPreviewErrorMessageKey(csvPreviewError))}
+            </p>
+          )}
+
+          {!csvPreviewError && state?.kind !== "pdf" && (
+            <>
+              <div role="status" aria-live="polite" className="grid grid-cols-3 gap-3">
+                <Counter label={t("claimsCreated")} value={result?.claims ?? 0} tone="text" />
+                <Counter
+                  label={t("denialsDetected")}
+                  value={result?.denials ?? 0}
+                  tone="atRisk"
+                />
+                <Counter
+                  label={t("quarantined")}
+                  value={result?.quarantined.length ?? 0}
+                  tone="muted"
+                />
+              </div>
+
+              {result?.ok && (
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className="mt-4 border-t border-hairline pt-4 text-body"
+                >
+                  {t("resultLead", {
+                    claims: result.claims,
+                    denials: result.denials,
+                    atRisk: formatMoney(result.atRiskSar),
+                  })}
+                </p>
+              )}
+              {result?.error && (
+                <p
+                  role="alert"
+                  aria-live="assertive"
+                  className="mt-4 rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text"
+                >
+                  {result.error}
+                </p>
+              )}
+            </>
+          )}
+
+          {/* AI-4 PDF-drop path: files as a pending_review row for the Review
+              queue tab (this page's other tab) rather than reporting counters
+              directly — nothing from a PDF ever reaches claims without a human
+              approving it there. */}
+          {state?.kind === "pdf" && (
+            <div className="mt-4 border-t border-hairline pt-4">
+              {state.result.ok ? (
+                <p role="status" aria-live="polite" className="text-body">
+                  {t("pdfResultLead")}
+                </p>
+              ) : (
+                <p
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text"
+                >
+                  {t(pdfErrorMessageKey(state.result.error))}
+                </p>
+              )}
             </div>
-
-            {result?.ok && (
-              <p
-                role="status"
-                aria-live="polite"
-                className="mt-4 border-t border-hairline pt-4 text-body"
-              >
-                {t("resultLead", {
-                  claims: result.claims,
-                  denials: result.denials,
-                  atRisk: formatMoney(result.atRiskSar),
-                })}
-              </p>
-            )}
-            {result?.error && (
-              <p
-                role="alert"
-                aria-live="assertive"
-                className="mt-4 rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text"
-              >
-                {result.error}
-              </p>
-            )}
-          </>
-        )}
-
-        {/* AI-4 PDF-drop path: files as a pending_review row for the Review
-            queue tab (this page's other tab) rather than reporting counters
-            directly — nothing from a PDF ever reaches claims without a human
-            approving it there. */}
-        {state?.kind === "pdf" && (
-          <div className="mt-4 border-t border-hairline pt-4">
-            {state.result.ok ? (
-              <p role="status" aria-live="polite" className="text-body">
-                {t("pdfResultLead")}
-              </p>
-            ) : (
-              <p
-                role="alert"
-                aria-live="assertive"
-                className="rounded-md bg-at-risk-bg p-3 text-body text-at-risk-text"
-              >
-                {t(pdfErrorMessageKey(state.result.error))}
-              </p>
-            )}
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
+      )}
 
       {/* Quarantine */}
       {result && result.quarantined.length > 0 && (

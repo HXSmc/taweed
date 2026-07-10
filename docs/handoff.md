@@ -18,6 +18,11 @@
 > added 2026-07-10) and ready to use — the key itself is not reproduced here since this file is
 > committed to git. `TAWEED_AI_ENABLED` and all per-feature AI flags remain OFF; the user wants to
 > test manually before enabling anything.**
+> **2026-07-10, later the same day: the B6 field-mapping panel is now BUILT** on branch
+> `b6-field-mapping-panel`, in this directory, not yet merged to `main`. This was the one remaining
+> buildable EXECUTE Tier 3 item (`docs/superpowers/plans/execute-phase.md`). See the new bullet in
+> "Where the project stands" below, and the "⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED" callout
+> there before merging.
 
 ## Where the project stands
 
@@ -163,19 +168,74 @@
   - **Verified after fixes:** unit **769/769** green (up from 708 pre-unit, 763 before the review
     fixes), root+web typecheck clean, lint clean, `apps/web` production build green (new routes
     confirmed in the build output: `/onboarding`, `/analytics/audit-report`, `/recovery/owner-report`).
-  - **Not yet built (still pending, unrelated to this unit):** the **B6 field-mapping panel** wired
-    into the Ingest UI (CSV/XLSX column-to-field override surface) — mentioned in the same Tier 3
-    plan but not part of A2/A3's scope.
+- **B6 field-mapping panel — DONE (synthetic data), built 2026-07-10 on branch
+  `b6-field-mapping-panel`, in this directory, NOT yet merged to `main`.** The last remaining
+  buildable EXECUTE Tier 3 item (`docs/superpowers/plans/execute-phase.md`): CSV/TSV drops now
+  surface a mapping-review step (detected column → canonical field, confidence, per-row override
+  `Select`, explicit Confirm required — no auto-proceed on high confidence) before anything is
+  written, built on the already-tested `@taweed/ingest` `detectFieldMapping`/`applyMappingOverrides`.
+  New pure `csvRowsToClaims` (`packages/ingest/src/csv-to-claims.ts`) converts confirmed rows to
+  `NormalizedClaim`s (one CSV row = one claim = one line, a documented scope cut — no multi-row
+  claim grouping this pass); new server actions `previewCsvMapping`/`commitCsvMapping`
+  (`apps/web/lib/actions/ingest-csv.ts`) mirror `ingestBundle`'s RBAC/rate-limit/audit and its
+  first-existing-dimension simplification (no per-row branch/provider/payer/patient creation from
+  CSV data — deliberately deferred to the BLK-1 real-partner-ingest track, avoiding an ad hoc
+  patient-pseudonymization scheme on a still-synthetic-tagged surface). XLSX still routes through
+  the typed `parseXlsx` stub (throws its existing "not wired" error, surfaced as a translated
+  message) — no real XLSX parser built, per the unit's own scope. Both locales/themes; new
+  `ingest.csvMapping.*` i18n keys (EN + real AR).
+  - **Multi-lens review (typescript + security + a11y-architect + healthcare-reviewer) run on the
+    diff with adversarial verification; all 19 confirmed findings fixed**, in three sequential fix
+    batches (the first single-batch attempt stalled mid-stream twice on a 11-item call — root cause:
+    a matcher bug that vacuumed unrelated findings into one oversized batch; fixed by routing on
+    basename instead of a naive suffix check, and splitting into smaller batches). Highlights: a
+    silent "None"-override no-op (operator clears a wrong auto-mapping in the UI, the wrong mapping
+    committed anyway — `applyMappingOverrides` now distinguishes `undefined` "keep auto-detected"
+    from explicit `null` "force no column"); stale mapping-panel state surviving a second file drop
+    (now keyed on file identity so it remounts); a live-region-born-already-populated a11y bug plus
+    focus orphaned on Confirm/Cancel/mapping-panel-mount (focus now moves to the right heading on
+    every transition, the announcer region is permanently mounted and only its text changes); a
+    file-size/row-count guard added (5 MB / 5,000 rows, no prior precedent in this repo to match);
+    the `ingestBundle` dimension-query duplication closed (both paths now call one
+    `resolveFirstDimensions` helper); raw exception text no longer leaks to the client on a parse
+    failure (fixed machine-readable error codes throughout, matching `ingestBundle`'s own
+    fixed-string convention).
+  - **⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED.** Per this repo's `defer-money-path-
+    comprehensive-docs` instinct (revised 2026-07-10 to fit build-session-on-unreleased-code: extra
+    audit + extra tests + fix + prominent doc flag, not a pre-fix human block — see the instinct file
+    for the full reasoning), `csv-to-claims.ts`'s money parsing got a dedicated adversarial pass
+    beyond the standard review, **after** the standard review's own money-adjacent findings (parseMoney
+    accepting locale-comma/hex/scientific-notation input, a zero-value denial row, a fully-denied
+    claim mislabeled `"partial"` instead of `"error"`) were already fixed. The extra pass found and
+    fixed two more, both empirically demonstrated in a Node REPL before writing the fix:
+    **(1)** `MONEY_RE` allowed unlimited decimal digits, so a 3-decimal amount like `"1.005"` hit a
+    real JS float64 representation gap — `(1.005).toFixed(2)` evaluates to `"1.00"`, not `"1.01"` —
+    silently storing a wrong (rounded-down) amount instead of quarantining; fixed by capping the regex
+    at 2 decimal places (SAR/halala's actual precision). **(2)** No upper bound on magnitude, so an
+    implausibly large digit string (extra zeros, unit mismatch, hostile input) could reach
+    `Number.prototype.toFixed`'s exponential-notation threshold (`(1e21).toFixed(2) === "1e+21"`, not
+    a valid decimal literal) instead of being caught as a data-quality problem; fixed with a documented
+    `MAX_MONEY_VALUE` ceiling (999,999,999.99 SAR, no existing repo precedent to match). Six new
+    regression tests added (`packages/ingest/test/csv-to-claims.test.ts`, "money precision &
+    magnitude guards" describe block) plus two tests locking in confirmed-safe edge cases (`-0`
+    normalizes to `"0.00"`; an explicit `0.00` total is intentionally accepted, matching `ingestBundle`'s
+    own null-only check — not a bug). **Verified end-to-end in the live app via chrome-devtools MCP**,
+    not just unit tests: a 5-row CSV with one clean claim, one clean denial, and three money-path
+    edge-case rows (3-decimal amount, an oversized digit string, an Arabic-Indic-digit amount)
+    produced exactly 2 claims created / 1 denial / SAR 120 at-risk / 3 correctly-reasoned quarantine
+    rows in the real `/ingest` page (RCM demo account), confirmed on both EN and AR routes.
+  - Verified: unit **861/861** green (up from 850 pre-extra-pass), root+web typecheck clean, lint
+    clean (0 errors), `apps/web` production build green.
 - **Next up:** `docs/04_agentic_retrofit_plan.md` §9 (PROMPT 1–3) is fully built — there is no
-  PROMPT 4, re-confirmed 2026-07-10. With A2/A3 now also built, the EXECUTE phase's buildable scope
-  is complete except the **B6 field-mapping panel** (independently pending, not gating anything) and
-  the **real-data headline**, which stays gated on BLK-1/2/9 as always; AI-4's production route is a
-  separate legal/ops track (BLK-AI-1/3/4). Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
-- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel pending · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ · AI-5 deferred)** → DEPLOY.
+  PROMPT 4, re-confirmed 2026-07-10. With A2/A3 and now B6 also built, the EXECUTE phase's buildable
+  scope is fully complete; only the **real-data headline** remains, gated on BLK-1/2/9 as always;
+  AI-4's production route is a separate legal/ops track (BLK-AI-1/3/4). Paste-ready:
+  `docs/NEXT_STEP_PROMPT.md`.
+- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
 
-**The buildable half of EXECUTE is DONE on synthetic data** (E2E/a11y/Lighthouse in CI, first-run corridor, free-audit + owner report, landing, real-data scaffolding B5–B8, typed DEPLOY swaps — only the B6 field-mapping panel remains). **The headline** (recovered-SAR on a real clinic) is human-gated — see `docs/blocker.md` (needs B1 design-partner data + B2 real codes + B9 SME sign-off).
+**The buildable half of EXECUTE is fully DONE on synthetic data** (E2E/a11y/Lighthouse in CI, first-run corridor, free-audit + owner report, landing, the B6 field-mapping panel, real-data scaffolding B5–B8, typed DEPLOY swaps). **The headline** (recovered-SAR on a real clinic) is human-gated — see `docs/blocker.md` (needs B1 design-partner data + B2 real codes + B9 SME sign-off).
 
 Soft caveats:
 

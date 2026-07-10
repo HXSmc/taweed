@@ -246,6 +246,44 @@ Click **Ingest**. (Only visible to rcm/finance/admin — that's why we're using 
 
 > **Where Scrubber (Step 4) and Appeals (Step 5) test data actually comes from:** both modules only show something once **claims exist** in the database. The seed (§1.5) already loads a full set for you, but if you ever land on an empty/thin Scrubber or Appeals — a fresh DB you didn't seed, or you just want more variety — **this Ingest step is how you add more claims**: click **Download sample file** then **Process** again (you can do this repeatedly; each run adds another batch of synthetic claims/denials on top of what's there, it does not wipe anything). The only way to reset to a completely clean, empty-then-fully-seeded state is re-running the seed script (§1.5), which is destructive and rebuilds from scratch. In short: **no seed run yet → empty Scrubber/Appeals is expected, not a bug — go to Ingest first.**
 
+### Step 3a — B6: CSV/TSV field-mapping panel
+
+Still on **Ingest**, same dropzone as Step 3 — but drop a `.csv` or `.tsv` file instead of the JSON
+sample bundle. (An `.xlsx` drop is also accepted by the dropzone but currently always fails with an
+explanatory error — a real XLSX parser is a documented later swap, not built yet.)
+
+- **What it does:** a remittance CSV/TSV doesn't carry FHIR-typed fields, so the app can't know which
+  column is which. It auto-detects a best-guess mapping (source column → canonical field, e.g. a
+  "Denied Amount" header maps to the `deniedAmount` field) with a confidence indicator, and always
+  requires an explicit human confirm before anything is written — never auto-proceeds even on a
+  high-confidence match.
+- **To test it:**
+  1. Make a small CSV with a header row and a few data rows — columns like `Claim ID, Payer Name,
+     SBS Code, Total Amount, Denied Amount, Denial Reason` map cleanly; try a deliberately odd header
+     name too, to see a low-confidence "No match" row.
+  2. Drop it on the dropzone (or use the file picker). A **"Map your columns"** panel replaces the
+     run ledger: one row per canonical field, showing the detected source column, a confidence badge
+     (High/Medium/Low/No match), and an override **dropdown** per row.
+  3. Correct any wrong/missing mapping via the dropdown (including explicitly clearing a field to
+     "— none —" — this is honored, not silently ignored).
+  4. Click **Confirm mapping**. The panel is replaced by the same run-ledger counters Step 3 uses
+     (claims created, denials detected, quarantined) — a CSV commit lands in the exact same
+     claims-creation path a JSON bundle does.
+  5. Click **Cancel** instead (on a fresh drop) to back out to the empty dropzone without committing
+     anything.
+- **Quarantine behavior (money-path — treat with extra care):** a row with a missing/invalid total
+  amount, an inconsistent denied-amount/denial-reason pair, an amount with more than 2 decimal places
+  (SAR's actual precision), an implausibly large amount, or an amount written in Arabic-Indic digits
+  (this app's digit law requires Western digits in money columns, both locales) is **quarantined with
+  a specific reason**, never silently dropped, corrupted, or mis-rounded. The quarantine table below
+  the counters lists each bad row's ref + reason, same as the JSON path.
+- **What to verify:** the mapping panel's heading receives focus on appearing (screen-reader users
+  aren't left behind on a silent page transition); after Confirm or Cancel, focus lands back on the
+  run-ledger heading; a live status region announces "N rows detected" and, after commit, the same
+  result summary the JSON path shows ("*N claims, M denials, at-risk SAR …*"); dropping a *second*,
+  different file while the mapping panel is still open resets the override selections (they don't
+  leak from the first file's mapping).
+
 ### Step 3b — AI-4: EOB/PDF Extraction (Review queue)
 
 Still on **Ingest**. Note the second tab at the top of the panel, next to the upload tab: **"Review queue"** (it shows a pending-count badge once something is waiting). This is AI-4 — the newest AI feature.
@@ -700,7 +738,7 @@ The ledger's own "Deploy-Ready DoD" checklist is a good living to-do list; sever
 1. Run the automated suites (§1.11) — see them green yourself.
 2. Do the full click-through (§1.8) with AI off, then on (§1.10), including AI-4's Review queue (§Step 3b).
 3. Read `docs/handoff.md`, `docs/ai-deploy-readiness.md`, and `docs/blocker.md` — they're the living project memory.
-4. AI-0 through AI-4 are all built on synthetic data, and the EXECUTE UI tail (A2 first-run corridor, A3 free-audit + owner report) is now built too — check `docs/NEXT_STEP_PROMPT.md` for the current pointer to whatever's next. Two concrete gaps worth closing before AI-4 sees real data: build the synthetic-EOB→PDF rasterizer so the eval harness can actually score the model (§2.9), and add an adjustment/withholding bucket to the extraction schema so a real remittance with a contractual write-off doesn't get stuck permanently un-approvable (§2.11). The real-data headline itself still waits on the external blockers (BLK-1/2/9) and, for AI-4 specifically, the production-route decision + counsel sign-off (BLK-AI-1/3/4).
+4. AI-0 through AI-4 are all built on synthetic data, and the EXECUTE phase's entire buildable pass — including the UI tail (A2 first-run corridor, A3 free-audit + owner report) and the B6 CSV/TSV field-mapping panel (§Step 3a) — is now built too, closing out the EXECUTE build plan entirely; check `docs/NEXT_STEP_PROMPT.md` for the current pointer to whatever's next. Two concrete gaps worth closing before AI-4 sees real data: build the synthetic-EOB→PDF rasterizer so the eval harness can actually score the model (§2.9), and add an adjustment/withholding bucket to the extraction schema so a real remittance with a contractual write-off doesn't get stuck permanently un-approvable (§2.11). The real-data headline itself still waits on the external blockers (BLK-1/2/9) and, for AI-4 specifically, the production-route decision + counsel sign-off (BLK-AI-1/3/4).
 
 ## 2.13 Beginner glossary
 

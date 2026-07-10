@@ -114,17 +114,28 @@ export function detectFieldMapping(headers: string[]): MappingSuggestion[] {
 }
 
 /**
- * Apply manual overrides ({ field: column }). An override forces confidence 1 and
- * removes that column from any other field, so a human correction is definitive.
+ * Apply manual overrides ({ field: column | null }). A string override forces
+ * confidence 1 and removes that column from any other field, so a human
+ * correction is definitive. An explicit `null` override forces the field to
+ * "no column" — distinct from the field being absent from `overrides`
+ * entirely, which means "keep the auto-detected suggestion". This distinction
+ * is what lets a reviewer deliberately clear a wrong auto-detected mapping:
+ * without it, a cleared field would silently fall back to the very
+ * auto-detected column the reviewer was trying to reject.
  */
 export function applyMappingOverrides(
   suggestions: MappingSuggestion[],
-  overrides: Partial<Record<CanonicalField, string>>,
+  overrides: Partial<Record<CanonicalField, string | null>>,
 ): MappingSuggestion[] {
-  const overriddenColumns = new Set(Object.values(overrides));
+  const overriddenColumns = new Set(
+    Object.values(overrides).filter((v): v is string => typeof v === "string"),
+  );
   return suggestions.map((s) => {
     const override = overrides[s.field];
     if (override !== undefined) {
+      if (override === null) {
+        return { field: s.field, sourceColumn: null, confidence: 0 };
+      }
       return { field: s.field, sourceColumn: override, confidence: 1 };
     }
     // Clear a field that pointed at a now-manually-claimed column.

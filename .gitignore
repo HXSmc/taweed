@@ -38,3 +38,5 @@ docs/screenshots/
 docs/minimap.md
 # temp: injected for live a11y audits, never commit
 apps/web/public/axe-core-audit.min.js
+# temp: chrome-devtools MCP manual-QA fixtures, never commit
+.scratch/

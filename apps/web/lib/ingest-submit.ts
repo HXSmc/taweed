@@ -8,6 +8,25 @@ export function isPdfFile(file: File): boolean {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
+// EXECUTE B6 — CSV/TSV/XLSX drops route to the field-mapping panel
+// (previewCsvMapping/commitCsvMapping) instead of the FHIR-bundle JSON path.
+// Extension first, MIME as a fallback signal — both are client-controlled and
+// only advisory; the server actions re-derive routing from the filename
+// extension independently (apps/web/lib/actions/ingest-csv.ts).
+const CSV_LIKE_EXTENSIONS = [".csv", ".tsv", ".xlsx"];
+const CSV_LIKE_MIME_TYPES = new Set([
+  "text/csv",
+  "text/tab-separated-values",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
+export function isCsvLikeFile(file: File): boolean {
+  const name = file.name.toLowerCase();
+  if (CSV_LIKE_EXTENSIONS.some((ext) => name.endsWith(ext))) return true;
+  return CSV_LIKE_MIME_TYPES.has(file.type);
+}
+
 export type UploadState =
   | { kind: "json"; result: IngestResult }
   | { kind: "pdf"; result: ExtractEobPdfResult };

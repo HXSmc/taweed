@@ -41,6 +41,15 @@ const mockedResolveUploadState = vi.fn();
 mockedResolveUploadState.mockResolvedValue(okState);
 vi.mock("@/lib/ingest-submit", () => ({
   resolveUploadState: (...args: unknown[]) => mockedResolveUploadState(...args),
+  isCsvLikeFile: (file: File) => /\.(csv|tsv|xlsx)$/i.test(file.name),
+}));
+// @/lib/csv-mapping-submit -> @/lib/actions/ingest-csv -> @/lib/authz pulls in
+// next-auth, which this environment cannot resolve in a plain vitest/jsdom
+// run (see ingest-panel-csv-mapping-a11y.test.tsx). Mock it at the module
+// boundary; this suite never exercises the CSV-mapping path.
+vi.mock("@/lib/csv-mapping-submit", () => ({
+  resolveCsvPreview: vi.fn(),
+  resolveCsvCommit: vi.fn(),
 }));
 vi.mock("@/components/money/count-up", () => ({
   CountUp: ({ value, className }: { value: number; className?: string }) => (

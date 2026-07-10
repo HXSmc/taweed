@@ -20,6 +20,12 @@ export {
   parseXlsx,
   type XlsxAdapter,
 } from "./xlsx.js";
+export {
+  csvRowsToClaims,
+  type CsvToClaimsContext,
+  type CsvToClaimsResult,
+  type QuarantineItem,
+} from "./csv-to-claims.js";
 export { ocrEob, type OcrAdapter } from "./pdf-ocr.js";
 export {
   extractEobFromPdf,

@@ -1,13 +1,13 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { asc } from "drizzle-orm";
 import { parseBundle, type ClaimPair } from "@taweed/fhir";
 import { normalize, type NormalizeContext } from "@taweed/normalizer";
-import { insertNormalizedClaim, schema } from "@taweed/db";
+import { insertNormalizedClaim } from "@taweed/db";
 import { logAudit } from "@taweed/audit";
 import { authorizeAction } from "@/lib/authz";
 import { withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
+import { resolveFirstDimensions } from "@/lib/tenant-dimensions";
 
 // Per-tenant+actor throttle for this action (common/security.md): each call does
 // an unbounded JSON.parse plus a per-claim DB insert loop, so without a ceiling
@@ -78,16 +78,12 @@ export async function ingestBundle(formData: FormData): Promise<IngestResult> {
   }
 
   // Resolve dimension ids for this tenant (RLS-scoped). Uploaded bundles map onto
-  // the tenant's existing branch/provider/payer/patient for this pass.
+  // the tenant's existing branch/provider/payer/patient for this pass. Shared
+  // with the CSV ingest path (apps/web/lib/actions/ingest-csv.ts) via
+  // resolveFirstDimensions so there is exactly one copy of this query.
   let dims;
   try {
-    dims = await withSession(session.tenantId, async (db) => {
-      const [branch] = await db.select().from(schema.branches).orderBy(asc(schema.branches.name)).limit(1);
-      const [provider] = await db.select().from(schema.providers).orderBy(asc(schema.providers.name)).limit(1);
-      const [payer] = await db.select().from(schema.payers).orderBy(asc(schema.payers.name)).limit(1);
-      const [patient] = await db.select().from(schema.patients).orderBy(asc(schema.patients.pseudonym)).limit(1);
-      return { branch, provider, payer, patient };
-    });
+    dims = await resolveFirstDimensions(session.tenantId);
   } catch {
     return { ...empty, fileName, error: "could not read tenant setup" };
   }

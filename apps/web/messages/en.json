@@ -139,7 +139,42 @@
     "pdfRateLimited": "Too many extractions submitted recently. Wait a moment and try again.",
     "pdfDisabled": "AI extraction is currently off for this tenant. Enter this remittance manually or ask an admin to enable it.",
     "pdfMisconfigured": "AI extraction is enabled but not configured yet. Enter this remittance manually for now.",
-    "pdfFailed": "That PDF could not be processed. Try again, or enter this remittance manually."
+    "pdfFailed": "That PDF could not be processed. Try again, or enter this remittance manually.",
+    "csvMapping": {
+      "title": "Map your columns",
+      "lead": "We matched your columns to the fields below. Review and correct any before importing — nothing is saved until you confirm.",
+      "rowsDetected": "{n} rows detected",
+      "columnSource": "Detected column",
+      "columnField": "Field",
+      "columnConfidence": "Confidence",
+      "columnOverride": "Override",
+      "noMatch": "No match",
+      "noneOption": "— none —",
+      "overrideLabel": "Column mapped to {field}",
+      "confirm": "Confirm mapping",
+      "cancel": "Cancel",
+      "notAuthorized": "You do not have permission to upload remittances.",
+      "rateLimited": "Too many uploads submitted recently. Wait a moment and try again.",
+      "emptyFile": "That file has no columns to map.",
+      "fileTooLarge": "That file is too large to import. Split it into smaller files and try again.",
+      "xlsxNotWired": "XLSX import is not enabled yet. Export the file as CSV or TSV and try again.",
+      "previewFailed": "That file could not be read. Check the file and try again.",
+      "fields": {
+        "claimId": "Claim ID",
+        "nphiesClaimId": "NPHIES claim ID",
+        "payerName": "Payer",
+        "branchName": "Branch",
+        "providerName": "Provider",
+        "patientRef": "Patient reference",
+        "sbsCode": "SBS code",
+        "icd10amCode": "ICD-10-AM code",
+        "serviceDate": "Service date",
+        "totalAmount": "Total amount",
+        "deniedAmount": "Denied amount",
+        "reasonCode": "Denial reason code",
+        "reasonText": "Denial reason text"
+      }
+    }
   },
   "reviewQueue": {
     "tabTitle": "Review queue",
