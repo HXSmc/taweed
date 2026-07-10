@@ -35,6 +35,12 @@
 > (6/6 confirmed findings fixed), plus a dedicated two-round money-path adversarial pass on the new
 > 5-bucket arithmetic validator (4 real gaps found and fixed — see the bullet in "Where the project
 > stands" below and its "⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED" callout).
+> **2026-07-10, still later the same day: doc-sync correction, no code change.** The Scrubber
+> `<tr role="button">` a11y item `docs/NEXT_STEP_PROMPT.md` pointed at as the last pickable item was
+> already fixed by the WCAG AA audit sweep (commit `516e72d`); `docs/review.md` §2.11 just never said
+> so. Corrected in place, reconfirmed via a passing `scrubber-table.test.tsx` (7/7). There is now no
+> self-contained buildable unit left at all — see the new bullet in "Where the project stands" and
+> `docs/NEXT_STEP_PROMPT.md`.
 
 ## Where the project stands
 
@@ -325,6 +331,19 @@
   route as a separate legal/ops track (BLK-AI-1/3/4 — closing the two gaps above makes AI-4
   real-data-*ready*, not real-data-*enabled*; the flag flip is still a separate, human-gated
   decision). Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
+- **Doc-sync correction (2026-07-10, later the same day): the Scrubber `<tr role="button">` a11y item
+  in `docs/review.md` §2.11 was stale — no code change needed.** `docs/NEXT_STEP_PROMPT.md` pointed at
+  it as the one remaining independently-pickable pick-up item, but the WCAG AA accessibility audit
+  sweep (commit `516e72d`, `docs/a11y.md` #21) had already fixed it as part of its 25-finding pass;
+  `docs/review.md` §2.11 was just never updated to say so. Verified this session: no `role="button"`
+  on any `<TR>` in `apps/web/components/modules/scrubber-table.tsx`, native row/cell semantics intact,
+  the row's sole interactive control is a nested labeled `<button>`, and
+  `apps/web/test/scrubber-table.test.tsx` reconfirms it (7/7 passing). A repo-wide grep sweep across
+  `docs/*.md` found one more stale mention (`docs/ai-deploy-readiness.md` line ~60) but that file is
+  an immutable per-iteration loop ledger — a historical record, not a live status doc — so it was
+  left alone. `docs/review.md` §2.11 corrected in place; `docs/NEXT_STEP_PROMPT.md` rewritten: **no
+  self-contained buildable unit remains at all now** — everything left is blocker-gated
+  (BLK-1/2/9, BLK-AI-1/3/4), same list as the "Independently pending" bullets above.
 - Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ + real-data-gaps closed ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
