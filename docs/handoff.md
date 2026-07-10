@@ -28,9 +28,9 @@
 > "Where the project stands" below, and the "⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED" callout
 > there for what shipped and why it got extra review.
 > **2026-07-10, still later the same day: the AI-4 real-data-gaps unit (synthetic-EOB→PDF rasterizer
-> + adjustment/withholding bucket) is BUILT** on branch `ai4-real-data-gaps` (in this dir), **NOT yet
-> merged/pushed** — awaiting the user's explicit go-ahead per this repo's standing push gate. Closes
-> both AI-4 real-data-*enablement* gaps `docs/NEXT_STEP_PROMPT.md` flagged after B6. Unit 902/902,
+> + adjustment/withholding bucket) is BUILT, MERGED, and PUSHED to `origin/main`** (merge `00c7dfe`,
+> `back-up` ritual completed, `ai4-real-data-gaps` deleted post-merge, CI green on the pushed tip).
+> Closes both AI-4 real-data-*enablement* gaps `docs/NEXT_STEP_PROMPT.md` flagged after B6. Unit 902/902,
 > integration 42/42, typecheck/lint/build all green; multi-lens review + adversarial verify run
 > (6/6 confirmed findings fixed), plus a dedicated two-round money-path adversarial pass on the new
 > 5-bucket arithmetic validator (4 real gaps found and fixed — see the bullet in "Where the project
@@ -239,8 +239,12 @@
   - Verified: unit **861/861** green (up from 850 pre-extra-pass), root+web typecheck clean, lint
     clean (0 errors), `apps/web` production build green.
 - **AI-4 real-data-gaps (synthetic-EOB rasterizer + adjustment bucket) — DONE, built 2026-07-10 on
-  branch `ai4-real-data-gaps` (in this dir), NOT yet merged/pushed** (commits `659f023`, `e9ece53`,
-  `89e0d3f`, `f5364ca`, `ce23df9`). Closes the two AI-4 real-data-*enablement* gaps
+  branch `ai4-real-data-gaps`, MERGED + PUSHED to `origin/main`** (commits `659f023`, `e9ece53`,
+  `89e0d3f`, `f5364ca`, `ce23df9`, merge `00c7dfe`, feature branch deleted post-merge, `back-up`
+  ritual completed — `back-up` re-pointed to the pre-merge tip `8aa8677` and force-pushed BEFORE
+  `main` was pushed, confirmed `back-up` is exactly one merge-edge behind `main` post-push; CI green
+  on the pushed tip — lint/typecheck/unit, integration, and E2E+a11y jobs all passed). Closes the two
+  AI-4 real-data-*enablement* gaps
   `docs/NEXT_STEP_PROMPT.md` called out after B6 — both buildable on synthetic fixtures, neither
   needs real partner data:
   - **Gap 1 — synthetic-EOB→PDF rasterizer.** `test/synthetic-eob/src/rasterize.ts`: Playwright
@@ -312,8 +316,8 @@
     landed), and two cases in `apps/web/test/eob-extraction-form.test.tsx`.
   - Verified: unit **902/902** green (up from 861 pre-this-unit), integration **42/42** green,
     root+web typecheck clean, lint clean (0 errors, 2 pre-existing unrelated warnings), `apps/web`
-    production build green. NOT YET merged to `main`, NOT pushed — awaiting the user's explicit
-    go-ahead per this repo's standing push gate.
+    production build green — re-verified again on the merged `main` tip before pushing. MERGED to
+    `main` and PUSHED to `origin/main`, with the user's explicit go-ahead (merge `00c7dfe`).
 - **Next up:** `docs/04_agentic_retrofit_plan.md` §9 (PROMPT 1–3) is fully built — there is no
   PROMPT 4, re-confirmed 2026-07-10. With A2/A3, B6, and now the AI-4 real-data-gaps unit also built,
   the EXECUTE phase's buildable scope AND AI-4's real-data-*enablement* gaps are fully complete;
@@ -410,7 +414,7 @@ IMPLEMENT:
 ## Git workflow & safety
 
 - **The app lives on `main` in this dir** (`~/Desktop/web apps/taweed`). IMPLEMENT was built in a worktree (`worktree-create-data-pipeline`, merged to `44e0e13` + deleted). The **EXECUTE buildable pass** was built on branch `execute-phase` and **merged to `main`**. **AI-4 (PROMPT 3)** was built in-place on branch `ai-phase-4` and has been **merged to local `main`** (merge commit `78b7801`, 2026-07-08). The 6-pass **audit sweep** (2026-07-08 through 2026-07-10) was committed directly on `main` in-place. **The EXECUTE UI tail (A2 + A3) was built on branch `execute-ui-tail`, merged into `main` (merge commit `bcb980c`) and PUSHED to `origin/main`, 2026-07-10** — `git branch -d execute-ui-tail` after the merge (fully merged, no data loss). **Correction to this file's own prior claim:** the "local `main` 12 commits ahead of `origin/main`, last pushed tip `9813fc6`" note carried since the audit sweep was **stale** — `git fetch` before this merge showed `origin/main` was already at `62d0beb` (0 ahead/0 behind local `main` at that point), so whatever pushed the audit-sweep commits did so without this file being updated to say so. Lesson: trust `git fetch` + `git rev-list --left-right --count origin/main...main` over a doc's claimed commit-ahead count before any push/merge decision.
-- **Backup-branch rule — `back-up` is the pre-advance `main` tip (restore point).** Before any push that advances `main`, snapshot the current (soon-to-be-previous) **pushed** `main` tip onto `back-up`. As of this writing (after the EXECUTE-UI-tail push), `back-up` = `62d0beb` (the pre-merge `main`/`origin/main` tip, confirmed via `git fetch` immediately before the merge) and `main`/`origin/main` = `bcb980c` (the merge commit carrying A2/A3). `back-up` is a direct git-graph ancestor of `main` (one merge-edge behind), matching the ritual's intent.
+- **Backup-branch rule — `back-up` is the pre-advance `main` tip (restore point).** Before any push that advances `main`, snapshot the current (soon-to-be-previous) **pushed** `main` tip onto `back-up`. As of this writing (after the AI-4 real-data-gaps push), `back-up` = `8aa8677` (the pre-merge `main`/`origin/main` tip, confirmed via `git fetch` immediately before the merge) and `main`/`origin/main` = `00c7dfe` (the merge commit carrying the rasterizer + adjustment bucket). `back-up` is a direct git-graph ancestor of `main` (one merge-edge behind, confirmed via `git log -1 <merge>^1`), matching the ritual's intent. CI (lint/typecheck/unit, integration, E2E+a11y) confirmed green on the pushed tip. (B6's own push, `ff2e438` into `bcb980c`'s successor `8aa8677`, also followed this ritual — this line just wasn't re-synced after it; noted here so the note doesn't go stale again.)
 
   ```bash
   git branch -f back-up main        # snapshot the current main tip (the 'old' commit)
