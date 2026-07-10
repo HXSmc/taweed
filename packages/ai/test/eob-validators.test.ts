@@ -292,7 +292,9 @@ describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment
 // state as passed:true, and validateEobExtractionArithmetic (the ONLY check
 // run for scanned PDFs with no text layer, and the same re-check
 // approveEobExtractionAction runs on a human-edited payload) had zero
-// text-layer-match findings to catch it. Fixed by nonNegativeAdjustmentFinding.
+// text-layer-match findings to catch it. Fixed by nonNegativeMoneyFinding
+// (originally nonNegativeAdjustmentFinding; generalized below — the
+// "non-negative-money" check name reflects that generalization).
 describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment non-negativity (money-path fix)", () => {
   it("fails a line whose negative adjustment sign-cancels an impossible paid>billed relationship", () => {
     // Exact scenario from the adversarial finding: billed=500, paid=700,
@@ -326,7 +328,7 @@ describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment
     // must never report passed:true for this payload.
     expect(report.passed).toBe(false);
     const failing = report.findings.filter((f) => !f.passed);
-    expect(failing.some((f) => f.check === "adjustment-non-negative")).toBe(true);
+    expect(failing.some((f) => f.check === "non-negative-money")).toBe(true);
   });
 
   it("fails when totalAdjustmentHalalas is negative at the claim level", () => {
@@ -337,7 +339,7 @@ describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment
     const failing = report.findings.filter((f) => !f.passed);
     expect(
       failing.some(
-        (f) => f.check === "adjustment-non-negative" && f.detail.includes(e.claims[0]!.claimId),
+        (f) => f.check === "non-negative-money" && f.detail.includes(e.claims[0]!.claimId),
       ),
     ).toBe(true);
   });
@@ -345,7 +347,114 @@ describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment
   it("passes a genuinely non-negative adjustment (no false positive)", () => {
     const report = validateEobExtractionArithmetic(clone(CLEAN_EXTRACTION));
     const failing = report.findings.filter(
-      (f) => !f.passed && f.check === "adjustment-non-negative",
+      (f) => !f.passed && f.check === "non-negative-money",
+    );
+    expect(failing.length).toBe(0);
+  });
+});
+
+// MONEY-PATH EXTRA-SCRUTINY REGRESSION — adversarial re-review findings
+// (eob-validators.ts): the non-negativity guard above, in its first form,
+// covered ONLY adjustmentHalalas. But billedHalalas, paidHalalas,
+// patientShareHalalas, and rejectedHalalas remained plain unsigned-unchecked
+// z.number() fields, so the IDENTICAL sign-cancellation exploit the guard
+// was written to close was still open via any of the other four buckets —
+// at the line, claim-total, and remittance-total levels. Fixed by
+// generalizing nonNegativeAdjustmentFinding into nonNegativeMoneyFinding /
+// lineNonNegativityFindings / claimNonNegativityFindings, applied to all
+// five line-level buckets, all four claim-level totals, and the
+// remittance-level total.
+describe("validateEobExtraction / validateEobExtractionArithmetic — non-adjustment bucket non-negativity (money-path fix, extra-scrutiny pass #2)", () => {
+  it("fails a line whose negative rejectedHalalas sign-cancels an impossible paid>billed relationship", () => {
+    // Exact scenario from the adversarial finding: billed=50000, paid=70000
+    // (paid > billed — physically impossible for a remittance),
+    // rejected=-20000 (a negative "rejection"), patientShare=0,
+    // adjustment=0. Every pure cross-total sum (70000-20000+0+0=50000)
+    // balances despite paid genuinely exceeding billed — before this fix
+    // this reported passed:true, since only adjustmentHalalas was guarded.
+    const e = clone(CLEAN_EXTRACTION);
+    e.claims[0]!.lines[0]!.billedHalalas = 50000;
+    e.claims[0]!.lines[0]!.paidHalalas = 70000;
+    e.claims[0]!.lines[0]!.rejectedHalalas = -20000;
+    e.claims[0]!.lines[0]!.patientShareHalalas = 0;
+    e.claims[0]!.lines[0]!.adjustmentHalalas = 0;
+    e.claims[0]!.lines = [e.claims[0]!.lines[0]!];
+    e.claims[0]!.totalBilledHalalas = 50000;
+    e.claims[0]!.totalPaidHalalas = 70000;
+    e.claims[0]!.totalRejectedHalalas = -20000;
+    e.claims[0]!.totalAdjustmentHalalas = 0;
+    e.remittanceTotalPaidHalalas = 70000;
+
+    const report = validateEobExtractionArithmetic(e);
+    // The line/claim/remittance cross-total checks still all pass — proving
+    // the masking actually works at the arithmetic layer via a bucket the
+    // first-pass fix did not guard.
+    const crossTotalChecks = report.findings.filter((f) =>
+      ["line-total", "claim-total", "remittance-total"].includes(f.check),
+    );
+    expect(crossTotalChecks.every((f) => f.passed)).toBe(true);
+    // But the generalized non-negativity guard now catches it.
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(
+      failing.some(
+        (f) => f.check === "non-negative-money" && f.detail.includes("rejectedHalalas"),
+      ),
+    ).toBe(true);
+  });
+
+  it.each([
+    "billedHalalas",
+    "paidHalalas",
+    "patientShareHalalas",
+    "rejectedHalalas",
+  ] as const)("fails when line-level %s is negative", (field) => {
+    const e = clone(CLEAN_EXTRACTION);
+    (e.claims[0]!.lines[0] as unknown as Record<string, number>)[field] = -1;
+    const report = validateEobExtractionArithmetic(e);
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(
+      failing.some((f) => f.check === "non-negative-money" && f.detail.includes(field)),
+    ).toBe(true);
+  });
+
+  it.each(["totalBilledHalalas", "totalPaidHalalas", "totalRejectedHalalas"] as const)(
+    "fails when claim-level %s is negative",
+    (field) => {
+      const e = clone(CLEAN_EXTRACTION);
+      (e.claims[0] as unknown as Record<string, number>)[field] = -1;
+      const report = validateEobExtractionArithmetic(e);
+      expect(report.passed).toBe(false);
+      const failing = report.findings.filter((f) => !f.passed);
+      expect(
+        failing.some(
+          (f) =>
+            f.check === "non-negative-money" &&
+            f.detail.includes(field) &&
+            f.detail.includes(e.claims[0]!.claimId),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it("fails when remittanceTotalPaidHalalas is negative", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    e.remittanceTotalPaidHalalas = -1;
+    const report = validateEobExtractionArithmetic(e);
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(
+      failing.some(
+        (f) => f.check === "non-negative-money" && f.detail.includes("remittanceTotalPaidHalalas"),
+      ),
+    ).toBe(true);
+  });
+
+  it("passes ordinary non-negative buckets across all fields (no false positive)", () => {
+    const report = validateEobExtractionArithmetic(clone(CLEAN_EXTRACTION));
+    const failing = report.findings.filter(
+      (f) => !f.passed && f.check === "non-negative-money",
     );
     expect(failing.length).toBe(0);
   });
