@@ -13,9 +13,10 @@
 > confirmed again 2026-07-10 — **there is no PROMPT 4 in that plan and none was added.** Next
 > product unit = the EXECUTE UI tail (**A2 first-run corridor, A3 free-audit + owner report**),
 > independently pending since before the AI phase started — see `docs/NEXT_STEP_PROMPT.md`. The
-> real-data headline (BLK-1/2/9) remains independently pending too. **A Claude API key was added
-> to `apps/web/.env.local` 2026-07-10 for manual testing — `TAWEED_AI_ENABLED` and all per-feature
-> AI flags remain OFF; the user wants to test manually before enabling anything.**
+> real-data headline (BLK-1/2/9) remains independently pending too. **A working Claude API key is
+> already filled in at `apps/web/.env.local` (`ANTHROPIC_API_KEY`, added 2026-07-10) and ready to
+> use — the key itself is not reproduced here since this file is committed to git. `TAWEED_AI_ENABLED`
+> and all per-feature AI flags remain OFF; the user wants to test manually before enabling anything.**
 
 ## Where the project stands
 
