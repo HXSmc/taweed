@@ -394,6 +394,21 @@ docker compose down
 - `docs/02_product_build_plan.md` §2/§7/§8 · `docs/03_design_brief.md` (UI system) · `ECC_GUIDE.md` (tooling, at repo root, local only).
 - `docs/superpowers/CREATE_review_followups.md` — **now CLOSED** in migration `0003` (auth-derived `tenant_id`, composite same-tenant FKs, money precision). Kept for history (local only).
 
+**Standing rules for `docs/NEXT_STEP_PROMPT.md` rewrites (committed here, since that file itself is
+gitignored and could in principle be regenerated from scratch without a prior copy to read from —
+this is the durable anchor):**
+1. **Docs sync on completion is mandatory, not optional, and not just `handoff.md`** — `handoff.md` +
+   `review.md` (if the unit changes anything §2.9–§2.12 describes) + rewriting
+   `docs/NEXT_STEP_PROMPT.md` itself for the step after + the Obsidian brain note, before commit →
+   merge → `back-up` ritual → push (push always gated on the user's explicit go-ahead).
+2. **The LAST LINE of the final report to the user** (after all workflows/agents finish, not buried
+   mid-summary) **must state whether `docs/NEXT_STEP_PROMPT.md` exists and whether it has a blocker
+   that fully prevents completion of its actual next buildable task** — distinct from adjacent
+   blocker-gated items that aren't that task.
+3. **Any UI-touching unit gets a chrome-devtools MCP live-verification pass**, not just unit/
+   component tests — drive the actual affected page(s), EN/AR + both themes where relevant — capped
+   at **3 open tabs at a time** (`list_pages`/`close_page`, close before opening the next).
+
 ## Key decisions locked (CREATE + IMPLEMENT)
 
 CREATE:
