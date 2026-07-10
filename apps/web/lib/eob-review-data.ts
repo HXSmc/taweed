@@ -32,8 +32,47 @@ export interface EobReviewRow {
   createdAt: string;
 }
 
+/**
+ * Backward-compat backfill for eob_extractions rows persisted before Gap 2
+ * added the adjustmentHalalas/totalAdjustmentHalalas bucket (code-review
+ * finding: schemas/eobExtraction.ts's adjustmentHalalas/totalAdjustmentHalalas
+ * are REQUIRED wire fields with no `.default()` — deliberately, since this
+ * same schema is also converted to the model-facing structured-output JSON
+ * schema by extractEob.ts, where a `.default()` would leak an optional field
+ * into the model's tool contract). Any row stored before this branch lacks
+ * both keys entirely and would otherwise fail EobExtractionSchema.safeParse
+ * below, surfacing as extraction:null — unopenable in the review queue,
+ * approvable only via reject. Backfilling to 0 here (DB-read path only) is
+ * exactly what those rows meant: no write-off bucket existed yet, so the
+ * true adjustment was always 0.
+ */
+export function backfillLegacyAdjustmentFields(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null) return raw;
+  const extraction = raw as Record<string, unknown>;
+  if (!Array.isArray(extraction.claims)) return raw;
+  return {
+    ...extraction,
+    claims: extraction.claims.map((claim) => {
+      if (typeof claim !== "object" || claim === null) return claim;
+      const c = claim as Record<string, unknown>;
+      const lines = Array.isArray(c.lines)
+        ? c.lines.map((line) =>
+            typeof line === "object" && line !== null && !("adjustmentHalalas" in line)
+              ? { ...line, adjustmentHalalas: 0 }
+              : line,
+          )
+        : c.lines;
+      return {
+        ...c,
+        lines,
+        ...("totalAdjustmentHalalas" in c ? {} : { totalAdjustmentHalalas: 0 }),
+      };
+    }),
+  };
+}
+
 function rowToReview(r: EobExtractionDbRow): EobReviewRow {
-  const parsed = EobExtractionSchema.safeParse(r.extraction);
+  const parsed = EobExtractionSchema.safeParse(backfillLegacyAdjustmentFields(r.extraction));
   return {
     id: r.id,
     sourceFilename: r.source_filename,

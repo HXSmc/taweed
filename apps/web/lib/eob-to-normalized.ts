@@ -46,6 +46,38 @@ function buildOneClaim(
 ): NormalizedClaim {
   const claimId = newId();
 
+  // DOCUMENTED NON-PERSISTENCE DECISION (code-review finding, Gap 2 follow-up):
+  // claim.totalAdjustmentHalalas / line.adjustmentHalalas (the contractual
+  // write-off bucket added so the arithmetic gate can pass for a remittance
+  // that legitimately carries one) are READ nowhere below. This mirrors the
+  // pre-existing treatment of patientShareHalalas, which @taweed/shared's
+  // ClaimRow/ClaimResponseRow/DenialRow have never had a column for either —
+  // this is not a new gap this pass introduces, it is the same gap the 5th
+  // bucket now also falls into.
+  //
+  // Why not just write it to `denials`: a write-off is not a denial — it is
+  // an agreed, non-appealable reduction, whereas every row inserted into
+  // `denials` is treated as appealable by getAppealables (apps/web/lib/
+  // appeals-data.ts joins ALL denial rows with no won appeal). Recording it
+  // there would surface a contractual adjustment as something a provider
+  // should appeal, which is a worse, actively wrong money-path bug — not a
+  // fix.
+  //
+  // Why outcome stays 'complete' when totalAdjustmentHalalas > 0 and nothing
+  // was rejected: a claim with an ordinary contractual adjustment (e.g.
+  // billed 100 / paid 90 / adjustment 10) IS a completed adjudication in
+  // FHIR ClaimResponse.outcome terms — reclassifying it as 'partial' would
+  // conflate every normal partial-payment remittance with the denial-rate
+  // math denialRateDim (lib/data.ts) computes from 'partial'/'error' rows,
+  // which is a strictly worse regression than the gap being fixed here.
+  //
+  // TODO(ai-route): persisting the write-off total requires a schema
+  // migration (a new nullable column, e.g. on claim_responses) plus an
+  // analytics decision for how it should surface in getMoneyScope/
+  // getAppealables — out of scope for this pass; tracked as a follow-up, not
+  // silently dropped (see eob-to-normalized.test.ts's adjustment-bucket
+  // coverage below, which pins today's behavior so a future persistence
+  // change is a deliberate, reviewed diff).
   const claimRow: ClaimRow = {
     id: claimId,
     tenant_id: ctx.tenantId,

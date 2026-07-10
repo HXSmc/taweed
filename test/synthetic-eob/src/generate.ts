@@ -177,14 +177,25 @@ function buildTextLayer(spec: EobScenarioSpec, extraction: EobExtraction): strin
 
 /**
  * Builds a minimal, valid, bilingual (EN+AR) RTL-aware HTML document
- * representing the same remittance. This is a placeholder seam for a future
- * rasterization step (HTML -> PDF/PNG for real vision-model evals) — that
- * rasterization is explicitly NOT built this session.
- * TODO(ai-route): rasterize this HTML to PDF/PNG once the AI-4 vision
- * extraction route needs real image fixtures instead of text ground truth.
+ * representing the same remittance. This is the source `rasterize.ts`
+ * (Playwright headless Chromium) renders to PDF/PNG for the live vision-model
+ * eval (packages/ai/evals/extractEob.eval.ts) — rasterization now ships in
+ * this codebase; this is no longer a placeholder seam for a future step.
  */
 function buildHtmlTemplate(spec: EobScenarioSpec, extraction: EobExtraction): string {
-  const sar = (halalas: number): string => (halalas / 100).toFixed(2);
+  // MONEY-PATH / EVAL-FIDELITY FIX (code-review finding): this used to render
+  // sar()/date output as plain Western ASCII digits regardless of
+  // `spec.digitSet`, while buildTextLayer (above) already honored it via
+  // formatDigits. The live vision eval (packages/ai/evals/extractEob.eval.ts)
+  // rasterizes THIS template to PDF (rasterize.ts) and feeds that PDF to
+  // extractEob() — it never feeds textLayer — so the arabicHeavy/
+  // mixedDigitSets scenarios were presenting only Western numerals to the
+  // model, silently defeating the digit-diversity property the corpus exists
+  // to stress. `slot` mirrors buildTextLayer's alternation counter so "mixed"
+  // still guarantees both scripts appear.
+  let slot = 0;
+  const fmt = (value: number | string): string => formatDigits(value, spec.digitSet, slot++);
+  const sar = (halalas: number): string => fmt((halalas / 100).toFixed(2));
   const rows = extraction.claims
     .flatMap((claim) =>
       claim.lines.map(
@@ -214,7 +225,7 @@ function buildHtmlTemplate(spec: EobScenarioSpec, extraction: EobExtraction): st
 <body>
   <h1>Remittance Advice / إشعار تسوية مطالبات</h1>
   <p>Payer / الدافع: ${extraction.payerName} (${extraction.payerNphiesId})</p>
-  <p>Remittance Date / تاريخ التسوية: ${extraction.remittanceDate}</p>
+  <p>Remittance Date / تاريخ التسوية: ${fmt(extraction.remittanceDate)}</p>
   <p>Total Paid / إجمالي المسدد: ${sar(extraction.remittanceTotalPaidHalalas)} SAR</p>
   <table>
     <thead>

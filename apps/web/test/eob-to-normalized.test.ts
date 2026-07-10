@@ -112,3 +112,57 @@ describe("buildNormalizedClaimsFromEob — denial-row explosion", () => {
     expect(normalized!.denials).toHaveLength(0);
   });
 });
+
+// AI-4 code-review finding: buildOneClaim/buildNormalizedClaimsFromEob were
+// not exercised by any test with a non-zero adjustmentHalalas before this
+// pass. This does not assert the write-off is persisted anywhere (it is
+// documented, not persisted — see eob-to-normalized.ts's comment above
+// buildOneClaim's claimRow for why: no `denials` row, because a write-off is
+// not an appealable denial, and no schema column exists for it yet). It pins
+// TODAY'S actual behavior so a future change to how the adjustment bucket is
+// handled is a deliberate, reviewed diff instead of an accidental one.
+describe("buildNormalizedClaimsFromEob — adjustment bucket (write-off) is not silently mis-recorded", () => {
+  it("a fully-written-off claim (paid=0, adjustment=billed, nothing rejected) persists total_amount as billed, adjudicated_amount as 0, and outcome 'complete' — no denial row is fabricated for the write-off", () => {
+    // Arrange: billed 100 SAR, paid 0, adjustment 100 (fully written off,
+    // no denial). Passes the arithmetic gate: 10_000 = 0 + 0 + 0 + 10_000.
+    const line = makeLine({
+      billedHalalas: 10_000,
+      paidHalalas: 0,
+      rejectedHalalas: 0,
+      adjustmentHalalas: 10_000,
+    });
+    const extraction = makeExtraction([makeClaim([line])]);
+
+    // Act
+    const [normalized] = buildNormalizedClaimsFromEob(extraction, CTX, toSar);
+
+    // Assert: today's documented behavior — the write-off is not written to
+    // any field, and it does not fabricate an appealable denial row.
+    expect(normalized!.claim.total_amount).toBe(toSar(10_000));
+    expect(normalized!.response.adjudicated_amount).toBe(toSar(0));
+    expect(normalized!.response.outcome).toBe("complete");
+    expect(normalized!.denials).toHaveLength(0);
+  });
+
+  it("a partial adjustment alongside real rejected money still produces exactly one denial row, for the rejected money only", () => {
+    // Arrange: billed 100, paid 60, adjustment 20, rejected 20.
+    const line = makeLine({
+      billedHalalas: 10_000,
+      paidHalalas: 6_000,
+      rejectedHalalas: 2_000,
+      adjustmentHalalas: 2_000,
+      denialCode: "TWD-D01",
+    });
+    const extraction = makeExtraction([makeClaim([line])]);
+
+    // Act
+    const [normalized] = buildNormalizedClaimsFromEob(extraction, CTX, toSar);
+
+    // Assert: only the genuinely rejected 20 SAR is recorded as a denial —
+    // the 20 SAR adjustment is not folded into it and not double-counted.
+    expect(normalized!.denials).toHaveLength(1);
+    expect(normalized!.denials[0]!.denied_amount).toBe(toSar(2_000));
+    expect(normalized!.response.adjudicated_amount).toBe(toSar(6_000));
+    expect(normalized!.response.outcome).toBe("partial");
+  });
+});

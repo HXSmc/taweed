@@ -195,6 +195,24 @@ describe("generateEobGroundTruth — per-scenario semantics", () => {
       expect(htmlTemplate).toMatch(/dir="(rtl|ltr)"/);
     }
   });
+
+  // Code-review finding: buildHtmlTemplate never applied spec.digitSet — its
+  // sar()/date output was always Western ASCII digits, even though the live
+  // vision eval (packages/ai/evals/extractEob.eval.ts) rasterizes THIS
+  // template to PDF and feeds that to extractEob(), never textLayer. So the
+  // arabicHeavy/mixedDigitSets scenarios presented only Western numerals to
+  // the model through the actual eval path, defeating the digit-diversity
+  // property the corpus exists to stress.
+  it("mixedDigitSets: htmlTemplate contains both Arabic-Indic and Western digits, not just textLayer", () => {
+    const { htmlTemplate } = generateEobGroundTruth("mixedDigitSets", SEED);
+    expect(/[٠-٩]/.test(htmlTemplate)).toBe(true);
+    expect(/[0-9]/.test(htmlTemplate)).toBe(true);
+  });
+
+  it("arabicHeavy: htmlTemplate carries Arabic-Indic digits (arabicIndic digitSet), not Western-only", () => {
+    const { htmlTemplate } = generateEobGroundTruth("arabicHeavy", SEED);
+    expect(/[٠-٩]/.test(htmlTemplate)).toBe(true);
+  });
 });
 
 describe("generateAllEob", () => {
