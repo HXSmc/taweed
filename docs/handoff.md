@@ -27,6 +27,14 @@
 > suite (861/861) + typecheck re-verified on the merged `main` tip before pushing. See the bullet in
 > "Where the project stands" below, and the "⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED" callout
 > there for what shipped and why it got extra review.
+> **2026-07-10, still later the same day: the AI-4 real-data-gaps unit (synthetic-EOB→PDF rasterizer
+> + adjustment/withholding bucket) is BUILT** on branch `ai4-real-data-gaps` (in this dir), **NOT yet
+> merged/pushed** — awaiting the user's explicit go-ahead per this repo's standing push gate. Closes
+> both AI-4 real-data-*enablement* gaps `docs/NEXT_STEP_PROMPT.md` flagged after B6. Unit 902/902,
+> integration 42/42, typecheck/lint/build all green; multi-lens review + adversarial verify run
+> (6/6 confirmed findings fixed), plus a dedicated two-round money-path adversarial pass on the new
+> 5-bucket arithmetic validator (4 real gaps found and fixed — see the bullet in "Where the project
+> stands" below and its "⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED" callout).
 
 ## Where the project stands
 
@@ -230,12 +238,90 @@
     rows in the real `/ingest` page (RCM demo account), confirmed on both EN and AR routes.
   - Verified: unit **861/861** green (up from 850 pre-extra-pass), root+web typecheck clean, lint
     clean (0 errors), `apps/web` production build green.
+- **AI-4 real-data-gaps (synthetic-EOB rasterizer + adjustment bucket) — DONE, built 2026-07-10 on
+  branch `ai4-real-data-gaps` (in this dir), NOT yet merged/pushed** (commits `659f023`, `e9ece53`,
+  `89e0d3f`, `f5364ca`, `ce23df9`). Closes the two AI-4 real-data-*enablement* gaps
+  `docs/NEXT_STEP_PROMPT.md` called out after B6 — both buildable on synthetic fixtures, neither
+  needs real partner data:
+  - **Gap 1 — synthetic-EOB→PDF rasterizer.** `test/synthetic-eob/src/rasterize.ts`: Playwright
+    headless Chromium (`page.pdf()`, `@playwright/test` — already a devDependency elsewhere in the
+    repo, so this is a new *importer edge*, not a new *package resolution*), rendering the existing
+    ground-truth HTML template to a real PDF. Wired into `packages/ai/evals/extractEob.eval.ts`'s
+    `PdfRenderer` seam, which previously always threw (`notWiredRenderer`) — the live eval harness
+    (`AI_EVALS_LIVE=1`) can now actually run end to end, though a real scored pass against the
+    Anthropic API hasn't been run yet (deliberately out of scope for this build). Proven with a
+    genuine Chromium launch, not just a green typecheck: decoded PDF byte length 49,633 (`clean`
+    scenario) / 52,117 (`arabicHeavy`, RTL), `%PDF-` magic bytes confirmed both times. Guarded to
+    skip cleanly (`describe.skipIf`) rather than fail-red in CI's "quality" job, which doesn't
+    install Playwright browsers (only the separate `e2e` job does) — probed once at module load.
+  - **Gap 2 — adjustment/withholding (5th money) bucket.** `adjustmentHalalas` /
+    `totalAdjustmentHalalas` threaded end to end: schema (`packages/ai/src/schemas/eobExtraction.ts`),
+    arithmetic validator (`packages/ai/src/eob-validators.ts`), reviewer-edit boundary + the
+    approve-revalidates-arithmetic invariant (`apps/web/lib/actions/eob-review.ts` — confirmed still
+    holding under the 5-bucket shape), the review-queue UI (`eob-extraction-form.tsx`), eval scoring
+    (`packages/ai/evals/scoring.ts`), and a new `contractualAdjustment` synthetic scenario so the
+    (now-live) eval harness actually exercises it. A real remittance with a contractual write-off is
+    no longer permanently stuck at "reject only" even when the extraction is accurate.
+    `apps/web/lib/eob-to-normalized.ts` was deliberately left untouched — no DB column exists for
+    the bucket and writing it into `denials` would wrongly mark a non-appealable write-off as
+    appealable; a documented `TODO(ai-route)` + two pinning tests in `eob-to-normalized.test.ts` lock
+    in today's behavior so a future persistence change is a deliberate diff, not a silent one.
+  - **Multi-lens review (typescript + security + healthcare + react) run on the full diff with
+    adversarial verification; all 6 confirmed findings fixed** (`f5364ca`): a legacy-row backfill
+    (`eob-review-data.ts`'s new `backfillLegacyAdjustmentFields`, so an `eob_extractions` row stored
+    before this branch — missing the now-required `adjustmentHalalas` field — doesn't fail
+    `EobExtractionSchema.safeParse` and go unopenable in the review queue); a real bug in
+    `test/synthetic-eob/src/generate.ts`'s `buildHtmlTemplate` that never applied `spec.digitSet`
+    (only `buildTextLayer` did) — meaning `arabicHeavy`/`mixedDigitSets` scenarios were rendering
+    Western-only numerals into the PDF the live vision eval actually reads (it rasterizes the HTML
+    template, never `textLayer`); a stale doc comment contradicting the now-shipped rasterizer; and a
+    documented non-persistence decision + pinning tests for `eob-to-normalized.ts` (see Gap 2 above).
+  - **⚠ MONEY-PATH CHANGES — EXTRA SCRUTINY REQUESTED.** Same `defer-money-path-comprehensive-docs`
+    instinct as B6: a dedicated adversarial pass ran on the 5-bucket arithmetic validator, beyond the
+    standard review, specifically hunting for ways the new bucket could be exploited. It found and
+    fixed four real gaps across two rounds (`89e0d3f` then, after a resumed workflow step
+    independently re-derived and *generalized* the first fix, `ce23df9`):
+    **(1)** `SAR_MONEY_REGEX` (`apps/web/lib/money.ts`) had no upper bound on integer-part digit
+    count, so a 16+ digit SAR string could lose precision through `Number(intPart)` and collide at
+    float64 (two genuinely different amounts converting to the identical halalas integer), silently
+    defeating the validator's `===` cross-total checks — contained today only by an unrelated
+    accident (Postgres `numeric(14,2)` rejects the insert before any bad row commits), not by design.
+    Fixed by bounding the regex to `^\d{1,12}(\.\d{1,2})?$`, matching `numeric(14,2)`'s actual
+    capacity, so the containment is now explicit at the boundary that accepts untrusted input.
+    **(2)** `adjustmentHalalas` had no non-negativity constraint, so a hallucinated negative value
+    (e.g. billed=500, paid=700, adjustment=-200) sign-cancelled an impossible paid > billed
+    relationship and every cross-total identity reported `passed:true` — including
+    `validateEobExtractionArithmetic`, the *only* check run for scanned PDFs with no text layer.
+    Fixed with a new `non-negative-money` validator finding. **(3), the round-2 generalization:** the
+    round-1 fix guarded only `adjustmentHalalas` — but the identical sign-cancellation exploit was
+    still open through any of the other four buckets (billed/paid/patientShare/rejected), none of
+    which can carry a `min:0` wire constraint either (same structured-output-stripping reason as
+    adjustment). Generalized to guard all five line-level buckets, all four claim-level totals, and
+    the remittance-level total. **(4)** The cross-total checks themselves had no magnitude bound
+    independent of adjustment — any halalas value near/above `2^53` could still float64-collide via
+    *any* bucket, with soundness resting entirely on the same accidental DB-column-width backstop as
+    (1). Fixed with a `money-magnitude-bound` finding capped at `numeric(14,2)`'s max representable
+    value (`999,999,999,999.99` SAR), so the validator's own "a passing report is trustworthy"
+    contract is now self-contained rather than borrowed from an unrelated caller. **(5)**
+    `halalasToSarDisplay` (`eob-extraction-form.tsx`) unconditionally `Math.max(0, ...)`-clamped every
+    SAR display field, so a real negative adjustment surfaced by (2) would render as an inexplicable
+    `"0.00"` and produce an undiagnosable "inconsistent" rejection on Approve; made sign-aware
+    (mirrors `@taweed/analytics`'s own `toSar`). New regression tests: `apps/web/test/money-sar-regex-
+    shared-source.test.ts`, several new `describe` blocks in `packages/ai/test/eob-validators.test.ts`
+    (positive + negative cases for every fix above, RED-verified via `git stash` before each fix
+    landed), and two cases in `apps/web/test/eob-extraction-form.test.tsx`.
+  - Verified: unit **902/902** green (up from 861 pre-this-unit), integration **42/42** green,
+    root+web typecheck clean, lint clean (0 errors, 2 pre-existing unrelated warnings), `apps/web`
+    production build green. NOT YET merged to `main`, NOT pushed — awaiting the user's explicit
+    go-ahead per this repo's standing push gate.
 - **Next up:** `docs/04_agentic_retrofit_plan.md` §9 (PROMPT 1–3) is fully built — there is no
-  PROMPT 4, re-confirmed 2026-07-10. With A2/A3 and now B6 also built, the EXECUTE phase's buildable
-  scope is fully complete; only the **real-data headline** remains, gated on BLK-1/2/9 as always;
-  AI-4's production route is a separate legal/ops track (BLK-AI-1/3/4). Paste-ready:
-  `docs/NEXT_STEP_PROMPT.md`.
-- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ · AI-5 deferred)** → DEPLOY.
+  PROMPT 4, re-confirmed 2026-07-10. With A2/A3, B6, and now the AI-4 real-data-gaps unit also built,
+  the EXECUTE phase's buildable scope AND AI-4's real-data-*enablement* gaps are fully complete;
+  only the **real-data headline** remains, gated on BLK-1/2/9 as always, plus AI-4's production
+  route as a separate legal/ops track (BLK-AI-1/3/4 — closing the two gaps above makes AI-4
+  real-data-*ready*, not real-data-*enabled*; the flag flip is still a separate, human-gated
+  decision). Paste-ready: `docs/NEXT_STEP_PROMPT.md`.
+- Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ + real-data-gaps closed ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
 
@@ -288,14 +374,14 @@ docker compose down
 - `packages/appeals` — **BUILT.** Deterministic **bilingual EN/AR** appeal letters, document checklist, human-in-the-loop, **never auto-submits**.
 - `packages/analytics` — **BUILT.** Rollups over canonical rows: denial rate, at-risk / recovered SAR, Pareto, trend. **EXECUTE:** `resolveRecovery` (recovered-exceeds-appealed guardrail, §8.5), `captureBaseline`/`getLatestBaseline` (onboarding baseline), `recoverability`/`recoverabilityByPayerReason` (recovered-outcome feedback loop, B7/B8).
 - `packages/ingest` — **BUILT (EXECUTE B6 + AI-4).** Real-data intake: `parseDelimited` (dependency-free RFC-4180 CSV/TSV), `detectFieldMapping`/`applyMappingOverrides` (column→field with confidence + override), `resolveDimension(s)` (per-tenant find-or-create from partner data). `parseXlsx` is a typed adapter stub (inject SheetJS at DEPLOY). **AI-4:** `pdf-text-layer.ts` (`extractPdfTextLayer` — born-digital PDF text extraction via `pdf-parse`/`pdfjs-dist`, self-polyfills `@napi-rs/canvas`'s DOMMatrix/ImageData/Path2D globals since pnpm's strict isolation breaks pdfjs-dist's own polyfill lookup), `eob-extraction-adapter.ts` (the `EobExtractionAdapter` seam + `extractEobFromPdf`, forwards `{hiRes, textLayer}` opts through to the concrete adapter).
-- `packages/ai` — **BUILT (AI-0 through AI-4).** The only package that talks to an LLM. `provider.ts` (`LlmProvider`/`LlmClient` narrow swap surface, now with a per-request `timeoutMs` override), `anthropic-1p.ts` (`@anthropic-ai/sdk` `messages.parse` + `zodOutputFormat`, 30s default timeout overridable per-call, extracted+tested response mapping, `INFERENCE_GEO="us"` pinned on every call), `fixture.ts` (record/replay for CI), `run.ts` (audited runner — 3-layer kill switch, short transactions around the network call, audit on every attempt incl. failures), `audit.ts` (`writeLlmCall` hashes-only + PHI-leak guard), `pseudonymize.ts` + `postprocess-ar.ts` (pure, 100% covered), `config.ts`/`errors.ts` (kill switches + `AiDisabledError`), `schemas/{flagExplanation,scrubRuleDraft,eobExtraction}.ts`, `features/{explainFlag,assistAppeal,authorRule,extractEob}.ts` (AI-1 through AI-4), `eob-validators.ts` (AI-4's deterministic cross-total/text-layer/enum gate), `adapters/claude-vision-ocr.ts` (AI-4's sonnet→opus escalation adapter). `evals/` (live smoke evals + AI-4's `extractEob.eval.ts` scaffold, `AI_EVALS_LIVE=1` only — the AI-4 one has never scored a real pass, see the AI-4 entry above). Exports feature fns + gates + pure helpers ONLY — never the provider client or the runner.
+- `packages/ai` — **BUILT (AI-0 through AI-4).** The only package that talks to an LLM. `provider.ts` (`LlmProvider`/`LlmClient` narrow swap surface, now with a per-request `timeoutMs` override), `anthropic-1p.ts` (`@anthropic-ai/sdk` `messages.parse` + `zodOutputFormat`, 30s default timeout overridable per-call, extracted+tested response mapping, `INFERENCE_GEO="us"` pinned on every call), `fixture.ts` (record/replay for CI), `run.ts` (audited runner — 3-layer kill switch, short transactions around the network call, audit on every attempt incl. failures), `audit.ts` (`writeLlmCall` hashes-only + PHI-leak guard), `pseudonymize.ts` + `postprocess-ar.ts` (pure, 100% covered), `config.ts`/`errors.ts` (kill switches + `AiDisabledError`), `schemas/{flagExplanation,scrubRuleDraft,eobExtraction}.ts`, `features/{explainFlag,assistAppeal,authorRule,extractEob}.ts` (AI-1 through AI-4), `eob-validators.ts` (AI-4's deterministic cross-total/text-layer/enum gate), `adapters/claude-vision-ocr.ts` (AI-4's sonnet→opus escalation adapter). `evals/` (live smoke evals + AI-4's `extractEob.eval.ts` scaffold, `AI_EVALS_LIVE=1` only — its `PdfRenderer` seam is now wired to a real Playwright rasterizer (`test/synthetic-eob/src/rasterize.ts`), see the AI-4 real-data-gaps entry above; a real scored pass against the Anthropic API still hasn't been run). `eob-validators.ts` now models 5 money buckets per line (billed/paid/patient-share/rejected/adjustment). Exports feature fns + gates + pure helpers ONLY — never the provider client or the runner.
 - `packages/platform` — **BUILT (EXECUTE C, typed swaps).** `ObjectStore` + `InMemoryObjectStore` (per-tenant keyed) + `S3ObjectStoreConfig` (`me-riyadh-1`, SSE); `TenantKms` + `DevPassthroughKms` (dev stub, NOT real crypto, cross-tenant decrypt refused); `ksaOidcConfigFromEnv` + `KsaOidcConfig` (BLK-7 swap, fails closed). Dev impls now; real KSA-region clients at DEPLOY.
 - `infra/` — **BUILT (EXECUTE C, skeleton).** Terraform pinned to Oracle Cloud Riyadh `me-riyadh-1` (Postgres + S3-compatible store + per-tenant KMS), resources commented until BLK-8 creds; NOT applied. `*.tfstate*`/`*.tfvars`/`*.pem`/`*.key` gitignored.
 - `apps/web` — **BUILT.** Next 15 App Router. Design tokens (`globals.css`) → Tailwind + hand-built shadcn/Radix primitives → EN/AR RTL (`next-intl`, logical properties, `dir` on `<html>`) → light/dark → Auth.js **dev credentials** (gated dev-only; `TODO(ksa-oidc)` swap = B7) → app-level RBAC (owner/finance/rcm/clinician/admin), **server-enforced** in server actions → three-zone shell + persistent dual money indicator with count-up. Five module surfaces: Ingest, Denial Analytics, Scrubber, Appeal Generator, Recovery.
   - Seams: `apps/web/lib/{db,auth,session,rbac,authz,audit,data,appeals-data}.ts`, `lib/actions/*` (server actions), `components/{ui,shell,charts,money,modules}`, `i18n/*`, `messages/{en,ar}.json`.
 - `test/synthetic-fhir` — deterministic R4 bundle generator (9 scenarios).
 - CI: `.github/workflows/ci.yml` (lint + typecheck + unit + integration w/ Postgres service + **`e2e` job** — Playwright + a11y against a seeded Postgres, EXECUTE A1).
-- `apps/web` **EXECUTE additions:** marketing landing at `/[locale]` for logged-out visitors (`components/marketing/landing.tsx`, A4); `playwright.config.ts` + `tests/e2e/*` (smoke/a11y/money-arc, A1); `lib/data.ts` uses `projectClaimFacts` + `selectRulesForClaim`; `lib/actions/recovery.ts` uses `resolveRecovery`; `lib/utils.ts` `cn()` teaches tailwind-merge the custom fontSize scale (app-wide hero-size fix). **AI-1 additions:** `lib/actions/explain-flag.ts` (server action → `@taweed/ai` `explainFlag`, re-derives prompt from `SCRUBBER_RULES`, RBAC-gated, catches `AiDisabledError` → deterministic); `components/modules/flag-explainer.tsx` (additive bilingual popover); `lib/data.ts` `ScrubRow` carries `ruleVersions`; `@taweed/ai` added to deps + `transpilePackages`; EN/AR scrubber i18n keys. **AI-2/AI-3 additions:** `components/modules/appeals-composer.tsx` (AI-2 "Suggest" panel), `components/modules/rule-authoring.tsx` + the authored-rule library (AI-3 Draft/Gate/Approve flow), Settings "Author" tab. **AI-4 additions:** `lib/actions/{eob-extract,eob-review}.ts` (upload entrypoint + approve/reject, approve re-validates arithmetic on edited values), `lib/eob-review-data.ts` + `lib/eob-to-normalized.ts`, `components/modules/eob-review-queue.tsx` + `components/modules/eob-review/{confidence-badge,eob-extraction-form}.tsx`, a second "Review queue" tab on the Ingest page; `next.config.mjs` gained `serverExternalPackages` + explicit webpack `externals` for `pdf-parse`/`pdfjs-dist`/`@napi-rs/canvas`'s native binary. `lib/chart-colors.ts` (new, 2026-07-08 design-audit fix — shared SVG-safe hex for Pareto/TrendLine, was duplicated in two files). **EXECUTE UI tail (A2/A3) additions, 2026-07-10:** `app/[locale]/(onboarding)/{layout,onboarding/page}.tsx` (chromeless first-run corridor route), `components/modules/onboarding-corridor.tsx`, `lib/onboarding.ts` (`isOnboarded`), `lib/actions/onboarding.ts` (`completeOnboarding`); `app/[locale]/(app)/analytics/audit-report/page.tsx` + `app/[locale]/(app)/recovery/owner-report/page.tsx`, `components/modules/{report-shell,audit-report-document,owner-report-document}.tsx`, `lib/report-data.ts` (`recoverableSplit`/`projectedRecoveryRange`/`aggregateTopPayers`), `lib/data.ts` gained `getAuditReportData`/`getOwnerReportData` + a shared `appealPipelineRows` helper (extracted from `getRecovery`); `components/modules/ingest-panel.tsx` gained an additive optional `onIngestSuccess` prop; `app/[locale]/(app)/layout.tsx` gained `print:hidden`/`print:` wrappers for the two new report pages. **Not yet built (independently pending): B6 field-mapping panel wired into the Ingest UI.**
+- `apps/web` **EXECUTE additions:** marketing landing at `/[locale]` for logged-out visitors (`components/marketing/landing.tsx`, A4); `playwright.config.ts` + `tests/e2e/*` (smoke/a11y/money-arc, A1); `lib/data.ts` uses `projectClaimFacts` + `selectRulesForClaim`; `lib/actions/recovery.ts` uses `resolveRecovery`; `lib/utils.ts` `cn()` teaches tailwind-merge the custom fontSize scale (app-wide hero-size fix). **AI-1 additions:** `lib/actions/explain-flag.ts` (server action → `@taweed/ai` `explainFlag`, re-derives prompt from `SCRUBBER_RULES`, RBAC-gated, catches `AiDisabledError` → deterministic); `components/modules/flag-explainer.tsx` (additive bilingual popover); `lib/data.ts` `ScrubRow` carries `ruleVersions`; `@taweed/ai` added to deps + `transpilePackages`; EN/AR scrubber i18n keys. **AI-2/AI-3 additions:** `components/modules/appeals-composer.tsx` (AI-2 "Suggest" panel), `components/modules/rule-authoring.tsx` + the authored-rule library (AI-3 Draft/Gate/Approve flow), Settings "Author" tab. **AI-4 additions:** `lib/actions/{eob-extract,eob-review}.ts` (upload entrypoint + approve/reject, approve re-validates arithmetic on edited values), `lib/eob-review-data.ts` + `lib/eob-to-normalized.ts`, `components/modules/eob-review-queue.tsx` + `components/modules/eob-review/{confidence-badge,eob-extraction-form}.tsx`, a second "Review queue" tab on the Ingest page; `next.config.mjs` gained `serverExternalPackages` + explicit webpack `externals` for `pdf-parse`/`pdfjs-dist`/`@napi-rs/canvas`'s native binary. `lib/chart-colors.ts` (new, 2026-07-08 design-audit fix — shared SVG-safe hex for Pareto/TrendLine, was duplicated in two files). **EXECUTE UI tail (A2/A3) additions, 2026-07-10:** `app/[locale]/(onboarding)/{layout,onboarding/page}.tsx` (chromeless first-run corridor route), `components/modules/onboarding-corridor.tsx`, `lib/onboarding.ts` (`isOnboarded`), `lib/actions/onboarding.ts` (`completeOnboarding`); `app/[locale]/(app)/analytics/audit-report/page.tsx` + `app/[locale]/(app)/recovery/owner-report/page.tsx`, `components/modules/{report-shell,audit-report-document,owner-report-document}.tsx`, `lib/report-data.ts` (`recoverableSplit`/`projectedRecoveryRange`/`aggregateTopPayers`), `lib/data.ts` gained `getAuditReportData`/`getOwnerReportData` + a shared `appealPipelineRows` helper (extracted from `getRecovery`); `components/modules/ingest-panel.tsx` gained an additive optional `onIngestSuccess` prop; `app/[locale]/(app)/layout.tsx` gained `print:hidden`/`print:` wrappers for the two new report pages. **AI-4 real-data-gaps additions, 2026-07-10:** `eob-review.ts`'s `EditedLine`/`EditedClaim` gained `adjustmentSar`/`totalAdjustmentSar`; `eob-extraction-form.tsx` gained the matching 5th `MoneyField` per line/claim (sign-aware `halalasToSarDisplay`, see the money-path callout above); `eob-review-data.ts` gained `backfillLegacyAdjustmentFields` (pre-Gap-2 `eob_extractions` rows backfill to `adjustmentHalalas: 0` on read); `apps/web/lib/money.ts`'s `SAR_MONEY_REGEX` gained a 12-digit integer-part bound (money-path fix).
 
 ## Must-read before building
 
