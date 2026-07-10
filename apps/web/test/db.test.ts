@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-// Regression coverage for the audit finding: listDemoAccounts() must never
-// run its unauthenticated, no-tenant-filter query outside genuine local dev.
-// `DEV_AUTH_ENABLED` (lib/auth.ts) is broader than NODE_ENV === "development"
-// — it also permits TAWEED_ENABLE_DEV_AUTH=1 in a deployed environment — so a
-// guard keyed only on that flag would still let /login enumerate every
-// tenant's user id/email/role/tenant name when that override is set. This
-// test pins the fail-closed NODE_ENV check in lib/db.ts itself.
+// Regression coverage: listDemoAccounts() must return accounts exactly when
+// DEV_AUTH_ENABLED (lib/dev-auth-flag.ts) is true, and an empty list
+// otherwise — never an independently hand-rolled, stricter check. A prior
+// version gated on `NODE_ENV === "development"` alone, which silently
+// diverged from DEV_AUTH_ENABLED's broader allow-list (NODE_ENV ===
+// "development" OR TAWEED_ENABLE_DEV_AUTH === "1") and broke CI's E2E job:
+// `next start` is a production build (NODE_ENV="production"), and CI sets
+// TAWEED_ENABLE_DEV_AUTH=1 specifically so the e2e webServer can sign in —
+// the old NODE_ENV-only guard returned an empty list there, so no demo
+// account buttons ever rendered and every E2E test that needed to sign in
+// timed out waiting for one. This suite pins all three real cases.
 
 const query = vi.fn();
 const release = vi.fn();
@@ -19,6 +23,7 @@ vi.mock("@taweed/db", () => ({
 
 describe("listDemoAccounts", () => {
   const originalNodeEnv = process.env.NODE_ENV;
+  const originalDevAuthOverride = process.env.TAWEED_ENABLE_DEV_AUTH;
 
   beforeEach(() => {
     vi.resetModules();
@@ -30,12 +35,13 @@ describe("listDemoAccounts", () => {
   afterEach(() => {
     // NODE_ENV is readonly under the ProcessEnv type; cast to assign it back.
     (process.env as Record<string, string | undefined>).NODE_ENV = originalNodeEnv;
+    process.env.TAWEED_ENABLE_DEV_AUTH = originalDevAuthOverride;
   });
 
-  it("returns an empty list without querying the DB outside genuine local dev", async () => {
-    // Arrange — the exact condition the finding warns about: dev auth reachable
-    // in a deployed environment (e.g. TAWEED_ENABLE_DEV_AUTH=1 in production).
+  it("returns an empty list without querying the DB when dev auth is fully disabled", async () => {
+    // Arrange — production, no override: DEV_AUTH_ENABLED is false.
     (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    delete process.env.TAWEED_ENABLE_DEV_AUTH;
     const { listDemoAccounts } = await import("../lib/db");
 
     // Act
@@ -47,9 +53,10 @@ describe("listDemoAccounts", () => {
     expect(query).not.toHaveBeenCalled();
   });
 
-  it("returns the mapped identity rows in genuine local dev", async () => {
+  it("returns the mapped identity rows in genuine local dev (NODE_ENV=development)", async () => {
     // Arrange
     (process.env as Record<string, string | undefined>).NODE_ENV = "development";
+    delete process.env.TAWEED_ENABLE_DEV_AUTH;
     query.mockResolvedValue({
       rows: [
         {
@@ -76,6 +83,44 @@ describe("listDemoAccounts", () => {
         role: "owner",
         locale: "en",
         email: "owner@demo.test",
+      },
+    ]);
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns accounts in a production build with TAWEED_ENABLE_DEV_AUTH=1 (the CI e2e scenario)", async () => {
+    // Arrange — exactly CI's e2e job: `next start` forces NODE_ENV=production,
+    // and the workflow sets TAWEED_ENABLE_DEV_AUTH=1 so the webServer can sign
+    // in as a demo account. This is the case the prior NODE_ENV-only guard
+    // silently broke.
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    process.env.TAWEED_ENABLE_DEV_AUTH = "1";
+    query.mockResolvedValue({
+      rows: [
+        {
+          id: "user-2",
+          tenant_id: "tenant-2",
+          tenant_name: "Al Salama Dental Group",
+          role: "owner",
+          locale: "en",
+          email: "owner@al-salama-dental-gro.dev",
+        },
+      ],
+    });
+    const { listDemoAccounts } = await import("../lib/db");
+
+    // Act
+    const accounts = await listDemoAccounts();
+
+    // Assert
+    expect(accounts).toEqual([
+      {
+        id: "user-2",
+        tenantId: "tenant-2",
+        tenantName: "Al Salama Dental Group",
+        role: "owner",
+        locale: "en",
+        email: "owner@al-salama-dental-gro.dev",
       },
     ]);
     expect(release).toHaveBeenCalledTimes(1);

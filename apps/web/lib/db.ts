@@ -5,6 +5,7 @@ import {
   type Database,
   type Pool,
 } from "@taweed/db";
+import { DEV_AUTH_ENABLED } from "./dev-auth-flag";
 
 /**
  * Data-access seam for the app. Two connections, mirroring production:
@@ -91,17 +92,24 @@ export async function findUserByEmail(email: string): Promise<IdentityUser | nul
 /**
  * Demo accounts for the dev sign-in screen (identity store, no PHI).
  *
- * SECURITY: fails closed to an empty list outside genuine local dev
- * (`NODE_ENV === "development"`, i.e. `next dev`). `DEV_AUTH_ENABLED`
- * (lib/auth.ts) is broader — it also allows `TAWEED_ENABLE_DEV_AUTH=1` in a
- * deployed/production environment — so gating only on that flag would still
- * let an unauthenticated /login visitor enumerate every tenant's user id,
- * email, role, and tenant name whenever that override is set. Checking
- * NODE_ENV here, independent of the caller, keeps that cross-tenant dump from
- * ever reaching a deployed environment.
+ * SECURITY: gated on the exact same `DEV_AUTH_ENABLED` allow-list
+ * (./dev-auth-flag) that gates the passwordless dev-credentials provider
+ * itself (lib/auth.ts) — not an independently hand-rolled, stricter
+ * `NODE_ENV === "development"` check. A prior version of this guard checked
+ * NODE_ENV alone, reasoning that TAWEED_ENABLE_DEV_AUTH=1 on a real
+ * deployment would let this list leak the tenant roster; in practice that
+ * reasoning was backwards; if that flag is ever wrongly set on a real
+ * deployment, passwordless sign-in is ALREADY exposed regardless of whether
+ * this list renders (a strictly worse outcome than enumeration), so gating
+ * this list more strictly than the credential provider itself added no real
+ * defense-in-depth — it only broke the CI/E2E environment that flag exists
+ * to serve (`next start`, a production build, so `NODE_ENV` is
+ * `"production"`; CI sets `TAWEED_ENABLE_DEV_AUTH=1` specifically so the
+ * e2e webServer can sign in as a demo account — the account list must
+ * render there for that to work).
  */
 export async function listDemoAccounts(): Promise<IdentityUser[]> {
-  if (process.env.NODE_ENV !== "development") return [];
+  if (!DEV_AUTH_ENABLED) return [];
   const client = await adminPool().connect();
   try {
     const res = await client.query(

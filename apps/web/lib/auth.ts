@@ -1,8 +1,11 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { findUserByEmail } from "./db";
+import { DEV_AUTH_ENABLED } from "./dev-auth-flag";
 import { DEV_INSECURE_AUTH_SECRET } from "./dev-auth-secret";
 import { allowRequest } from "./rate-limit";
+
+export { DEV_AUTH_ENABLED };
 
 /**
  * Local/dev auth (build-plan §4). A Credentials provider stands in for a real
@@ -22,9 +25,12 @@ import { allowRequest } from "./rate-limit";
  * TODO(ksa-oidc)/DEPLOY: swap Credentials for a KSA-resident managed OIDC
  * provider. The provider is the only thing that changes — callbacks, the session
  * shape, and every withSession call stay identical (typed swap).
+ *
+ * DEV_AUTH_ENABLED itself is defined in ./dev-auth-flag (re-exported here for
+ * existing call sites) so lib/db.ts's listDemoAccounts() can share the exact
+ * same allow-list without a circular import (this file already imports
+ * findUserByEmail from ./db).
  */
-const IS_DEV_ENV = process.env.NODE_ENV === "development";
-export const DEV_AUTH_ENABLED = IS_DEV_ENV || process.env.TAWEED_ENABLE_DEV_AUTH === "1";
 
 // The 'dev' provider authenticates by email alone (no password), so without a
 // throttle a misconfigured deploy would let an attacker iterate arbitrary/
