@@ -221,6 +221,43 @@ describe("EobExtractionForm — Review tab heading order", () => {
   });
 });
 
+// MONEY-PATH EXTRA-SCRUTINY REGRESSION — adversarial finding
+// (eob-extraction-form.tsx): halalasToSarDisplay used to
+// `Math.max(0, ...)`-clamp any negative halalas to "0.00" for ALL nine SAR
+// fields it renders, including adjustmentSar — which, unlike the other four
+// buckets, can legitimately be extracted as negative by a hallucinating
+// model (see eob-validators.ts's nonNegativeAdjustmentFinding, added in this
+// same fix pass). Clamping silently discarded the real extracted value from
+// the reviewer's view instead of surfacing the anomaly this review surface
+// exists to catch. Fixed by making the display conversion sign-aware,
+// mirroring @taweed/analytics's own toSar.
+describe("EobExtractionForm — negative adjustment display (money-path fix)", () => {
+  it("shows the true negative adjustment amount instead of silently clamping it to 0.00", () => {
+    const extraction = makeExtraction("Original Payer");
+    // -200.00 SAR — a hallucinated negative write-off, per the eob-validators
+    // adversarial finding this same fix pass addresses.
+    extraction.claims[0].lines[0].adjustmentHalalas = -20000;
+    renderForm(extraction);
+
+    const adjustmentInput = screen.getByLabelText(
+      enMessages.reviewQueue.adjustment,
+    ) as HTMLInputElement;
+    expect(adjustmentInput.value).toBe("-200.00");
+    expect(adjustmentInput.value).not.toBe("0.00");
+  });
+
+  it("still displays ordinary non-negative amounts unchanged", () => {
+    const extraction = makeExtraction("Original Payer");
+    extraction.claims[0].totalAdjustmentHalalas = 12345;
+    renderForm(extraction);
+
+    const totalAdjustmentInput = screen.getByLabelText(
+      enMessages.reviewQueue.totalAdjustment,
+    ) as HTMLInputElement;
+    expect(totalAdjustmentInput.value).toBe("123.45");
+  });
+});
+
 describe("EobExtractionForm — reseed on rerender", () => {
   it("keeps an in-progress edit when the same row's extraction object is a fresh reference (no key change)", () => {
     // Arrange: mount with extraction A, then edit the payer name field.

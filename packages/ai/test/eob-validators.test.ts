@@ -286,6 +286,148 @@ describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment
   });
 });
 
+// MONEY-PATH EXTRA-SCRUTINY REGRESSION — adversarial finding (eob-validators.ts):
+// the cross-total checks are pure sign-blind linear identities, so a
+// hallucinated NEGATIVE adjustmentHalalas can mask an impossible paid>billed
+// state as passed:true, and validateEobExtractionArithmetic (the ONLY check
+// run for scanned PDFs with no text layer, and the same re-check
+// approveEobExtractionAction runs on a human-edited payload) had zero
+// text-layer-match findings to catch it. Fixed by nonNegativeAdjustmentFinding.
+describe("validateEobExtraction / validateEobExtractionArithmetic — adjustment non-negativity (money-path fix)", () => {
+  it("fails a line whose negative adjustment sign-cancels an impossible paid>billed relationship", () => {
+    // Exact scenario from the adversarial finding: billed=500, paid=700,
+    // rejected=0, patientShare=0, adjustment=-200. Every pure cross-total sum
+    // (700+0+0-200=500) balances despite paid genuinely exceeding billed —
+    // before the fix this reported passed:true.
+    const e = clone(CLEAN_EXTRACTION);
+    e.claims[0]!.lines[0]!.billedHalalas = 50000;
+    e.claims[0]!.lines[0]!.paidHalalas = 70000;
+    e.claims[0]!.lines[0]!.rejectedHalalas = 0;
+    e.claims[0]!.lines[0]!.patientShareHalalas = 0;
+    e.claims[0]!.lines[0]!.adjustmentHalalas = -20000;
+    // Keep the OTHER two lines and the claim/remittance totals consistent
+    // with this single line's new values so only the adjustment sign is
+    // under test, not an unrelated cross-total mismatch.
+    e.claims[0]!.lines = [e.claims[0]!.lines[0]!];
+    e.claims[0]!.totalBilledHalalas = 50000;
+    e.claims[0]!.totalPaidHalalas = 70000;
+    e.claims[0]!.totalRejectedHalalas = 0;
+    e.claims[0]!.totalAdjustmentHalalas = -20000;
+    e.remittanceTotalPaidHalalas = 70000;
+
+    const report = validateEobExtractionArithmetic(e);
+    // The line/claim/remittance cross-total checks still all pass — proving
+    // the masking actually works at the arithmetic layer.
+    const crossTotalChecks = report.findings.filter((f) =>
+      ["line-total", "claim-total", "remittance-total"].includes(f.check),
+    );
+    expect(crossTotalChecks.every((f) => f.passed)).toBe(true);
+    // But the new non-negativity guard catches it, so the overall report
+    // must never report passed:true for this payload.
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(failing.some((f) => f.check === "adjustment-non-negative")).toBe(true);
+  });
+
+  it("fails when totalAdjustmentHalalas is negative at the claim level", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    e.claims[0]!.totalAdjustmentHalalas = -1;
+    const report = validateEobExtractionArithmetic(e);
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(
+      failing.some(
+        (f) => f.check === "adjustment-non-negative" && f.detail.includes(e.claims[0]!.claimId),
+      ),
+    ).toBe(true);
+  });
+
+  it("passes a genuinely non-negative adjustment (no false positive)", () => {
+    const report = validateEobExtractionArithmetic(clone(CLEAN_EXTRACTION));
+    const failing = report.findings.filter(
+      (f) => !f.passed && f.check === "adjustment-non-negative",
+    );
+    expect(failing.length).toBe(0);
+  });
+});
+
+// MONEY-PATH EXTRA-SCRUTINY REGRESSION — adversarial finding (eob-validators.ts):
+// the `===` cross-total checks compare raw float64 halalas with no magnitude
+// bound anywhere in the money path, so two genuinely different SAR amounts
+// can collide once they exceed 2^53 halalas and still report passed:true.
+// Fixed by withinMagnitudeFinding / MAX_HALALAS_MAGNITUDE.
+describe("validateEobExtractionArithmetic — money-magnitude bound (money-path fix)", () => {
+  it("fails when a claim total exceeds the numeric(14,2) precision-safe range and float64-collides with its own line sum", () => {
+    // paidSar "90071992547409920.00" and totalPaidSar
+    // "90071992547409921.00" (genuinely 1 SAR apart) both convert to the
+    // SAME float64 halalas value once they exceed 2^53 — reproduced directly
+    // in halalas here since this module operates on the wire (halalas)
+    // shape, same magnitude the adversarial finding demonstrated via
+    // moneyToHalalas.
+    const collidedHalalas = 9_007_199_254_740_992_000; // beyond 2^53
+    const e = clone(CLEAN_EXTRACTION);
+    e.claims[0]!.lines = [
+      {
+        ...e.claims[0]!.lines[0]!,
+        billedHalalas: collidedHalalas,
+        paidHalalas: collidedHalalas,
+        rejectedHalalas: 0,
+        patientShareHalalas: 0,
+        adjustmentHalalas: 0,
+      },
+    ];
+    e.claims[0]!.totalBilledHalalas = collidedHalalas;
+    e.claims[0]!.totalPaidHalalas = collidedHalalas;
+    e.claims[0]!.totalRejectedHalalas = 0;
+    e.claims[0]!.totalAdjustmentHalalas = 0;
+    e.remittanceTotalPaidHalalas = collidedHalalas;
+
+    const report = validateEobExtractionArithmetic(e);
+    // Confirms the collision is real: the cross-total identity itself
+    // reports passed:true at this magnitude.
+    const claimTotalChecks = report.findings.filter((f) => f.check === "claim-total");
+    expect(claimTotalChecks.every((f) => f.passed)).toBe(true);
+    // The new magnitude guard must still flag the overall report as failing.
+    expect(report.passed).toBe(false);
+    const failing = report.findings.filter((f) => !f.passed);
+    expect(failing.some((f) => f.check === "money-magnitude-bound")).toBe(true);
+  });
+
+  it("does not flag a value at the exact numeric(14,2) capacity (no false positive at the boundary)", () => {
+    const e = clone(CLEAN_EXTRACTION);
+    const atCapacity = 99_999_999_999_999; // 999999999999.99 SAR
+    e.claims[0]!.lines = [
+      {
+        ...e.claims[0]!.lines[0]!,
+        billedHalalas: atCapacity,
+        paidHalalas: atCapacity,
+        rejectedHalalas: 0,
+        patientShareHalalas: 0,
+        adjustmentHalalas: 0,
+      },
+    ];
+    e.claims[0]!.totalBilledHalalas = atCapacity;
+    e.claims[0]!.totalPaidHalalas = atCapacity;
+    e.claims[0]!.totalRejectedHalalas = 0;
+    e.claims[0]!.totalAdjustmentHalalas = 0;
+    e.remittanceTotalPaidHalalas = atCapacity;
+
+    const report = validateEobExtractionArithmetic(e);
+    const failing = report.findings.filter(
+      (f) => !f.passed && f.check === "money-magnitude-bound",
+    );
+    expect(failing.length).toBe(0);
+  });
+
+  it("passes ordinary small amounts (no false positive)", () => {
+    const report = validateEobExtractionArithmetic(clone(CLEAN_EXTRACTION));
+    const failing = report.findings.filter(
+      (f) => !f.passed && f.check === "money-magnitude-bound",
+    );
+    expect(failing.length).toBe(0);
+  });
+});
+
 describe("validateEobExtraction — denial-code validity (defense in depth)", () => {
   it("passes when every non-null denialCode is a real registry code", () => {
     const report = validateEobExtraction(clone(CLEAN_EXTRACTION), CLEAN_TEXT_LAYER);

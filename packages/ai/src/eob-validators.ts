@@ -203,6 +203,95 @@ function claimTextFindings(textLayer: string, claim: EobClaim): ValidatorFinding
   return [...claimFindings, ...lineFindings];
 }
 
+// --- adjustment non-negativity (defense in depth against sign-blind masking) -
+
+// MONEY-PATH FIX (adversarial-review finding, extra-scrutiny pass): the
+// cross-total checks above (lineTotalFinding/claimTotalFindings) are pure
+// linear sums — they are blind to sign. adjustmentHalalas is the newest of
+// the five buckets (Gap 2 / AI-4) and, unlike the wire schema's other number
+// fields, cannot be given a min:0 constraint at the model-call boundary
+// (structured-output schemas strip .min()/.max() client-side — see
+// schemas/eobExtraction.ts's header comment). Without a runtime guard, a
+// hallucinated NEGATIVE adjustment can sign-cancel an otherwise-impossible
+// paid>billed relationship and still satisfy every `===` cross-total
+// identity — e.g. billed=500, paid=700, rejected=0, patientShare=0,
+// adjustment=-200 sums back to exactly 500. adjustmentHalalas is documented
+// as a contractual write-off/withholding: an amount that can only ever
+// reduce what's owed, never increase it, so it is non-negative by
+// definition. This check runs unconditionally in validateEobExtraction (not
+// gated behind a text layer), so it also covers
+// validateEobExtractionArithmetic — the ONLY check run for scanned PDFs with
+// no text layer, and the same re-check approveEobExtractionAction runs on a
+// human-edited payload.
+function nonNegativeAdjustmentFinding(path: string, adjustmentHalalas: number): ValidatorFinding {
+  const ok = adjustmentHalalas >= 0;
+  return {
+    check: "adjustment-non-negative",
+    passed: ok,
+    detail: ok
+      ? `${path}.adjustmentHalalas ${adjustmentHalalas} is non-negative`
+      : `${path}.adjustmentHalalas ${adjustmentHalalas} is negative — a write-off/withholding can never reduce the amount owed below zero; a negative value here can sign-cancel an otherwise-impossible paid>billed relationship in the cross-total checks`,
+  };
+}
+
+// --- money-magnitude bound (float64-precision safety) -------------------------
+
+// MONEY-PATH FIX (adversarial-review finding, extra-scrutiny pass): every
+// cross-total check above (lineTotalFinding/claimTotalFindings/
+// remittanceTotalFinding) compares raw JS-double halalas with `===`. No
+// schema in the money path bounds a money field's magnitude, so two
+// genuinely different decimal SAR amounts can round to the identical float64
+// once they exceed 2^53 halalas (~9.007e15, Number.MAX_SAFE_INTEGER),
+// producing `passed:true` for a claim whose declared total actually
+// disagrees with its own line totals. Today the only thing preventing this
+// from being exploitable is an accident of the one current DB-writing
+// caller's column width (numeric(14,2) in packages/db/src/schema.ts) — a
+// value large enough to collide would fail to insert before commit. That
+// containment is invisible to this module and would silently disappear for
+// any other caller (a reconciliation/reporting tool, a future column
+// widening, or any consumer that trusts `report.passed` without an
+// independent precision backstop — e.g. claude-vision-ocr.ts's
+// deriveConfidence already trusts `report.passed` outright). Bounding
+// magnitude HERE makes the guarantee `report.passed === true` actually
+// implies "arithmetically correct" self-contained, not borrowed from an
+// unrelated caller. The cap matches numeric(14,2)'s own exact capacity
+// (999999999999.99 SAR = 99_999_999_999_999 halalas), comfortably under
+// 2^53, so no legitimate value is ever rejected by this check.
+const MAX_HALALAS_MAGNITUDE = 99_999_999_999_999;
+
+function withinMagnitudeFinding(path: string, field: string, value: number): ValidatorFinding {
+  const ok = Number.isFinite(value) && Math.abs(value) <= MAX_HALALAS_MAGNITUDE;
+  return {
+    check: "money-magnitude-bound",
+    passed: ok,
+    detail: ok
+      ? `${path}.${field} ${value} is within the numeric(14,2) precision-safe range`
+      : `${path}.${field} ${value} exceeds the numeric(14,2) precision-safe range (±${MAX_HALALAS_MAGNITUDE}) — beyond this magnitude, float64 halalas can silently collide and defeat the === cross-total checks`,
+  };
+}
+
+function lineMagnitudeFindings(claimId: string, line: EobLine): ValidatorFinding[] {
+  const path = `${claimId}/${line.claimLineRef}`;
+  const fields: Array<[string, number]> = [
+    ["billedHalalas", line.billedHalalas],
+    ["paidHalalas", line.paidHalalas],
+    ["patientShareHalalas", line.patientShareHalalas],
+    ["rejectedHalalas", line.rejectedHalalas],
+    ["adjustmentHalalas", line.adjustmentHalalas],
+  ];
+  return fields.map(([field, value]) => withinMagnitudeFinding(path, field, value));
+}
+
+function claimMagnitudeFindings(claim: EobClaim): ValidatorFinding[] {
+  const fields: Array<[string, number]> = [
+    ["totalBilledHalalas", claim.totalBilledHalalas],
+    ["totalPaidHalalas", claim.totalPaidHalalas],
+    ["totalRejectedHalalas", claim.totalRejectedHalalas],
+    ["totalAdjustmentHalalas", claim.totalAdjustmentHalalas],
+  ];
+  return fields.map(([field, value]) => withinMagnitudeFinding(claim.claimId, field, value));
+}
+
 // --- denial-code validity (defense in depth) ---------------------------------
 
 // Validated again here (not just trusted from the schema) because this
@@ -269,6 +358,33 @@ export function validateEobExtraction(
       findings.push(denialCodeFinding(claim.claimId, line));
     }
   }
+
+  // Adjustment non-negativity (defense in depth — see comment above).
+  for (const claim of extraction.claims) {
+    for (const line of claim.lines) {
+      findings.push(
+        nonNegativeAdjustmentFinding(`${claim.claimId}/${line.claimLineRef}`, line.adjustmentHalalas),
+      );
+    }
+    findings.push(nonNegativeAdjustmentFinding(claim.claimId, claim.totalAdjustmentHalalas));
+  }
+
+  // Money-magnitude bound (defense in depth — see comment above): every
+  // halalas value must stay within float64's exact-integer range for the
+  // === cross-total checks above to be sound in isolation.
+  for (const claim of extraction.claims) {
+    for (const line of claim.lines) {
+      findings.push(...lineMagnitudeFindings(claim.claimId, line));
+    }
+    findings.push(...claimMagnitudeFindings(claim));
+  }
+  findings.push(
+    withinMagnitudeFinding(
+      "remittance",
+      "remittanceTotalPaidHalalas",
+      extraction.remittanceTotalPaidHalalas,
+    ),
+  );
 
   // Mixed-digit-set anomaly (soft — reported, does not flip `passed`).
   const digitFields: Array<[string, string | null]> = [

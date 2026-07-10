@@ -7,8 +7,21 @@
  * at most 2 fractional digits (e.g. "120", "120.5", "120.50"). Single source of
  * truth for every Server Action that accepts a SAR amount as a string — keep any
  * precision-rule change (e.g. allowing 3 decimals) confined to this one place.
+ *
+ * MONEY-PATH FIX (adversarial-review finding, extra-scrutiny pass): the integer
+ * part is capped at 12 digits to match every money column's actual storage
+ * capacity — Postgres numeric(14,2) (packages/db/src/schema.ts's money()
+ * helper: precision 14, scale 2 => 12 integer digits + 2 fractional). Without
+ * this cap, a 16+ digit SAR string (still format-valid before this fix) can
+ * exceed Number.MAX_SAFE_INTEGER (2^53) once converted to integer halalas by
+ * moneyToHalalas (packages/analytics/src/money.ts), letting two genuinely
+ * different SAR amounts collapse to the identical float64 halalas value and
+ * silently defeat the strict `===` cross-total checks in
+ * eob-validators.ts. Today that was only contained by the accident of the DB
+ * column's own width rejecting the oversized insert — this makes the bound
+ * explicit at the boundary that actually accepts the untrusted string.
  */
-export const SAR_MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
+export const SAR_MONEY_REGEX = /^\d{1,12}(\.\d{1,2})?$/;
 
 /** Format a numeric string / number as grouped digits (no currency word). */
 export function formatMoney(value: string | number): string {
