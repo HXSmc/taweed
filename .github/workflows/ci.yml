@@ -76,6 +76,11 @@ jobs:
       DATABASE_URL: postgres://taweed:taweed@localhost:5432/taweed
       TAWEED_ENABLE_DEV_AUTH: "1"
       AUTH_SECRET: ci-insecure-secret
+      # next.config.mjs's headers() is resolved once at `next build` into
+      # .next/routes-manifest.json, not re-evaluated per-request by `next
+      # start` — so this must be set here (job-wide, covers the "Build the
+      # app" step below), not just in playwright.config.ts's webServer.env.
+      TAWEED_HTTP_ONLY_E2E: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

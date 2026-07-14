@@ -43,6 +43,12 @@ export default defineConfig({
       // See next.config.mjs — this test server has no TLS terminator, so the
       // CSP's upgrade-insecure-requests directive must be dropped or WebKit
       // hangs every navigation trying to upgrade to a nonexistent https port.
+      // NOTE: headers() is baked into .next/routes-manifest.json at `next
+      // build` time, not re-evaluated per-request by `next start` — this
+      // only takes effect if the same var was ALSO set during the build
+      // step (see .github/workflows/ci.yml's e2e job). Set here too so a
+      // developer building+testing locally (`pnpm build && pnpm test:e2e`
+      // with this var exported) gets the same behavior.
       TAWEED_HTTP_ONLY_E2E: "1",
       // Sourced from the single shared constant (lib/dev-auth-secret.ts) rather
       // than a duplicated literal — see that file for why duplication is unsafe.
