@@ -40,6 +40,10 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       TAWEED_ENABLE_DEV_AUTH: "1",
+      // See next.config.mjs — this test server has no TLS terminator, so the
+      // CSP's upgrade-insecure-requests directive must be dropped or WebKit
+      // hangs every navigation trying to upgrade to a nonexistent https port.
+      TAWEED_HTTP_ONLY_E2E: "1",
       // Sourced from the single shared constant (lib/dev-auth-secret.ts) rather
       // than a duplicated literal — see that file for why duplication is unsafe.
       AUTH_SECRET: process.env.AUTH_SECRET ?? DEV_INSECURE_AUTH_SECRET,

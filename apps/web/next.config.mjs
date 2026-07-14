@@ -3,6 +3,15 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const isDev = process.env.NODE_ENV === "development";
+// The Playwright E2E webServer (playwright.config.ts) runs a real production
+// build (`pnpm start`) served over plain HTTP with no TLS terminator — real
+// deployments always sit behind HTTPS (Vercel enforces it), so
+// `upgrade-insecure-requests` is dropped only for that one scenario. Without
+// this, WebKit takes the CSP literally and tries to upgrade every navigation
+// to https://localhost, which then hangs (nothing listens on 443) until
+// Playwright's `waitForURL` times out — Chromium/Firefox don't hang the same
+// way, so this only ever broke the webkit E2E project.
+const isHttpOnlyE2e = process.env.TAWEED_HTTP_ONLY_E2E === "1";
 
 // Static (non-nonce) CSP, per Next.js's own documented "Without Nonces"
 // pattern (next.config.js headers()) — see
@@ -31,8 +40,7 @@ const cspHeader = `
   object-src 'none';
   base-uri 'self';
   form-action 'self';
-  frame-ancestors 'none';
-  upgrade-insecure-requests;
+  frame-ancestors 'none';${isHttpOnlyE2e ? "" : "\n  upgrade-insecure-requests;"}
 `;
 
 // Security response headers applied to every route. Exported separately so

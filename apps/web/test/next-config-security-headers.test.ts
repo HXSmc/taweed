@@ -90,6 +90,24 @@ describe("next.config.mjs — security response headers", () => {
     expect(csp).toContain("'unsafe-eval'");
   });
 
+  it("drops upgrade-insecure-requests only for the plain-HTTP Playwright E2E server", async () => {
+    // Arrange — playwright.config.ts sets this for its webServer only; a real
+    // deployment never sets it, so upgrade-insecure-requests stays on by
+    // default (asserted in the test above).
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("TAWEED_HTTP_ONLY_E2E", "1");
+
+    // Act
+    const { securityHeaders } = await import("../next.config.mjs");
+    const csp = securityHeaders.find((h) => h.key === "Content-Security-Policy")?.value ?? "";
+
+    // Assert
+    expect(csp).not.toContain("upgrade-insecure-requests");
+    // Everything else in the CSP stays intact — only this one directive drops.
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+  });
+
   it("applies the header set to every route via the default-exported headers() function", async () => {
     // Arrange
     vi.stubEnv("NODE_ENV", "production");
