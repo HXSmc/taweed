@@ -12,3 +12,30 @@ services:
       interval: 2s
       timeout: 5s
       retries: 15
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://taweed:taweed@postgres:5432/taweed
+      # Demo/dev mode only — passwordless seeded-account login (same opt-in
+      # the E2E suite uses, see apps/web/lib/auth.ts). Never set this in a
+      # real deployment.
+      TAWEED_ENABLE_DEV_AUTH: "1"
+      AUTH_SECRET: dev-insecure-secret-change-me
+      # packages/db/test/migrate.ts refuses its destructive
+      # drop-schema-and-reseed unless DATABASE_URL's host is loopback
+      # (localhost/127.0.0.1/::1). "postgres" here is the compose service's
+      # internal DNS name for our OWN ephemeral, isolated container — genuinely
+      # local despite the non-loopback hostname — so this override is safe in
+      # this file specifically. Never set it against a real/shared database.
+      TAWEED_ALLOW_DESTRUCTIVE_MIGRATE: "1"
+      # Optional: set to enable AI features (all default OFF regardless).
+      # ANTHROPIC_API_KEY: ""
+

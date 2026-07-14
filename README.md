@@ -8,6 +8,38 @@ For product/architecture background see `docs/02_product_build_plan.md` and
 `docs/03_design_brief.md`. `infra/README.md` covers the (not-yet-runnable)
 Terraform deploy skeleton — this file covers day-to-day local dev.
 
+## Quick start with Docker (recommended — no Node/pnpm install needed)
+
+Everything (app + Postgres + demo data) runs in containers. Only prerequisite: **Docker
+Desktop** (or any Docker + Compose v2 install).
+
+```bash
+git clone https://github.com/HXSmc/taweed.git
+cd taweed
+docker compose up -d --build   # builds the app image, starts Postgres + the app
+docker compose exec app pnpm --filter @taweed/web seed   # loads synthetic demo data
+```
+
+Open **http://localhost:3000/en** — sign in as one of the seeded demo accounts (shown on
+the login page; passwordless, dev-mode auth — see the `TAWEED_ENABLE_DEV_AUTH` note in
+`docker-compose.yml`, never used in a real deployment).
+
+- Logs: `docker compose logs -f app`
+- Stop: `docker compose down` (add `-v` to also wipe the Postgres data volume)
+- Rebuild after pulling new code: `docker compose up -d --build`
+- Re-seed (drops + recreates all data): re-run the `seed` command above — safe, it only
+  ever targets this stack's own isolated Postgres container (see the
+  `TAWEED_ALLOW_DESTRUCTIVE_MIGRATE` comment in `docker-compose.yml` for why that's true
+  even though the guard it bypasses exists specifically to prevent this against a real DB).
+- AI features stay off by default (`TAWEED_AI_ENABLED` unset) — this quick start doesn't
+  need an Anthropic API key. To try them, add `ANTHROPIC_API_KEY` under the `app` service's
+  `environment:` in `docker-compose.yml` before `docker compose up`.
+
+This is a demo/dev stack (synthetic data, passwordless login) — not a production deployment
+recipe. For that, see `infra/README.md` (Terraform skeleton, not yet runnable — creds-gated).
+
+## Local dev without Docker
+
 ## Prerequisites
 
 - Node.js >= 20
