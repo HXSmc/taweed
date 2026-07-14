@@ -1,5 +1,6 @@
 .claude/
 ECC_GUIDE.md
+.orchestrator/
 
 # node / build
 node_modules/

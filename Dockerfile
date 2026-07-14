@@ -40,6 +40,8 @@ RUN pnpm --filter @taweed/web build
 FROM base AS runtime
 ENV NODE_ENV=production
 COPY --from=build /app /app
+RUN chown -R node:node /app
+USER node
 WORKDIR /app/apps/web
 EXPOSE 3000
 CMD ["pnpm", "start"]

@@ -20,6 +20,7 @@
 | 10 | **Incremental re-run: dependency audit** | 2026-07-10 (~22:33) | (no dedicated file) | 0 CVEs (807 deps); 15 safe patch/minor bumps applied; 14 majors + next-auth governance risk flagged | unit 933/933, typecheck green |
 | 11 | **Incremental re-run: WCAG AA** | 2026-07-10 (~23:00) | `docs/a11y.md` (updated in place, findings #23-24) | 2 confirmed+fixed; both prior "Considered" loose ends closed clean via live re-check | unit 933/933, typecheck green |
 | 12 | **Incremental re-run: codebase minimap** | 2026-07-10/11 (~23:30) | `docs/minimap.md` (overwritten — superseded pass #6's stale snapshot) | 24 weaknesses found (9 fixed safe-tier, incl. a re-dispatched agent + 2 follow-up fixes; 15 flagged for planning) | unit 977+/977+, typecheck green |
+| 13 | **Incremental re-run: diff-scoped bugs + security (CSP/CI/Docker)** | 2026-07-14 | `bugs.md` + `secure.md` (repo root, gitignored) | **0 confirmed, 0 refuted** — clean pass; auth/RBAC spot-check (4 server actions) holds; Dockerfile-runs-as-root noted as non-blocking FYI | unit 982/982, root + web typecheck green, lint clean (CI) |
 
 **Passes #7-#12 (2026-07-10 evening / 2026-07-11) are an incremental re-run, not a redundant one.**
 They ran *after* the same day's AI-4 real-data-gaps and EXECUTE-UI-tail work landed (~07:50+,
@@ -123,6 +124,33 @@ committed as of this writing (push/commit is user-gated, same as every other pas
   §Learnings section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #13 — diff-scoped incremental re-audit (2026-07-14)
+
+- **Disambiguate "since pass #12" carefully when the audit's own output is one of the commits in
+  the window.** `git log --since=2026-07-11` returned 4 commits, all dated 2026-07-14 — and the
+  oldest (`cf86b60` "land 6-pass code-quality audit sweep") **is passes #7-#12 themselves landing**,
+  not new work since them. The `.ts` source changes inside it (ingest.ts, eob-to-normalized.ts,
+  money.ts, ai/*, etc.) are the *prior passes' fixes*, already documented in `bugs.md`/`secure.md`.
+  Re-auditing them would have duplicated passes #7-#12. The genuinely-new code was the 3 younger
+  commits (CSP `TAWEED_HTTP_ONLY_E2E` tweak, its CI job-level wiring, Docker containerization) —
+  that's the real scope. Always check whether the boundary commit *is* the prior audit's landing
+  commit before treating its whole diff as in-scope.
+- **The CSP/security headers were already security-reviewed (pass #8's fix #1 in `secure.md`).**
+  This came up because the task listed "CSP security headers added to next.config.mjs" as new — but
+  `secure.md` already records "Verified live (production `next start` + curl, all 6 headers correct
+  on the wire)". Cross-reading the root findings file before re-auditing the CSP avoided a
+  redundant re-verify; only the *post*-pass-#8 `TAWEED_HTTP_ONLY_E2E` tweak needed a fresh look.
+- **A clean incremental pass (0 findings) is the right outcome for a mature, just-audited tree
+  where only a small, well-commented CI/Docker slice landed** — same shape as pass #9's 0-finding
+  auth re-audit. Don't manufacture findings to justify the pass; record the clean confirmation
+  (with the auth/RBAC spot-check evidence and the green verify output) and the one non-blocking
+  observation (Dockerfile runs as root) honestly.
+- **`pnpm lint` exits 1 locally but clean in CI when `.claude/**` harness files exist in the
+  working tree.** `.claude/` is gitignored (line 1) and untracked, so CI's checkout never sees
+  `desktop-notify.js`/`multi-lens-review.js`; the local non-zero exit is purely the agent
+  harness's own files getting linted. Confirm gitignore + `git ls-files` count (0) before treating
+  a lint failure as a repo defect.
 
 ### Incremental full-queue re-run, all 6 pass types (2026-07-10 evening – 2026-07-11)
 
