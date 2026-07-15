@@ -1,0 +1,2 @@
+claim id,patient id,sbs code,icd10am code,service date,total amount,denied amount,reason code
+CLM-T002,PT-T002,SBS-0200,M54.5,2026-06-02,500.00,900.00,ELIGIBILITY-EXPIRED

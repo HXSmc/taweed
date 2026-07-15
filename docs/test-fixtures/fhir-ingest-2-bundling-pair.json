@@ -1,0 +1,102 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:claim-test-bundling-1",
+      "resource": {
+        "resourceType": "Claim",
+        "id": "claim-test-bundling-1",
+        "status": "active",
+        "type": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional" }
+          ]
+        },
+        "use": "claim",
+        "patient": { "reference": "Patient/patient-test-bundling" },
+        "created": "2026-01-01",
+        "provider": { "reference": "Organization/provider-test-bundling" },
+        "priority": { "coding": [{ "code": "normal" }] },
+        "insurance": [
+          {
+            "sequence": 1,
+            "focal": true,
+            "coverage": { "reference": "Coverage/coverage-test-bundling" },
+            "preAuthRef": ["PA-TEST-BUNDLING-1"]
+          }
+        ],
+        "item": [
+          {
+            "sequence": 1,
+            "productOrService": {
+              "coding": [{ "system": "http://taweed.local/fhir/CodeSystem/sbs-placeholder", "code": "SBS-0007" }]
+            },
+            "diagnosisSequence": [1],
+            "quantity": { "value": 1 },
+            "unitPrice": { "value": 30000, "currency": "SAR" },
+            "net": { "value": 30000, "currency": "SAR" }
+          },
+          {
+            "sequence": 2,
+            "productOrService": {
+              "coding": [{ "system": "http://taweed.local/fhir/CodeSystem/sbs-placeholder", "code": "SBS-0008" }]
+            },
+            "diagnosisSequence": [1],
+            "quantity": { "value": 1 },
+            "unitPrice": { "value": 20000, "currency": "SAR" },
+            "net": { "value": 20000, "currency": "SAR" }
+          }
+        ],
+        "total": { "value": 50000, "currency": "SAR" },
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Test claim: two procedures that should be billed as one bundled line</div>"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ClaimResponse",
+        "id": "resp-test-bundling-1",
+        "status": "active",
+        "type": {
+          "coding": [
+            { "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional" }
+          ]
+        },
+        "use": "claim",
+        "patient": { "reference": "Patient/patient-test-bundling" },
+        "created": "2026-01-05",
+        "insurer": { "reference": "Organization/payer-bupa" },
+        "outcome": "complete",
+        "disposition": "Adjudication processed",
+        "request": { "reference": "Claim/claim-test-bundling-1" },
+        "item": [
+          {
+            "itemSequence": 1,
+            "adjudication": [
+              {
+                "category": {
+                  "coding": [{ "system": "http://taweed.local/fhir/CodeSystem/adjudication-placeholder", "code": "benefit" }]
+                },
+                "amount": { "value": 30000, "currency": "SAR" }
+              }
+            ]
+          },
+          {
+            "itemSequence": 2,
+            "adjudication": [
+              {
+                "category": {
+                  "coding": [{ "system": "http://taweed.local/fhir/CodeSystem/adjudication-placeholder", "code": "benefit" }]
+                },
+                "amount": { "value": 20000, "currency": "SAR" }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

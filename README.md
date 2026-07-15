@@ -8,35 +8,121 @@ For product/architecture background see `docs/02_product_build_plan.md` and
 `docs/03_design_brief.md`. `infra/README.md` covers the (not-yet-runnable)
 Terraform deploy skeleton — this file covers day-to-day local dev.
 
-## Quick start with Docker (recommended — no Node/pnpm install needed)
+## Quick start — step by step, no coding experience needed
 
-Everything (app + Postgres + demo data) runs in containers. Only prerequisite: **Docker
-Desktop** (or any Docker + Compose v2 install).
+This walks through running the whole app on your own computer, one click/command at a
+time. You do **not** need to know how to code. You will use one app (Docker Desktop) and
+paste a few commands into a black window (Terminal) — every command is given exactly, just
+copy-paste it.
+
+### Step 1 — Install Docker Desktop
+
+1. Go to **https://www.docker.com/products/docker-desktop/** in your browser.
+2. Click the download button for your computer (Mac or Windows).
+3. Open the file you downloaded and drag/install Docker Desktop like any other app.
+4. Open Docker Desktop once (find it in Applications on Mac, or Start menu on Windows).
+5. Wait until it says **"Docker Desktop is running"** (a whale icon appears in your
+   menu bar/system tray, no longer animated/loading). Leave it open in the background —
+   it needs to stay running for the app to work.
+
+### Step 2 — Open a Terminal window
+
+- **Mac**: press `Cmd + Space`, type `Terminal`, press Enter.
+- **Windows**: press the Start key, type `PowerShell`, press Enter.
+
+A plain text window opens. This is where you'll paste the commands below.
+
+### Step 3 — Download the project
+
+Copy this whole block, paste it into the Terminal window, press Enter:
 
 ```bash
 git clone https://github.com/HXSmc/taweed.git
 cd taweed
-docker compose up -d --build   # builds the app image, starts Postgres + the app
-docker compose exec app pnpm --filter @taweed/web seed   # loads synthetic demo data
 ```
 
-Open **http://localhost:3000/en** — sign in as one of the seeded demo accounts (shown on
-the login page; passwordless, dev-mode auth — see the `TAWEED_ENABLE_DEV_AUTH` note in
-`docker-compose.yml`, never used in a real deployment).
+If you see a folder listing / no red error text, it worked. (If it says `git: command not
+found`, install Git first from **https://git-scm.com/downloads**, then repeat this step.)
 
-- Logs: `docker compose logs -f app`
-- Stop: `docker compose down` (add `-v` to also wipe the Postgres data volume)
-- Rebuild after pulling new code: `docker compose up -d --build`
-- Re-seed (drops + recreates all data): re-run the `seed` command above — safe, it only
-  ever targets this stack's own isolated Postgres container (see the
-  `TAWEED_ALLOW_DESTRUCTIVE_MIGRATE` comment in `docker-compose.yml` for why that's true
-  even though the guard it bypasses exists specifically to prevent this against a real DB).
-- AI features stay off by default (`TAWEED_AI_ENABLED` unset) — this quick start doesn't
-  need an Anthropic API key. To try them, add `ANTHROPIC_API_KEY` under the `app` service's
-  `environment:` in `docker-compose.yml` before `docker compose up`.
+### Step 4 — Build and start everything
+
+Paste this next (this step takes a few minutes the first time — it's downloading and
+building everything; later runs are much faster):
+
+```bash
+docker compose up -d --build
+```
+
+When it finishes, you'll see lines ending in "Started" or "Running", and you'll be back at
+a normal prompt. That means Postgres (the database) and the app are both running.
+
+### Step 5 — Load the demo data
+
+Paste this (creates two example clinics with realistic sample claims to explore):
+
+```bash
+docker compose exec app pnpm --filter @taweed/web seed
+```
+
+You should see a line like `[seed] done. tenants=2 claims=1196 denials=520 appeals=416
+rules=30`. That's the confirmation it worked.
+
+### Step 6 — Open the app
+
+Open your web browser and go to: **http://localhost:3000/en**
+
+You'll see a login page listing demo accounts by clinic and role (e.g. "owner",
+"finance", "rcm"). **Click any one of the buttons** — there is no password, this is a demo
+login for exploring the product. You're now inside the app.
+
+### Everyday commands, once it's set up
+
+| What you want to do | Command to paste |
+|---|---|
+| Stop the app (keep your data) | `docker compose down` |
+| Stop the app AND erase all demo data | `docker compose down -v` |
+| Start it again later | `docker compose up -d` |
+| Start fresh after downloading new code | `docker compose up -d --build` |
+| See what the app is doing / find an error | `docker compose logs -f app` |
+| Wipe and reload the demo data | repeat Step 5's command |
 
 This is a demo/dev stack (synthetic data, passwordless login) — not a production deployment
 recipe. For that, see `infra/README.md` (Terraform skeleton, not yet runnable — creds-gated).
+
+### Testing the AI features (optional, needs an Anthropic API key)
+
+AI features are OFF by default — the steps above give you the full product except the four
+AI-assisted extras. To turn them on:
+
+1. In the `taweed` folder you downloaded, open **`docker-compose.yml`** in any text editor
+   (on Mac: right-click → Open With → TextEdit; on Windows: right-click → Open with →
+   Notepad).
+2. Find the `app:` section, then the `environment:` list under it. Near the bottom you'll
+   see lines starting with `#` (these are "commented out" / disabled) mentioning
+   `ANTHROPIC_API_KEY` and `TAWEED_AI_ENABLED`.
+3. Remove the `#` from the start of these lines (the master switch, plus whichever of the
+   four feature lines you want to try — you can enable one, some, or all four):
+   ```yaml
+   ANTHROPIC_API_KEY: "sk-ant-your-real-key-here"
+   TAWEED_AI_ENABLED: "true"
+   TAWEED_AI_EXPLAIN_ENABLED: "true"
+   TAWEED_AI_APPEAL_ENABLED: "true"
+   TAWEED_AI_AUTHOR_RULE_ENABLED: "true"
+   TAWEED_AI_EXTRACT_EOB_ENABLED: "true"
+   ```
+4. Replace `sk-ant-your-real-key-here` with a real Anthropic API key (from
+   **https://console.anthropic.com/settings/keys** if you don't have one — this is a paid
+   API, using it will incur small usage charges on that account).
+5. Save the file, then back in Terminal run:
+   ```bash
+   docker compose up -d
+   ```
+6. See `docs/review.md` → "Testing the AI features" for exactly where in the app each of
+   the four AI features appears and what a correct result looks like.
+
+**Important:** both the master switch (`TAWEED_AI_ENABLED`) AND that specific feature's own
+line must be uncommented for a feature to turn on — enabling the master switch alone turns
+on nothing.
 
 ## Local dev without Docker
 

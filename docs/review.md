@@ -37,6 +37,11 @@ The newest work (what you're mostly here to test) is a **selective AI layer** on
 
 This part is a complete, click-by-click script. If you follow it top to bottom you will have exercised every screen and every new feature.
 
+> **Not a programmer, or just want the fastest path?** The repo root `README.md` has a fully
+> click-by-click Docker quick start — install Docker Desktop, paste two commands, done, no Node/pnpm
+> install needed. Everything from §1.7 onward (login, the walkthrough, §1.14's test fixtures) works
+> identically either way. §1.1–§1.6 below are for a **local (non-Docker) developer setup** instead.
+
 ## 1.1 Prerequisites (what must be installed)
 
 | Tool | Version on this machine | Why |
@@ -505,6 +510,135 @@ Expected: all integration tests green (baseline 37 passing, up from ~33 pre-AI-4
 | Test output looks **truncated/summarized** when *Claude* runs it | The RTK tooling hook compresses stdout | Only affects the AI assistant, not your own terminal; if needed, write results to a file with `--reporter=json --outputFile <path>` |
 | **Integration tests left the DB empty** | They're destructive by design | Re-seed (§1.5) |
 | Seeing an **Arabic RTL** UI unexpectedly | You signed in as the **owner** (defaults to Arabic) | Use the EN/AR toggle, or sign in as rcm/finance for English |
+
+---
+
+## 1.14 Test fixtures — mock files with documented expected results
+
+`docs/test-fixtures/` has six ready-made files (two per scenario: two FHIR bundles, two CSVs, two
+EOB PDFs) you can drop straight onto the Ingest dropzone. Every result below was **verified against
+this running app**, not predicted from reading the code — upload the same file and you should see
+the exact same result every time (these are deterministic, not random).
+
+> **If you're on the Docker quick-start** (see the repo root `README.md`), do §1.5's seed step via
+> `docker compose exec app pnpm --filter @taweed/web seed` instead of the local `pnpm` command
+> above — same script, just run inside the container.
+
+### Important: what actually controls a scrubber flag on an uploaded claim
+
+Every claim you upload through the Ingest UI (FHIR bundle **or** CSV) is tagged
+`data_origin: "synthetic"` (`apps/web/lib/actions/ingest.ts`) — this is a deliberate PHI-safety gate
+(`packages/rules-engine/src/project.ts`'s "EXECUTE B5" guard: only an explicit `synthetic` tag may
+use the demo-data code path; anything else must use real, audited columns). One side effect worth
+knowing before you build your own test file: for a `synthetic`-tagged claim, some scrubber inputs
+are **fabricated from a stable hash of the claim**, not read from the file you uploaded —
+specifically `hasPreAuth`, `policyActive`, `isDuplicate`, `hasDiagnosis`, `hasDocumentation`, and
+patient gender/age. Only **SBS codes, line quantity, and the total amount** come from what you
+actually typed into the file. So a fixture built around "no prior authorization" won't reliably
+fire that specific rule — that's why both FHIR fixtures below are instead built around SBS codes
+and quantity, which the file's real content *does* control. You'll likely also see one extra,
+unrelated flag on each uploaded claim (e.g. "High-value claim submitted without prior
+authorization") — that's the hash-fabricated part firing incidentally; it's expected, not a bug in
+the fixture.
+
+### Fixture 1 — FHIR bundle, `fhir-ingest-1-excess-quantity.json`
+
+Tests the real, content-driven rule **R-D08-qty-exceeds-cap** (a line's quantity exceeds the
+allowed maximum of 10 units — this fixture's line has quantity 25).
+
+1. Sign in as `rcm@al-salama-dental-gro.dev` (§1.7).
+2. Go to **Ingest** (§1.8 Step 3).
+3. Drag `docs/test-fixtures/fhir-ingest-1-excess-quantity.json` onto the dropzone (or use the file
+   picker button).
+4. **Expected:** the run ledger shows **"1 claims, 0 denials detected, SAR 0 at risk."**
+5. Go to **Scrubber**. Search the table for claim id `claim-test-excess-qty-1` (SBS code `SBS-4200`,
+   amount `50,000`) — it's a very large claim so it should sort near the top.
+6. Click that row to open **"Why this flagged."**
+7. **Expected — verified:** two flags listed:
+   - **R-D08-qty-exceeds-cap** — "Line quantity exceeds the allowed maximum." (failed field:
+     `lineUnits`) — this is the one this fixture is testing.
+   - **R-D02-preauth-highcost** — "High-value claim submitted without prior authorization." (failed
+     field: `hasPreAuth`) — the incidental hash-fabricated flag described above; ignore it.
+
+### Fixture 2 — FHIR bundle, `fhir-ingest-2-bundling-pair.json`
+
+Tests the real, content-driven rule **R-D07-bundling-pair** (two procedures — SBS-0007 and
+SBS-0008 — that should be billed as one bundled line instead of two separate ones).
+
+1. Same setup as Fixture 1. Drag `docs/test-fixtures/fhir-ingest-2-bundling-pair.json` onto the
+   Ingest dropzone.
+2. **Expected:** "1 claims, 0 denials detected, SAR 0 at risk."
+3. Go to **Scrubber**, find claim id `claim-test-bundling-1` (SBS codes `SBS-0007, SBS-0008`,
+   amount `50,000`).
+4. Click the row to open **"Why this flagged."**
+5. **Expected — verified:** two flags:
+   - **R-D07-bundling-pair** — "Two procedures billed separately should be bundled into one line."
+     (failed field: `sbsCodes`) — this is the one this fixture is testing.
+   - One incidental hash-fabricated flag (varies) — ignore it, same reason as Fixture 1.
+
+### Fixture 3 — CSV, `csv-ingest-1-clean.csv`
+
+Tests a normal, valid remittance row that should ingest with nothing quarantined.
+
+1. Go to **Ingest**, drag `docs/test-fixtures/csv-ingest-1-clean.csv` onto the dropzone.
+2. A **"Map your columns"** panel appears (§1.8 Step 3a). Every field auto-maps at **High
+   confidence** (Claim ID → `claim id`, Patient reference → `patient id`, SBS code → `sbs code`,
+   ICD-10-AM code → `icd10am code`, Service date → `service date`, Total amount → `total amount`) —
+   don't change anything.
+3. Click **Confirm mapping**.
+4. **Expected — verified:** "1 claims, 0 denials detected, SAR 0 at risk." No quarantine table
+   appears.
+
+### Fixture 4 — CSV, `csv-ingest-2-bad-denial.csv`
+
+Tests the quarantine path: this row's denied amount (900) is greater than its total amount (500),
+which the ingest validator explicitly rejects (a denial can never exceed what was billed).
+
+1. Go to **Ingest**, drag `docs/test-fixtures/csv-ingest-2-bad-denial.csv` onto the dropzone.
+2. **"Map your columns"** appears again — this file additionally maps Denied amount → `denied
+   amount` and Denial reason code → `reason code`, both High confidence. Click **Confirm mapping**.
+3. **Expected — verified:** "0 claims, 0 denials detected, SAR 0 at risk," **Quarantined: 1**, and a
+   **Quarantine** table below listing ref `CLM-T002` with reason **"denied amount exceeds total
+   amount."** The row is set aside, not silently dropped or corrupted.
+
+### Fixture 5 — EOB PDF, `eob-1-clean.pdf` (+ `eob-1-clean.expected.json`)
+
+Generated by the app's own synthetic-EOB corpus generator (`test/synthetic-eob`, scenario
+`"clean"`, seed 1000) — a real, valid, single-page PDF remittance where every line is paid in full,
+no denials. Its exact ground-truth extraction (what a correct AI-4 read should produce) is saved
+alongside it in `eob-1-clean.expected.json` — compare a live extraction's payer name, amounts, and
+per-line `denialCode: null` values against that file.
+
+**Needs AI-4 turned on** (§1.10: `TAWEED_AI_ENABLED=true` **and**
+`TAWEED_AI_EXTRACT_EOB_ENABLED=true` **and** a real `ANTHROPIC_API_KEY`) — this is a real,
+billed Anthropic API call, not a local computation.
+
+- **With AI-4 off (verified):** dragging this PDF onto the Ingest dropzone fails with **"That PDF
+  could not be processed. Try again, or enter this remittance manually."** — a clean, honest
+  failure message, not a crash or a silent no-op. This itself is worth checking off as a pass.
+- **With AI-4 on:** upload it, then check the **Review queue** tab (§1.8 Step 3b). Compare the
+  extracted payer name, remittance date, and per-line billed/paid/patient-share amounts against
+  `eob-1-clean.expected.json`. Expect **no denial codes anywhere** (`remittanceTotalPaidHalalas` in
+  the JSON is > 0) and the arithmetic validator should show no failing checks, since paid + adjustment
+  + rejected reconciles against billed on every line.
+
+### Fixture 6 — EOB PDF, `eob-2-full-denial.pdf` (+ `eob-2-full-denial.expected.json`)
+
+Same generator, scenario `"fullDenial"`, seed 2001 — every line denied (`TWD-D01` "Service not
+covered by plan" and `TWD-D05` "Duplicate claim / service"), nothing paid.
+
+- **With AI-4 off (verified):** same clean failure message as Fixture 5.
+- **With AI-4 on:** upload it, open it in the Review queue, and compare against
+  `eob-2-full-denial.expected.json` — expect `paidHalalas: 0` on every line, a non-null
+  `denialCode` on every line, and `remittanceTotalPaidHalalas: 0` overall. This is the "extraction
+  correctly reads a bad-news remittance" case — a model that hallucinates a partial payment here
+  would be a real, visible bug.
+
+### After using any of these fixtures
+
+Re-seed (§1.5) to return to the standard demo dataset before continuing the rest of the walkthrough
+— the fixtures above add extra claims on top of the seed data rather than replacing it, so they'll
+otherwise keep showing up in Scrubber/Ingest for the rest of your session.
 
 ---
 ---

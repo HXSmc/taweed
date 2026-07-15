@@ -1,0 +1,2 @@
+claim id,patient id,sbs code,icd10am code,service date,total amount
+CLM-T001,PT-T001,SBS-0100,K02.9,2026-06-01,750.00

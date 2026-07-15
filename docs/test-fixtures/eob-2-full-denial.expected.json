@@ -1,0 +1,46 @@
+{
+  "payerName": "Placeholder Insurer",
+  "payerNphiesId": "payer-nphies-0",
+  "remittanceDate": "2026-01-15",
+  "remittanceTotalPaidHalalas": 0,
+  "claims": [
+    {
+      "claimId": "claim-fullDenial-2001-0",
+      "nphiesClaimId": "NPHIES-CLM-fullDenial-2001-0",
+      "patientRef": "Patient/patient-fullDenial-0",
+      "serviceDate": "2026-01-05",
+      "lines": [
+        {
+          "claimLineRef": "line-0-0",
+          "sbsCode": "SBS-6249",
+          "icd10amCode": "ICD10AM-141",
+          "billedHalalas": 3700,
+          "paidHalalas": 0,
+          "patientShareHalalas": 0,
+          "rejectedHalalas": 3700,
+          "adjustmentHalalas": 0,
+          "denialCode": "TWD-D01",
+          "confidence": 0.88
+        },
+        {
+          "claimLineRef": "line-0-1",
+          "sbsCode": "SBS-2231",
+          "icd10amCode": "ICD10AM-713",
+          "billedHalalas": 500,
+          "paidHalalas": 0,
+          "patientShareHalalas": 0,
+          "rejectedHalalas": 500,
+          "adjustmentHalalas": 0,
+          "denialCode": "TWD-D05",
+          "confidence": 0.88
+        }
+      ],
+      "totalBilledHalalas": 4200,
+      "totalPaidHalalas": 0,
+      "totalRejectedHalalas": 4200,
+      "totalAdjustmentHalalas": 0,
+      "confidence": 0.97
+    }
+  ],
+  "overallConfidence": 0.97
+}

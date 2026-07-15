@@ -36,6 +36,16 @@ services:
       # local despite the non-loopback hostname — so this override is safe in
       # this file specifically. Never set it against a real/shared database.
       TAWEED_ALLOW_DESTRUCTIVE_MIGRATE: "1"
-      # Optional: set to enable AI features (all default OFF regardless).
-      # ANTHROPIC_API_KEY: ""
+      # Optional: AI features (AI-1 through AI-4). ALL FOUR of the lines below
+      # must be uncommented for a given feature to actually turn on — the
+      # master switch alone enables nothing (packages/ai/src/config.ts
+      # isFeatureEnabled() requires TAWEED_AI_ENABLED=true AND that feature's
+      # own flag=true). See docs/review.md "Testing the AI features" for the
+      # full walkthrough of what each one does and how to test it.
+      # ANTHROPIC_API_KEY: "sk-ant-..."
+      # TAWEED_AI_ENABLED: "true"
+      # TAWEED_AI_EXPLAIN_ENABLED: "true"       # AI-1: "Explain this rule" on the Scrubber page
+      # TAWEED_AI_APPEAL_ENABLED: "true"        # AI-2: "Suggest with AI" on the Appeals page
+      # TAWEED_AI_AUTHOR_RULE_ENABLED: "true"   # AI-3: "Draft rule" on the Settings > Author tab
+      # TAWEED_AI_EXTRACT_EOB_ENABLED: "true"   # AI-4: EOB/PDF upload on the Ingest page
 
