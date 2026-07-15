@@ -3,3 +3,27 @@ packages:
   - "packages/*"
   - "test/synthetic-fhir"
   - "test/synthetic-eob"
+
+# pnpm 11's new supply-chain gate: postinstall/build scripts are blocked by
+# default unless explicitly allowed here. All four are trusted, well-known
+# packages that need a native build step to function at all (not optional
+# tooling) — esbuild's own binary, @swc/core and @parcel/watcher's native
+# bindings (transitive via vitest/eslint tooling), sharp's native image
+# bindings (transitive, unused directly by this app).
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  esbuild: true
+  sharp: true
+
+# Moved here from package.json's "pnpm.overrides" field — pnpm 11 no longer
+# reads the "pnpm" key in package.json at all (silently ignored, no warning).
+# These pin CVE remediations on transitive deps from the 2026-07 audit sweep
+# (docs/deps.md) — dropping them silently would revert to vulnerable
+# transitive versions, so this move is security-load-bearing, not cosmetic.
+overrides:
+  next>postcss: "^8.5.10"
+  "@esbuild-kit/core-utils>esbuild": "^0.25.4"
+  vitest>vite: "^6.4.3"
+  vite-node>vite: "^6.4.3"
+  "@vitest/mocker>vite": "^6.4.3"

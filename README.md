@@ -128,8 +128,8 @@ on nothing.
 
 ## Prerequisites
 
-- Node.js >= 20
-- pnpm 9.15 (pinned via `packageManager` in `package.json`)
+- Node.js >= 22
+- pnpm 11.13 (pinned via `packageManager` in `package.json`)
 - Docker (for local Postgres)
 
 ## First-time setup

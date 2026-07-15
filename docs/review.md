@@ -44,17 +44,17 @@ This part is a complete, click-by-click script. If you follow it top to bottom y
 
 ## 1.1 Prerequisites (what must be installed)
 
-| Tool | Version on this machine | Why |
+| Tool | Version required | Why |
 |------|------------------------|-----|
-| **Node.js** | `v20.2.0` | Runs the app and the tests. (Note: this is *below* Next.js 16's floor, which is exactly why the app is pinned to **Next.js 15**. Don't "upgrade Next" to fix an error — see Troubleshooting.) |
-| **pnpm** | `9.15.0`, installed at `~/.local/bin/pnpm` | The package manager (like `pip` / Maven / NuGet). It is **not** on the global PATH here, so every command below calls it by its full path `~/.local/bin/pnpm`. |
+| **Node.js** | `>= 22` (pinned via `engines` in `package.json`; bumped 2026-07-15 from a 20.2.0 pin — pnpm 11 requires Node 22+) | Runs the app and the tests. The app itself stays pinned to **Next.js 15** by deliberate choice, not a Node-version constraint — don't "upgrade Next" to fix an error, see Troubleshooting. |
+| **pnpm** | `11.13.0`, pinned via `packageManager` in `package.json` | The package manager (like `pip` / Maven / NuGet). If it's not on your PATH, install via `corepack enable && corepack prepare pnpm@11.13.0 --activate`, or call it by its full local-install path. |
 | **Docker** (with Docker Compose) | Docker CLI at `/usr/local/bin/docker` | Runs the local PostgreSQL database in a container so you don't have to install Postgres directly. |
 
 Quick sanity check — run this in your terminal (fish shell):
 
 ```fish
-node -v                 # expect v20.2.0
-~/.local/bin/pnpm -v    # expect 9.15.0
+node -v                 # expect v22.x
+~/.local/bin/pnpm -v    # expect 11.13.0
 docker --version        # expect Docker version 2x.x
 ```
 
@@ -482,7 +482,7 @@ Expected: all integration tests green (baseline 37 passing, up from ~33 pre-AI-4
 ~/.local/bin/pnpm --filter @taweed/web build
 ```
 
-**End-to-end (Playwright) tests:** these live in `apps/web/tests/e2e` and run in **CI** (GitHub Actions) against a seeded database, including accessibility checks. They **cannot run locally on this machine** because the pinned Playwright can't load its config under Node 20.2.0 (CI uses a newer Node 20.x). Treat CI as the source of truth for E2E; locally, the manual click-through (§1.8) is your E2E.
+**End-to-end (Playwright) tests:** these live in `apps/web/tests/e2e` and run in **CI** (GitHub Actions). As of the 2026-07-15 Node 22 bump (§1.1), local Playwright should now load its config correctly (the old Node 20.2.0-on-this-Mac block is gone) — untested locally as of this writing, but worth trying (`~/.local/bin/pnpm --filter @taweed/web test:e2e`) before assuming CI is the only option. Either way, treat CI as the source of truth for E2E; the manual click-through (§1.8) is a good substitute if local E2E still doesn't cooperate.
 
 ---
 
@@ -505,8 +505,8 @@ Expected: all integration tests green (baseline 37 passing, up from ~33 pre-AI-4
 | `docker info`/`ps`/`exec` **hangs** | Known Docker CLI metadata quirk on this host | Ignore those subcommands; the container still works — probe the port directly |
 | **Explain / Suggest says "unavailable"** | AI is off (the default) | That's correct behavior. To enable, set the env vars in §1.10 and restart the dev server |
 | AI enabled but errors **loudly** ("misconfigured") | `ANTHROPIC_API_KEY` missing/blank while a feature flag is `true` | Add a valid key to `apps/web/.env.local`, restart |
-| Tempted to **upgrade Next.js** to fix an error | Node here is 20.2.0, below Next 16's floor | **Don't.** The app is intentionally pinned to Next 15. Fix the actual error instead |
-| **Playwright/E2E won't run locally** | Playwright can't load config under Node 20.2.0 | Expected; rely on CI for E2E, manual click-through locally |
+| Tempted to **upgrade Next.js** to fix an error | Next 15 is a deliberate pin, not a Node-version workaround | **Don't.** Fix the actual error instead |
+| **Playwright/E2E won't run locally** | Used to be blocked by a Node 20.2.0 pin on this Mac; that pin is gone as of the 2026-07-15 Node 22 bump | Try it again locally first; fall back to CI + manual click-through if it still doesn't cooperate |
 | Test output looks **truncated/summarized** when *Claude* runs it | The RTK tooling hook compresses stdout | Only affects the AI assistant, not your own terminal; if needed, write results to a file with `--reporter=json --outputFile <path>` |
 | **Integration tests left the DB empty** | They're destructive by design | Re-seed (§1.5) |
 | Seeing an **Arabic RTL** UI unexpectedly | You signed in as the **owner** (defaults to Arabic) | Use the EN/AR toggle, or sign in as rcm/finance for English |

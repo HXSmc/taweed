@@ -2,8 +2,8 @@
 # workspace. Debian-based (not alpine) because packages/ingest depends on
 # @napi-rs/canvas, a native prebuilt binary that targets glibc, not musl.
 
-FROM node:20-bookworm-slim AS base
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+FROM node:22-bookworm-slim AS base
+RUN corepack enable && corepack prepare pnpm@11.13.0 --activate
 WORKDIR /app
 
 # --- deps: install once, cached until lockfile/package.json files change ---
