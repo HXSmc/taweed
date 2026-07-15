@@ -1,0 +1,5 @@
+# Force LF line endings on checkout regardless of the cloning machine's
+# core.autocrlf setting. Without this, Windows git's default autocrlf=true
+# converts docker-compose.yml (and other text files) to CRLF on checkout,
+# which breaks Docker Compose's YAML parser ("did not find expected key").
+* text=auto eol=lf
