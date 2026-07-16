@@ -521,6 +521,7 @@ docker compose down
 
 - `docs/NEXT_STEP_PROMPT.md` — the **EXECUTE** prompt (local only).
 - `docs/blocker.md` — blocker register + a paste-ready unblock prompt per blocker (local only).
+- `docs/deferred.md` — `DEF-*` registry of deliberately-parked build decisions (optimizations/features we've *chosen not to build yet*, each with rationale + revisit trigger). Distinct from `blocker.md` (external gates) and `review.md` §2.11 (issues in existing code). Current entry: **DEF-1** text-layer-first extraction routing (parked 2026-07-16 — see the calculation there).
 - `docs/02_product_build_plan.md` §2/§7/§8 · `docs/03_design_brief.md` (UI system) · `ECC_GUIDE.md` (tooling, at repo root, local only).
 - `docs/superpowers/CREATE_review_followups.md` — **now CLOSED** in migration `0003` (auth-derived `tenant_id`, composite same-tenant FKs, money precision). Kept for history (local only).
 

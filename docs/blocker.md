@@ -4,6 +4,10 @@
 > docs refer to by id (`BLK-1`, `BLK-AI-2`, …). `docs/review.md`, `docs/handoff.md`,
 > `docs/04_agentic_retrofit_plan.md`, and `docs/AI_HARDEN_LOOP.md` all point here.
 >
+> **Not to be confused with `docs/deferred.md` (`DEF-*`):** a *blocker* is something we're waiting on
+> someone else for (it prevents real-data operation); a *deferral* is something we've decided not to
+> spend our own effort on yet (an optimization/feature parked by choice, with a revisit trigger).
+>
 > **Why it looked missing:** this file is listed in `.gitignore` (line 38, alongside
 > `docs/NEXT_STEP_PROMPT.md` and `ECC_GUIDE.md`) and was historically kept **local-only**, so a
 > fresh `git clone` never contained it — which is why references to `docs/blocker.md` appeared to
