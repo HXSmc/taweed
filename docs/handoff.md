@@ -2,7 +2,10 @@
 
 > Entry point for a new Claude Code session picking up Taweed. Read this, then run the
 > next-step prompt (`docs/NEXT_STEP_PROMPT.md`). Blocker register + a per-blocker unblock prompt:
-> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-10 (**the EXECUTE UI tail — A2
+> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-16 (newest entries at the end of the
+> log below: the real-tester bug-fix pass + the 2026-07-16 docs-only follow-ups — blocker.md,
+> review.md AI-4 eval sync, and deferred.md/DEF-1 — are all merged and pushed to `origin/main`, CI
+> green). Earlier context (kept for history): 2026-07-10 (**the EXECUTE UI tail — A2
 > first-run corridor + A3 free-audit/owner reports — is now BUILT** on branch `execute-ui-tail`, in
 > this directory, not yet merged to `main`; see the new bullet in "Where the project stands" below
 > and `docs/NEXT_STEP_PROMPT.md` for what comes after). Earlier the same day: **a full 6-pass
@@ -51,8 +54,22 @@
 > cause of the "AI is always off" reports** — not a config/docs gap as first hypothesized — caught
 > only because this was the first time AI-1 and AI-4 were driven against the live API with a real
 > key instead of the fixture provider used everywhere in CI and prior manual passes. Unit
-> **1007/1007** (up from 902), integration **42/42**, typecheck/lint/build all green. Not yet
-> merged/pushed — in progress on `main` in this dir as of this note.
+> **1007/1007** (up from 902), integration **42/42**, typecheck/lint/build all green. **Now merged
+> and pushed to `origin/main`** (`034c2ed`), followed by a git-workflow doc sync (`92e7dfb`) and a
+> pnpm-lock regen for the pinned pnpm 11.13.0 (`a5c6d9e`); CI green on the pushed tip.
+> **2026-07-16, docs-only follow-ups (no product code changed), both pushed to `origin/main` with CI
+> green:** (1) **`docs/blocker.md` reconstructed and force-added to git** (`git add -f`; it was
+> historically gitignored/local-only, so `BLK-*` references dangled in a fresh clone) — sourced from
+> `04_agentic_retrofit_plan.md §8` + `review.md §2.14`; marks **BLK-AI-2 partial** (technical
+> `ANTHROPIC_API_KEY` added → live calls on synthetic/PHI-free inputs only; ZDR + DPA still open).
+> `review.md`'s AI-4 eval notes (§1.11, §1.8 Step 3b, §2.9, §2.11, §2.12, §2.14) were synced to say
+> both former blockers on a live `AI_EVALS_LIVE=1` scored pass are gone (rasterizer built 2026-07-10
+> + key configured) — only manual execution + review of the 98%/95% accuracy remains (commit
+> `9fecdcd`). (2) **`docs/deferred.md` created** — a `DEF-*` registry of deliberately-parked build
+> decisions; first entry **DEF-1** (text-layer-first EOB extraction routing) parked after a cost
+> calculation (negligible savings at pre-pilot volume; no compliance benefit as designed; not the
+> highest-value next step) with revisit triggers; cross-linked from `review.md`, `handoff.md` (this
+> doc's must-read index), and `blocker.md` (commit `552dbcb`). No test/typecheck deltas — docs only.
 
 ## Where the project stands
 
