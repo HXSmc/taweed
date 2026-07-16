@@ -132,7 +132,16 @@ export async function extractEobPdfAction(
   // check uses it as a non-LLM source-fidelity signal. A scanned PDF has none
   // (extractPdfTextLayer resolves to undefined, not an error); the adapter
   // skips that specific check in that case rather than scoring against "".
-  const textLayer = await extractPdfTextLayer(pdfBytes);
+  //
+  // Pass a COPY: pdf-parse's pdfjs-dist internals detach the underlying
+  // ArrayBuffer of whatever typed array they're given (a pdfjs-dist
+  // optimization to avoid copying large PDFs). Handing them `pdfBytes`
+  // directly left the buffer empty by the time the vision adapter below
+  // base64-encoded the same reference, so every extraction died with a real
+  // API 400 ("PDF cannot be empty") that surfaced as a generic schema-parse
+  // failure — caught live via chrome-devtools MCP against the real API,
+  // 2026-07-16. `.slice()` copies into a fresh buffer pdf-parse can consume.
+  const textLayer = await extractPdfTextLayer(pdfBytes.slice());
 
   let extracted;
   try {

@@ -4,8 +4,10 @@ import {
   buildUserContent,
   createAnthropicProvider,
   mapParseResponse,
+  supportsInferenceGeo,
   type ParseResponseLike,
 } from "../src/anthropic-1p.js";
+import { LLM_MODEL_IDS } from "../src/models.js";
 
 describe("buildSystemBlocks", () => {
   it("returns a plain text block when caching is off", () => {
@@ -54,6 +56,21 @@ describe("buildUserContent", () => {
       },
       { type: "text", text: "go" },
     ]);
+  });
+});
+
+describe("supportsInferenceGeo", () => {
+  // Regression: Haiku 4.5 returns a live 400 ("does not support inference_geo")
+  // when the param is sent — this silently broke every AI-1 explainFlag call
+  // (the only feature routed to Haiku, see models.ts MODEL_BY_FEATURE) until
+  // caught via chrome-devtools MCP against the real API, 2026-07-16.
+  it("returns false for Haiku — the model rejects inference_geo with a 400", () => {
+    expect(supportsInferenceGeo(LLM_MODEL_IDS.haiku)).toBe(false);
+  });
+
+  it("returns true for Sonnet and Opus — both accept inference_geo", () => {
+    expect(supportsInferenceGeo(LLM_MODEL_IDS.sonnet)).toBe(true);
+    expect(supportsInferenceGeo(LLM_MODEL_IDS.opus)).toBe(true);
   });
 });
 

@@ -393,3 +393,61 @@ describe("AppealsComposer — queue roving tabindex and confirm-checkbox focus r
     expect(checkbox.className).toMatch(/focus-visible:outline-none/);
   });
 });
+
+// Regression tests for a tester-reported symptom ("the AI suggestions cannot
+// be inserted and edited") that did NOT reproduce on this code: insertParagraph
+// already reads the reviewer-edited textarea value (`edited[key] ?? original`),
+// not the stale AI original, before appending to the letter body. These tests
+// pin that behavior so a future regression is caught.
+describe("AppealsComposer — AI-2 suggestion edit + insert", () => {
+  afterEach(cleanup);
+
+  it("inserts the EDITED suggestion text into the body, not the original AI text", async () => {
+    renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: /MedGulf.*1,437/ }));
+    const letterBox = (await screen.findByRole("textbox", {
+      name: enMessages.appeals.draft,
+    })) as HTMLTextAreaElement;
+
+    fireEvent.click(screen.getByRole("button", { name: enMessages.appeals.aiSuggest }));
+    await screen.findByRole("region", { name: enMessages.appeals.aiSuggestions });
+
+    const firstParagraphName = enMessages.appeals.aiDraftLabelNumbered.replace(
+      "{n}",
+      "1",
+    );
+    const paragraphBox = screen.getByRole("textbox", { name: firstParagraphName });
+    const edited = "EDITED BY REVIEWER with clinical context.";
+    fireEvent.change(paragraphBox, { target: { value: edited } });
+
+    const insertName = enMessages.appeals.insertNumbered.replace("{n}", "1");
+    fireEvent.click(screen.getByRole("button", { name: insertName }));
+
+    await waitFor(() =>
+      expect(letterBox.value).toBe(`${draft.draft.body_en}\n\n${edited}`),
+    );
+    expect(letterBox.value).not.toContain(suggestion.paragraphs_en[0]);
+  });
+
+  it("inserts the original AI text when the paragraph is left unedited", async () => {
+    renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: /MedGulf.*1,437/ }));
+    const letterBox = (await screen.findByRole("textbox", {
+      name: enMessages.appeals.draft,
+    })) as HTMLTextAreaElement;
+
+    fireEvent.click(screen.getByRole("button", { name: enMessages.appeals.aiSuggest }));
+    await screen.findByRole("region", { name: enMessages.appeals.aiSuggestions });
+
+    const insertName = enMessages.appeals.insertNumbered.replace("{n}", "1");
+    fireEvent.click(screen.getByRole("button", { name: insertName }));
+
+    await waitFor(() =>
+      expect(letterBox.value).toBe(
+        `${draft.draft.body_en}\n\n${suggestion.paragraphs_en[0]}`,
+      ),
+    );
+  });
+});

@@ -1,5 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { schema } from "@taweed/db";
@@ -144,6 +146,23 @@ export async function markAppealOutcomeForm(formData: FormData): Promise<void> {
       ? recoveredRaw
       : undefined;
   if (outcome === "won" || outcome === "lost" || outcome === "submitted") {
-    await markAppealOutcome(appealId, outcome, recoveredSar);
+    const result = await markAppealOutcome(appealId, outcome, recoveredSar);
+    // Surface failures instead of swallowing them. markAppealOutcome returns
+    // {ok:false} — deliberately detail-free so it can't leak RBAC/RLS state —
+    // when the caller is unauthorized, the input is invalid, the per-tenant
+    // throttle trips, or the appeal isn't found for this tenant. Previously
+    // this return was discarded (`await ... ` with no use), so a failed "mark
+    // won/lost" was indistinguishable from a successful no-op: the operator
+    // clicked and nothing visibly happened (e.g. an admin/read-only or
+    // clinician/hidden role, or a stale appeal id). A server-action <form>
+    // already re-renders the page on success; on failure we redirect with a
+    // flag so the page renders an inline error region (settings.actionFailed).
+    if (!result.ok) {
+      // Locale comes from the next-intl middleware request header (set on the
+      // form POST by apps/web/middleware.ts), so we don't pull next-auth into
+      // this action just to read it off the session.
+      const locale = (await headers()).get("x-next-intl-locale") ?? "en";
+      redirect(`/${locale}/recovery?recoveryError=1`);
+    }
   }
 }

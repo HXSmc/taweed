@@ -22,6 +22,11 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, ...rest }: React.ComponentProps<"a">) => <a {...rest}>{children}</a>,
   usePathname: () => "/analytics",
 }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/en/analytics",
+  useSearchParams: () => new URLSearchParams(),
+}));
 vi.mock("@/lib/actions/auth", () => ({
   signOutAction: vi.fn(),
 }));

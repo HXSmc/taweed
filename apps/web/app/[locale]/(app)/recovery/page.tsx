@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Check, X } from "lucide-react";
+import { Check, TriangleAlert, X } from "lucide-react";
 import { requireSession } from "@/lib/session";
 import { isVisible } from "@/lib/rbac";
 import { getRecovery, type AppealPipelineRow } from "@/lib/data";
@@ -25,8 +25,13 @@ const ROWS_PER_STAGE = 25;
 
 export default async function RecoveryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  // Optional only so direct unit-test invocation (which calls the component
+  // with just `params`) stays safe; Next.js always supplies searchParams at
+  // runtime.
+  searchParams?: Promise<{ recoveryError?: string | string[] }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -42,9 +47,21 @@ export default async function RecoveryPage({
   if (!isVisible(session.role, "recovery")) notFound();
   const t = await getTranslations("recovery");
   const tc = await getTranslations("common");
+  // Reuses the existing generic "action did not complete" string rather than
+  // adding a new i18n key (the messages JSON is outside this task's scope).
+  const tAction = await getTranslations("settings");
 
   const { money, winRate, medianDays, sharePct, shareSar, rows } =
     await getRecovery(session.tenantId);
+
+  // Set by markAppealOutcomeForm when a "mark won/lost" mutation failed (RBAC
+  // denial, invalid input, throttle, or appeal not found for this tenant) —
+  // previously the failure was swallowed and the operator saw nothing happen.
+  const sp = (await searchParams) ?? {};
+  const recoveryErrorFlag = Array.isArray(sp.recoveryError)
+    ? sp.recoveryError[0]
+    : sp.recoveryError;
+  const showRecoveryError = Boolean(recoveryErrorFlag);
 
   const stageLabel: Record<string, string> = {
     submitted: t("stageSubmitted"),
@@ -57,6 +74,20 @@ export default async function RecoveryPage({
   return (
     <div>
       <PageHeader title={t("title")} lead={t("lead")} />
+
+      {/* Inline failure banner for a "mark won/lost" action that returned
+          {ok:false} (see markAppealOutcomeForm). role="alert" + aria-live so
+          assistive tech announces it; the at-risk tone matches error.tsx. */}
+      {showRecoveryError && (
+        <p
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 flex items-center gap-2 rounded-md border border-at-risk/30 bg-at-risk-bg px-4 py-3 text-body text-at-risk-text"
+        >
+          <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+          {tAction("actionFailed")}
+        </p>
+      )}
 
       {/* ROI band — recovered is the emerald hero (the product promise made visible). */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-4">

@@ -86,6 +86,13 @@ const FAKE_MONEY = {
 // ingest-bundle-cap.test.ts for this same drizzle-shaped fake db.
 let executeQueue: { rows: unknown[] }[] = [];
 let selectQueue: unknown[][] = [];
+// Total `.where(...)` calls across the fake db's whole select-builder surface
+// this test run — getScrubRows' claim_lines/patients/payers lookups always
+// call `.where()` (3 calls); the OPTIONAL branch-scope narrowing on the
+// claims query itself adds a 4th when (and only when) a branchId is passed.
+// A plain call-count discriminates the two paths without needing to inspect
+// Drizzle's internal eq() expression shape.
+let whereCallCount = 0;
 
 function fakeDb() {
   return {
@@ -95,7 +102,20 @@ function fakeDb() {
         orderBy: () => ({
           limit: () => Promise.resolve(selectQueue.shift() ?? []),
         }),
-        where: () => Promise.resolve(selectQueue.shift() ?? []),
+        // Thenable AND chainable: most callers (claim_lines/patients/payers
+        // lookups) just `await .where(...)` directly; getScrubRows' optional
+        // branch-scope narrowing chains `.where(...).orderBy(...).limit(...)`
+        // on top (real Drizzle supports both shapes).
+        where: () => {
+          whereCallCount += 1;
+          const result = selectQueue.shift() ?? [];
+          return {
+            then: (resolve: (v: unknown) => void) => resolve(result),
+            orderBy: () => ({
+              limit: () => Promise.resolve(result),
+            }),
+          };
+        },
       }),
     }),
   };
@@ -106,6 +126,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   executeQueue = [];
   selectQueue = [];
+  whereCallCount = 0;
   mockedMoneyScope.mockResolvedValue(FAKE_MONEY);
   mockedReasonPareto.mockResolvedValue([]);
   mockedTrend.mockResolvedValue([]);
@@ -296,6 +317,101 @@ describe("getScrubRows", () => {
 
     expect(highRow?.patientLabel).toBe("PT-0002");
     expect(highRow?.payerName).toBe("Tawuniya");
+  });
+
+  it("narrows the claim query with a WHERE when a branchId is passed", async () => {
+    const { getScrubRows } = await import("../lib/data");
+
+    await getScrubRows("tenant-a", 60, "branch-1");
+
+    // 3 unconditional `.where()` calls (claim_lines/patients/payers lookups)
+    // + 1 for the branch-scope narrowing on the claims query itself.
+    expect(whereCallCount).toBe(4);
+  });
+
+  it("does NOT add a claims WHERE when no branchId is passed (All branches)", async () => {
+    const { getScrubRows } = await import("../lib/data");
+
+    await getScrubRows("tenant-a", 60);
+
+    // Only the 3 unconditional lookups — the claims query itself goes
+    // straight to `.orderBy().limit()`, matching every other test in this
+    // describe block that never seeds a branch-filter WHERE result.
+    expect(whereCallCount).toBe(3);
+  });
+});
+
+describe("resolveBranchId", () => {
+  const BRANCHES = [
+    { id: "branch-riyadh" },
+    { id: "branch-mecca" },
+  ];
+
+  it("returns the id when it matches one of the tenant's own branches", async () => {
+    const { resolveBranchId } = await import("../lib/data");
+    expect(resolveBranchId("branch-riyadh", BRANCHES)).toBe("branch-riyadh");
+  });
+
+  it("returns undefined for a raw id that isn't any of the tenant's branches — the security boundary for the ?branch= URL param", async () => {
+    // This is what stands between the branch-scope filter and a cross-tenant
+    // or stale/forged branch id: an id that doesn't belong to THIS tenant's
+    // own (RLS-scoped) branch list is silently ignored, never trusted as a
+    // filter — so it can never widen or redirect the query to another
+    // tenant's data. The underlying claims query still runs under RLS
+    // regardless (defense in depth), but this is the first gate.
+    const { resolveBranchId } = await import("../lib/data");
+    expect(resolveBranchId("some-other-tenants-branch-id", BRANCHES)).toBeUndefined();
+    expect(resolveBranchId("", BRANCHES)).toBeUndefined();
+    expect(resolveBranchId(undefined, BRANCHES)).toBeUndefined();
+    expect(resolveBranchId(null, BRANCHES)).toBeUndefined();
+  });
+
+  it("trims whitespace before matching", async () => {
+    const { resolveBranchId } = await import("../lib/data");
+    expect(resolveBranchId("  branch-mecca  ", BRANCHES)).toBe("branch-mecca");
+  });
+});
+
+describe("getAnalytics branch scoping", () => {
+  it("passes the branch filter to moneyScope/reasonPareto/trend when a branch is selected", async () => {
+    executeQueue = [{ rows: [] }, { rows: [] }];
+    const { getAnalytics } = await import("../lib/data");
+
+    await getAnalytics("tenant-a", "branch-1");
+
+    // Direct moneyScope(db, {branchIds:[...]}) call — NOT the cached
+    // getMoneyScope wrapper (which always fetches the tenant's full,
+    // unfiltered scope for the command-bar's global money indicator).
+    expect(mockedMoneyScope).toHaveBeenCalledWith(
+      expect.anything(),
+      { branchIds: ["branch-1"] },
+    );
+    expect(mockedReasonPareto).toHaveBeenCalledWith(
+      expect.anything(),
+      { branchIds: ["branch-1"] },
+    );
+    expect(mockedTrend).toHaveBeenCalledWith(
+      expect.anything(),
+      { branchIds: ["branch-1"] },
+    );
+  });
+
+  it("calls moneyScope/reasonPareto/trend UNFILTERED when no branch is selected (All branches)", async () => {
+    executeQueue = [{ rows: [] }, { rows: [] }];
+    const { getAnalytics } = await import("../lib/data");
+
+    await getAnalytics("tenant-a");
+
+    // No branchId -> routed through the cached getMoneyScope wrapper, which
+    // still calls moneyScope(db) under the hood but with NO filter arg (1
+    // argument, not 2) — distinct from the branchId path's moneyScope(db, f).
+    expect(mockedMoneyScope).toHaveBeenCalledWith(expect.anything());
+    expect(mockedMoneyScope).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(mockedReasonPareto).toHaveBeenCalledWith(expect.anything(), undefined);
+    expect(mockedTrend).toHaveBeenCalledWith(expect.anything(), undefined);
   });
 });
 

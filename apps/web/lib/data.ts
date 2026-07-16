@@ -66,12 +66,19 @@ export const getMoneyScope = cache(
 async function denialRateDim(
   db: Database,
   dim: "payer" | "branch",
+  branchId?: string,
 ): Promise<DimRate[]> {
   const keyCol = dim === "payer" ? sql`c.payer_id` : sql`c.branch_id`;
   const nameJoin =
     dim === "payer"
       ? sql`JOIN payers x ON x.id = c.payer_id`
       : sql`JOIN branches x ON x.id = c.branch_id`;
+  // Optional branch narrowing — parameterized (drizzle binds ${branchId}), and
+  // only ever applied to the by-PAYER breakdown. The by-BRANCH chart deliberately
+  // calls this WITHOUT branchId so it keeps showing every branch side-by-side
+  // for cross-branch comparison (design-brief §7; see scope-cut note in
+  // getAnalytics).
+  const where = branchId ? sql` WHERE c.branch_id = ${branchId}` : sql``;
   const res = await db.execute<{
     key: string;
     label: string;
@@ -87,6 +94,7 @@ async function denialRateDim(
       ${nameJoin}
       LEFT JOIN claim_lines cl ON cl.claim_id = c.id
       LEFT JOIN denials d ON d.claim_line_id = cl.id
+      ${where}
      GROUP BY ${keyCol}, x.name
      ORDER BY SUM(d.denied_amount) DESC NULLS LAST`);
   return res.rows.map((r) => ({
@@ -99,14 +107,33 @@ async function denialRateDim(
   }));
 }
 
-export function getAnalytics(tenantId: string): Promise<AnalyticsBundle> {
+export function getAnalytics(
+  tenantId: string,
+  branchId?: string,
+): Promise<AnalyticsBundle> {
+  // Branch scope (design-brief §7): when a single branch is selected we narrow
+  // the headline money KPIs (moneyScope), the by-PAYER breakdown, the reason
+  // Pareto, the trend, and the derived overallRate to that branch's claims only.
+  // The by-BRANCH breakdown chart is INTENTIONALLY left unfiltered — its whole
+  // purpose is cross-branch comparison, so it must keep showing every branch.
+  //
+  // SCOPE CUT (deliberate, not an oversight — mirrors how packages/ingest defers
+  // per-row branch/provider/payer/patient attribution): branch filtering is wired
+  // ONLY into Analytics + Scrubber here, where claims.branch_id is the natural
+  // key. Ingest, Appeals, and Recovery are out of scope for this change — their
+  // data fetching is untouched. The URL ?branch=<id> param is still surfaced in
+  // their command bar but has no filtering effect on those modules.
+  const f = branchId ? { branchIds: [branchId] } : undefined;
   return withSession(tenantId, async (db) => {
     const [money, byPayer, byBranch, pareto, trendPts] = await Promise.all([
-      getMoneyScope(tenantId),
-      denialRateDim(db, "payer"),
+      // Direct (not the cached getMoneyScope) when filtering, so the branch
+      // actually narrows the hero money. The layout's CommandBar keeps using the
+      // cached unfiltered getMoneyScope for its global chrome indicator.
+      branchId ? moneyScope(db, f) : getMoneyScope(tenantId),
+      denialRateDim(db, "payer", branchId),
       denialRateDim(db, "branch"),
-      reasonPareto(db),
-      trend(db),
+      reasonPareto(db, f),
+      trend(db, f),
     ]);
     const totalClaims = byPayer.reduce((a, r) => a + r.claims, 0);
     const deniedClaims = byPayer.reduce((a, r) => a + r.denied, 0);
@@ -133,11 +160,16 @@ export interface ScrubRow {
 export function getScrubRows(
   tenantId: string,
   limit = 60,
+  branchId?: string,
 ): Promise<ScrubRow[]> {
   return withSession(tenantId, async (db) => {
-    const claims = await db
-      .select()
-      .from(schema.claims)
+    // Optional branch narrowing (parameterized; RLS still scopes to this tenant,
+    // so a cross-tenant branch id simply matches no claims — never a leak).
+    const claimQuery = db.select().from(schema.claims);
+    const scoped = branchId
+      ? claimQuery.where(eq(schema.claims.branch_id, branchId))
+      : claimQuery;
+    const claims = await scoped
       .orderBy(desc(schema.claims.total_amount))
       .limit(limit);
     if (claims.length === 0) return [];
@@ -410,6 +442,27 @@ export function getBranches(tenantId: string): Promise<BranchRow[]> {
       .orderBy(schema.branches.name);
     return rows;
   });
+}
+
+/**
+ * Validate a raw `?branch=<id>` URL param against this tenant's REAL branches
+ * (already fetched under RLS, so `branches` only ever contains this tenant's
+ * own rows). Returns the id only if it names one of the tenant's branches;
+ * otherwise undefined → caller treats it as "All branches".
+ *
+ * Security boundary for the branch-scope param: an attacker-supplied or stale /
+ * cross-tenant branch id is silently IGNORED rather than trusted, so it can
+ * never widen the RLS tenant scope or filter on another tenant's branch. The
+ * underlying queries still run under RLS regardless, so even a bug here cannot
+ * leak a foreign tenant's claims — this is defense in depth, not the only gate.
+ */
+export function resolveBranchId(
+  raw: string | undefined | null,
+  branches: { id: string }[],
+): string | undefined {
+  const id = raw?.trim();
+  if (!id) return undefined;
+  return branches.some((b) => b.id === id) ? id : undefined;
 }
 
 export function getRules(tenantId: string) {

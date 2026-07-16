@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/session";
-import { getAnalytics } from "@/lib/data";
+import { getAnalytics, getBranches, resolveBranchId } from "@/lib/data";
 import { formatMoney, formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +17,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ branch?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -26,8 +28,12 @@ export default async function AnalyticsPage({
   const t = await getTranslations("analytics");
   const tc = await getTranslations("common");
 
+  const branches = await getBranches(session.tenantId);
+  const sp = (await searchParams) ?? {};
+  const branchId = resolveBranchId(sp.branch, branches);
+
   const { money, overallRate, byPayer, byBranch, pareto, trend } =
-    await getAnalytics(session.tenantId);
+    await getAnalytics(session.tenantId, branchId);
   const rate = overallRate;
 
   // Text alternative for the trend chart (WCAG 1.1.1): describe what the two

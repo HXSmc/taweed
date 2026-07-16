@@ -1,7 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { mapTaweedModel } from "./models.js";
+import { mapTaweedModel, LLM_MODEL_IDS } from "./models.js";
 import type {
   LlmClient,
   LlmProvider,
@@ -15,9 +15,12 @@ import type {
 //
 // Data residency is enforced at TWO levels, and they are NOT the same field:
 //   - inference_geo: a top-level Messages API REQUEST param that pins where the
-//     model runs. It is set on every call below (INFERENCE_GEO). @anthropic-ai/sdk
-//     ^0.110 predates it in the request TYPE, so it is threaded via a spread
-//     (forwarded on the wire); bump the SDK to make it a typed field.
+//     model runs. @anthropic-ai/sdk >=0.111 types it natively (no spread hack
+//     needed). Only sent when the target model supports it — Haiku 4.5 rejects
+//     it outright with a 400 ("does not support inference_geo"), which silently
+//     broke every AI-1 (explainFlag) call in production until caught live via
+//     chrome-devtools MCP (2026-07-16) — prior verification only ever ran
+//     AI-1 against the fixture/cached path, never a real key.
 //   - Zero Data Retention: an ORG/account-level posture, NOT a request field — it
 //     cannot be "set on the request". It is configured on the Anthropic account
 //     and, because Batches is not ZDR-eligible, this provider DECLARES
@@ -26,6 +29,11 @@ import type {
 //     Batches-based feature must check this flag (and add an explicit ZDR
 //     gate) before routing a PHI-adjacent call through Batches.
 const INFERENCE_GEO = "us";
+
+/** Haiku 4.5 rejects `inference_geo` with a 400; every other tier accepts it. */
+export function supportsInferenceGeo(model: string): boolean {
+  return model !== LLM_MODEL_IDS.haiku;
+}
 //
 // The response→result mapping and system-block construction are extracted as
 // pure functions so they are unit-testable WITHOUT a live call; the provider is
@@ -138,16 +146,17 @@ export function createAnthropicProvider(
       req: StructuredRequest<T>,
     ): Promise<StructuredResult<T>> {
       const started = Date.now();
+      const model = mapTaweedModel(req.model);
       const res = await anthropic.messages.parse({
-        model: mapTaweedModel(req.model),
+        model,
         max_tokens: req.maxTokens,
         system: buildSystemBlocks(req.system, req.cacheSystem),
         messages: [
           { role: "user", content: buildUserContent(req.user, req.documents) },
         ],
         output_config: { format: zodOutputFormat(req.schema) },
-        // Data-residency pin. Spread past the SDK's request type (see header).
-        ...({ inference_geo: INFERENCE_GEO } as { inference_geo: string }),
+        // Data-residency pin — only on models that accept it (see header).
+        ...(supportsInferenceGeo(model) ? { inference_geo: INFERENCE_GEO } : {}),
       }, req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : undefined);
       return mapParseResponse<T>(
         res as unknown as ParseResponseLike<T>,

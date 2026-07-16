@@ -41,6 +41,18 @@
 > so. Corrected in place, reconfirmed via a passing `scrubber-table.test.tsx` (7/7). There is now no
 > self-contained buildable unit left at all — see the new bullet in "Where the project stands" and
 > `docs/NEXT_STEP_PROMPT.md`.
+> **2026-07-16: first real-tester bug-fix pass — 5 confirmed defects fixed, 2 investigated and
+> found already-correct, all verified live against the real Anthropic API and a real Postgres
+> instance (not fixtures).** A tester on Docker/Windows filed a bug list (screenshots) after
+> following README + `docs/review.md`; §1.11's automated suite was run first (confirmed green —
+> the fixtures/mocks never exercised any of these), then every item was reproduced and root-caused
+> live via chrome-devtools MCP before fixing. See the bullet in "Where the project stands" below
+> for the full breakdown. **Two real, previously-undetected product bugs were the actual root
+> cause of the "AI is always off" reports** — not a config/docs gap as first hypothesized — caught
+> only because this was the first time AI-1 and AI-4 were driven against the live API with a real
+> key instead of the fixture provider used everywhere in CI and prior manual passes. Unit
+> **1007/1007** (up from 902), integration **42/42**, typecheck/lint/build all green. Not yet
+> merged/pushed — in progress on `main` in this dir as of this note.
 
 ## Where the project stands
 
@@ -344,6 +356,105 @@
   left alone. `docs/review.md` §2.11 corrected in place; `docs/NEXT_STEP_PROMPT.md` rewritten: **no
   self-contained buildable unit remains at all now** — everything left is blocker-gated
   (BLK-1/2/9, BLK-AI-1/3/4), same list as the "Independently pending" bullets above.
+- **First real-tester bug-fix pass (2026-07-16), on `main` in this dir.** A tester on Docker/
+  Windows followed README + `docs/review.md` and filed a bug list (screenshots): Scrubber AI-1
+  "explanation unavailable", Appeal AI-2 suggestions "can't be inserted and edited", Recovery
+  "mark won/lost doesn't do anything", "Owner report doesn't exist", EOB PDF AI-4 "always off"
+  (two fixtures), dead search bar, and a branch selector that only ever shows "All branches".
+  §1.11's automated suite was run first per the tester's own instructions (green — the fixtures/
+  mocks never exercised any of these, since they only surface against the real API/UI). Every
+  item was then reproduced and root-caused live via chrome-devtools MCP before any fix:
+  - **AI-1 (Scrubber explain) — real code bug, not config.** `packages/ai/src/anthropic-1p.ts`
+    unconditionally sent `inference_geo: "us"` on every model call; Claude Haiku 4.5 (the only
+    model AI-1 routes to, per `models.ts`'s `MODEL_BY_FEATURE`) rejects that parameter with a
+    live 400 (`'claude-haiku-4-5-20251001' does not support inference_geo`). This has silently
+    broken every AI-1 call since it shipped — prior verification passes only ever exercised the
+    fixture/cached provider path, never a real key against the live API. Every other AI feature
+    (AI-2/3/4) routes to Opus/Sonnet, which accept the parameter, so only AI-1 was affected —
+    consistent with the tester's own report that AI-2 worked while AI-1 didn't. Fixed:
+    `supportsInferenceGeo()` gates the param per-model; `@anthropic-ai/sdk` 0.111 also now types
+    `inference_geo` natively, so the old wire-spread workaround was removed too. New unit tests
+    in `packages/ai/test/anthropic-1p.test.ts` pin the Haiku-rejects/Sonnet-Opus-accept contract.
+  - **AI-4 (EOB PDF extraction, both reported fixtures) — real code bug, not config.**
+    `apps/web/lib/actions/eob-extract.ts` ran `extractPdfTextLayer(pdfBytes)` (the born-digital
+    text-layer check) BEFORE handing the same `pdfBytes` reference to the vision adapter.
+    `pdf-parse`'s pdfjs-dist internals detach the underlying `ArrayBuffer` of whatever typed
+    array they're given as a memory optimization — proven with an isolated repro (byte length
+    50554 → 0 after the old call order, stays 50554 with a copy) — so by the time the adapter
+    base64-encoded `pdfBytes`, it was empty, and Sonnet + the Opus escalation both failed
+    outright with a real API 400 (`"PDF cannot be empty"`), collapsing to a generic
+    "could not be processed" with the actual cause never logged (the adapter's own
+    never-throw-on-double-failure contract swallows it into a validator report, not a log line).
+    Fixed with a one-line `.slice()` copy before the text-layer call.
+  - **Recovery "mark won/lost does nothing" — the mutation itself was never broken.** Proven via
+    a direct SQL reproduction of `markAppealOutcome`'s own transaction (UPDATE succeeded,
+    reverted after). The real bug: `markAppealOutcomeForm` discarded the action's return value,
+    so every `{ok:false}` early-return (RBAC denial, invalid input, rate-limit, appeal-not-found)
+    produced zero user feedback — a failed click looked identical to a successful no-op. Fixed:
+    the wrapper now redirects with `?recoveryError=1` on failure so the page renders an inline
+    `role="alert"` banner (reuses the existing `settings.actionFailed` i18n string, no new key).
+    5 new tests in `apps/web/test/recovery-form-error-surfacing.test.ts`. No money-guardrail
+    logic (`packages/analytics/src/recovery.ts`'s `resolveRecovery`) was touched.
+  - **Owner report "doesn't exist" — reachable and correct; a discoverability gap, not a bug.**
+    `rbac.ts`'s `recovery: rcm="full"` and the page's own `isVisible` gate both pass for rcm;
+    `/en/recovery/owner-report` renders correctly by direct URL. Root cause of the report: rcm's
+    default landing page is Analytics (`landingModule("rcm") === "analytics"`), whose only report
+    CTA is "Build audit report" → a *different* page; the owner report's only in-app link is a
+    card on Overview, which rcm never lands on by default. No code change made (existing
+    `owner-report-page.test.ts` already covers the rcm path and passes) — flagged as a follow-up:
+    add a second header link on `/analytics` pointing at the owner report, or surface it from the
+    Recovery module landing instead. Not done in this pass — needs `analytics/page.tsx` +
+    an i18n key, both one line, low risk, next session.
+  - **Appeal AI-2 "can't be inserted and edited" — did not reproduce; already correct.**
+    `appeals-composer.tsx`'s `insertParagraph` already reads the reviewer-edited textarea value
+    (`edited[key] ?? original`), not the stale AI original. 2 new regression tests in
+    `apps/web/test/appeals-composer-a11y.test.tsx` pin the edited-vs-original insert behavior so
+    a future regression is caught; no product code change.
+  - **Dead search bar — real gap, now built.** The command-bar `<input type="search">` had no
+    `onChange`/submit handler at all. Now a controlled input; Enter with a query navigates to
+    `/scrubber?q=<query>`, which substring-filters its already-loaded claim rows by claim id /
+    NPHIES id / payer name (no new search index/API/dependency). New test:
+    `apps/web/test/command-bar-search.test.tsx`.
+  - **Branch selector ("only ever shows All branches") — real gap, contained scope per user
+    decision.** `tenant-switcher.tsx` was a fully static shell (no selection handler at all) —
+    the design brief (§7) specs a full multi-select filtering every module, but that's a much
+    bigger, money-adjacent change; the user explicitly scoped this pass to: make the switcher
+    functional (`?branch=<id>` URL param, updated trigger label), and wire REAL filtering into
+    Analytics + Scrubber only (the two pages whose data already keys off `claims.branch_id`).
+    Ingest/Appeals/Recovery show the same switcher chrome but are deliberately unfiltered — see
+    the scope-cut comment on `getAnalytics` in `lib/data.ts`. `resolveBranchId()` is the security
+    boundary: a `?branch=` value that isn't one of the tenant's own (RLS-scoped) branches is
+    silently ignored, never trusted as a filter (RLS itself is defense-in-depth underneath
+    regardless). Verified live: at-risk SAR went 35,959 (all branches) → 19,524 (Riyadh only);
+    the "by branch" cross-branch comparison chart correctly stays unfiltered. New tests:
+    `apps/web/test/tenant-switcher-branch-select.test.tsx` (5), plus `resolveBranchId`/
+    `getScrubRows`/`getAnalytics` branch-scoping cases added to `apps/web/test/data.test.ts`.
+  - **Process note — a orchestrator-spoke incident, caught and recovered, no data lost.** Root
+    causes for AI-1/AI-4 were found and fixed directly; the remaining 5 items were parallelized
+    across GLM spokes per `~/.claude/orchestrator/PROTOCOL.md`. One spoke (Recovery) ran an
+    out-of-scope `git stash pop` that collided with two others running concurrently in the same
+    (non-worktree-isolated) working tree, silently reverting the search-bar and appeal-insert-
+    edit test files to HEAD. Caught during diff review (not by trusting the spoke's own "done"
+    report), reconstructed both from the accepted reports' exact content, and re-verified with a
+    full fresh suite once the tree was quiet. Lesson for future waves touching overlapping shell
+    files: either isolate concurrent spokes in worktrees, or explicitly forbid `git stash`/
+    `git checkout` in every spec (neither was forbidden before this).
+  - Verified: unit **1007/1007** green (up from 902 pre-pass, 984 immediately post-baseline —
+    the gap is 6 new test files/blocks added across the fixes above), integration **42/42**,
+    root+web typecheck clean, lint clean (one pre-existing, unrelated `.claude/workflows/
+    multi-lens-review.js` parse error — ECC tooling, not product code, untouched by this pass),
+    `apps/web` production build green. Every fix live-verified via chrome-devtools MCP against
+    the real running app (not just unit tests) — dev server `.next` cache needed one clean
+    rebuild mid-session after heavy hot-reload churn corrupted its webpack chunk manifest
+    (`Cannot find module './911.js'`), unrelated to any of the fixes.
+  - **Doc fix, same pass:** `docs/review.md` §1.10 ("Testing the NEW AI features") only ever
+    documented the non-Docker `apps/web/.env.local` method with no warning that it has zero
+    effect inside the Docker container — a real trap for exactly the audience most of
+    `docs/review.md` targets (its own §1.3 has Docker users start there via `docker compose up
+    -d`). This is the most likely explanation for the tester's setup silently not taking, even
+    though it turned out NOT to be the actual root cause of the reported bugs (both were real
+    code defects, confirmed by reproducing them from a correctly-configured non-Docker dev
+    server). Added an explicit callout cross-referencing README's docker-compose.yml method.
 - Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ + real-data-gaps closed ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?

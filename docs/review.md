@@ -40,7 +40,9 @@ This part is a complete, click-by-click script. If you follow it top to bottom y
 > **Not a programmer, or just want the fastest path?** The repo root `README.md` has a fully
 > click-by-click Docker quick start — install Docker Desktop, paste two commands, done, no Node/pnpm
 > install needed. Everything from §1.7 onward (login, the walkthrough, §1.14's test fixtures) works
-> identically either way. §1.1–§1.6 below are for a **local (non-Docker) developer setup** instead.
+> identically either way — **except §1.10** (enabling AI): its `apps/web/.env.local` method is
+> non-Docker-only and has no effect on a Docker deployment — see the callout at the top of §1.10
+> for the Docker equivalent. §1.1–§1.6 below are for a **local (non-Docker) developer setup** instead.
 
 ## 1.1 Prerequisites (what must be installed)
 
@@ -395,6 +397,19 @@ To turn AI **on** locally you need **three** things to line up (defense in depth
 3. **An Anthropic API key** — the real model provider.
 
 (There's also a fourth layer — a per-tenant database flag — but it **defaults to ON** when no row exists, so locally you can ignore it. It exists to switch a single clinic off in production.)
+
+> **Running via the Docker quick start (README.md)? Stop here and use README's method instead.**
+> `apps/web/.env.local` is only read by the local (non-Docker) `pnpm --filter @taweed/web dev`
+> server — it does **not** exist inside the Docker container, so setting it has **zero effect**
+> on a `docker compose up` deployment. A Docker tester who follows the `.env.local` steps below
+> will see every AI feature stay stuck on "unavailable" with no error, because the flags were
+> never actually read. This bit a real tester (2026-07-16) who followed this exact section
+> before realizing they were on Docker. If you're on Docker, set the same six variables inside
+> **`docker-compose.yml`**'s `app: environment:` block instead — see README.md → "Testing the AI
+> features" for the click-by-click version — then `docker compose up -d` to pick them up (no
+> `--build` needed, only a container recreate).
+>
+> Everything below this note is for the **non-Docker** `pnpm dev` path only.
 
 **Easiest way: create `apps/web/.env.local`** (Next.js loads it automatically for the dev server). Put:
 
