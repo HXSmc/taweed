@@ -726,6 +726,17 @@ IMPLEMENT:
   suites / 1075 tests, 1072 pass / 0 fail / 3 skipped)/`pnpm --filter @taweed/web build` all
   confirmed green on the pushed tip before pushing (no CI run separately checked post-push as of
   this note).
+- **As of this writing (after the `/autopilot` full-walkthrough-audit push, 2026-07-17, same day),
+  `back-up` = `0c8f800`** (the pre-push `main`/`origin/main` tip — the FHIR-audit git-workflow
+  doc-sync commit) **and `main`/`origin/main` = `e0ffaa5`** (`fix: EOB outcome-semantics twin +
+  Owner-report discoverability link`, a plain commit on `main` directly, no merge branch, no
+  divergence from `origin/main` to reconcile this time). `back-up` is a direct git-graph ancestor
+  of `main` (confirmed via `git merge-base --is-ancestor back-up main`), one commit behind,
+  matching the ritual's intent. `git push -f origin back-up` succeeded on the first attempt this
+  time (no classifier block). Full `vitest run` (454 suites / 1076 tests, 1073 pass / 0 fail / 3
+  skipped), typecheck, lint (baseline), and `pnpm --filter @taweed/web build` all confirmed green
+  on the pushed tip before pushing — plus 3 parallel Sonnet reviewers (architecture/correctness,
+  security, quality), all ACCEPT round 1, before the commit was made at all.
 
   ```bash
   git branch -f back-up main        # snapshot the current main tip (the 'old' commit)
