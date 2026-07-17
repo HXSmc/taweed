@@ -11,6 +11,9 @@ const claim = {
   created: "2026-01-01",
   provider: { reference: "Organization/o1" },
   priority: { coding: [{ code: "normal" }] },
+  insurance: [
+    { sequence: 1, focal: true, coverage: { reference: "Coverage/cov1" } },
+  ],
 };
 
 const claimResponse = {

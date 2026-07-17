@@ -54,7 +54,9 @@ describe("normalize — denial explosion", () => {
     const n = normalizeScenario("fullDenial");
     expect(n.denials).toHaveLength(2);
     expect(new Set(n.denials.map((d) => d.claim_line_id)).size).toBe(2);
-    expect(n.response.outcome).toBe("error");
+    // FHIR R4 ClaimResponse.outcome "complete" = adjudication finished
+    // without errors, regardless of denial outcome (see scenarios.ts).
+    expect(n.response.outcome).toBe("complete");
   });
 
   it("partialDenial denies fewer lines than exist", () => {

@@ -109,7 +109,7 @@ describe("csvRowsToClaims — happy path", () => {
     expect(c.denials).toEqual([]);
   });
 
-  it("carries a valid denial pair into a DenialRow and a partial response outcome", () => {
+  it("carries a valid denial pair into a DenialRow, response outcome stays 'complete'", () => {
     const rows = [
       row({
         "Claim ID": "CLM-2",
@@ -126,7 +126,7 @@ describe("csvRowsToClaims — happy path", () => {
     expect(claims).toHaveLength(1);
     const c = claims[0]!;
 
-    expect(c.response.outcome).toBe("partial");
+    expect(c.response.outcome).toBe("complete");
     expect(c.response.adjudicated_amount).toBe("380.00");
 
     expect(c.denials).toHaveLength(1);
@@ -270,7 +270,7 @@ describe("csvRowsToClaims — deniedAmount / reasonCode pairing", () => {
     ]);
   });
 
-  it("accepts deniedAmount exactly equal to totalAmount, labeled outcome 'error' (fully denied, not partial)", () => {
+  it("accepts deniedAmount exactly equal to totalAmount, outcome stays 'complete' (fully denied is still error-free adjudication per FHIR R4)", () => {
     const rows = [
       row({
         "Claim ID": "CLM-E",
@@ -282,7 +282,7 @@ describe("csvRowsToClaims — deniedAmount / reasonCode pairing", () => {
     const { claims, quarantined } = csvRowsToClaims(rows, mapping(), CTX);
     expect(quarantined).toEqual([]);
     expect(claims[0]!.response.adjudicated_amount).toBe("0.00");
-    expect(claims[0]!.response.outcome).toBe("error");
+    expect(claims[0]!.response.outcome).toBe("complete");
   });
 
   // Regression: a reasonCode with deniedAmount that parses to exactly 0 must

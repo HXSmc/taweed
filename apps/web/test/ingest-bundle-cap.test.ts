@@ -77,6 +77,10 @@ function claimAndResponse(i: number): unknown[] {
     patient: { reference: "Patient/p1" },
     created: "2026-01-01",
     provider: { reference: "Organization/o1" },
+    priority: { coding: [{ code: "normal" }] },
+    insurance: [
+      { sequence: 1, focal: true, coverage: { reference: "Coverage/cov1" } },
+    ],
     total: { value: 100, currency: "SAR" },
   };
   const claimResponse = {

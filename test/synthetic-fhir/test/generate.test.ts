@@ -53,10 +53,12 @@ describe("generateBundle — scenario semantics", () => {
     const lineCount = pairs[0]!.claim.item?.length ?? 0;
     expect(denied.length).toBeGreaterThan(0);
     expect(denied.length).toBeLessThan(lineCount);
-    expect(response.outcome).toBe("partial");
+    // FHIR R4 ClaimResponse.outcome "complete" = adjudication finished
+    // without processing errors, regardless of denial outcome.
+    expect(response.outcome).toBe("complete");
   });
 
-  it("fullDenial denies every line with outcome error", () => {
+  it("fullDenial denies every line with outcome complete", () => {
     const { pairs } = parseBundle(generateBundle("fullDenial", SEED));
     const response = pairs[0]!.claimResponse;
     const lineCount = pairs[0]!.claim.item?.length ?? 0;
@@ -64,7 +66,7 @@ describe("generateBundle — scenario semantics", () => {
       deniedAdjudications(response).map((d) => d.itemSequence),
     );
     expect(deniedLines.size).toBe(lineCount);
-    expect(response.outcome).toBe("error");
+    expect(response.outcome).toBe("complete");
   });
 
   it("missingPreAuth omits preAuthRef and denies with TWD-D02", () => {

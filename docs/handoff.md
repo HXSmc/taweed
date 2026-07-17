@@ -70,6 +70,12 @@
 > calculation (negligible savings at pre-pilot volume; no compliance benefit as designed; not the
 > highest-value next step) with revisit triggers; cross-linked from `review.md`, `handoff.md` (this
 > doc's must-read index), and `blocker.md` (commit `552dbcb`). No test/typecheck deltas — docs only.
+> **2026-07-17: FHIR R4 validator full audit — DONE.** `packages/fhir`'s base-R4
+> validator gained full nested-element SHALL checks (was 7-8 top-level fields only); a real
+> `ClaimResponse.outcome` semantics bug (denial-amount-keyed instead of processing-status-keyed)
+> found and fixed beyond cardinality gaps. NPHIES-profile stub confirmed correctly untouched
+> (boundary research: public conformance page is license-gated-too, no exception). See the new
+> bullet in "Where the project stands" and `docs/NEXT_STEP_PROMPT.md` for the follow-up item.
 
 ## Where the project stands
 
@@ -472,6 +478,44 @@
     though it turned out NOT to be the actual root cause of the reported bugs (both were real
     code defects, confirmed by reproducing them from a correctly-configured non-Docker dev
     server). Added an explicit callout cross-referencing README's docker-compose.yml method.
+- **FHIR R4 validator full audit — DONE, 2026-07-17, uncommitted.** Orchestrated via Sonnet-5
+  hub + `agy` (Antigravity CLI, non-GLM) for research + Opus-pinned audit/review agents (Sonnet
+  for the mechanical fix/verify legs) — no GLM anywhere in the pipeline (weekly GLM quota was at
+  100%). `packages/fhir/src/validate-r4.ts` previously checked only 7-8 top-level scalar fields
+  per resource; it now validates every FHIR R4 SHALL element down to the leaf, including
+  conditionally-required nested elements: `Claim.insurance` (1..\*, was completely missing) plus
+  per-entry requirements on `careTeam`/`diagnosis`/`procedure`/`item`/`item.detail`/
+  `item.detail.subDetail`/`insurance`, and on the `ClaimResponse` side `item`/`adjudication`/
+  `detail`/`subDetail`/`total`/`payment`/`insurance`/`processNote`/`error`/`addItem`. 19 new
+  RED-then-GREEN test cases in `packages/fhir/test/validate-r4.test.ts`. Research sourced the live
+  `hl7.org/fhir/R4/claim.profile.json` StructureDefinition directly (not the HTML page) via `agy`;
+  one research call (ClaimResponse cardinalities) hit agy's own 5-minute timeout and was retried
+  successfully. **Real bug found beyond cardinality:** `ClaimResponse.outcome` was derived from
+  denial amount (`totalRejected > 0 ? "partial"/"error" : "complete"`), but FHIR R4's
+  `RemittanceOutcome` value set only encodes *processing* status — a cleanly-adjudicated-but-denied
+  claim is `"complete"`, not `"error"`/`"partial"`. Fixed in `packages/ingest/src/csv-to-claims.ts`
+  and propagated through `test/synthetic-fhir/src/scenarios.ts` (all 9 denial scenarios) plus 3
+  test files that had the wrong semantics hard-coded as assertions. **Flagged, not fixed (separate
+  follow-up needed):** `apps/web/lib/eob-to-normalized.ts:184` has the identical outcome-mapping
+  bug on the EOB-OCR path (`apps/web/test/eob-to-normalized.test.ts:166` still asserts the wrong
+  value) — out of this pass's scope (audit only covered `packages/ingest`+`packages/normalizer`).
+  NPHIES-profile boundary was explicitly researched (is the public
+  `portal.nphies.sa/ig/conformance.html` page usable to hand-roll profile validation, separate
+  from the licensed `nphies-fs#1.0.0` IG package?) — verdict **LICENSE-GATED-TOO** (the public page
+  has zero profile schemas, only generic SHALL/SHOULD terminology + IP declarations); `packages/
+  fhir/src/nphies-profile.ts`'s creds-gated stub was confirmed untouched (empty diff) by the Opus
+  reviewer, verdict **ACCEPT**. Process note: a workflow-script bug meant the agy-sourced spec text
+  reached 3 of 4 audit agents as literal `undefined` — they self-corrected by cross-verifying
+  directly against the installed `@medplum/fhirtypes` `.d.ts` files (itself R4-StructureDefinition-
+  generated) instead of guessing, and the Opus reviewer independently re-verified every citation
+  against that same primary source before accepting; worth knowing, not worth redoing. Also:
+  two parallel `Fix`-phase agents both touched the same `packages/fhir` area — one detected the
+  concurrent write mid-task and correctly did not clobber it (only added a missing fixture field
+  elsewhere), but this was a coordination gap that happened to converge safely rather than one
+  that was structurally prevented — worth worktree-isolating or sequencing overlapping-file fix
+  agents in future waves. Verified: **452 suites / 1075 tests, 1072 pass, 0 fail, 3 skipped** (unit
+  + integration, against the repo's own `docker compose` Postgres). 9 files changed, 461
+  insertions / 27 deletions. **Not committed** — awaiting the user's go-ahead.
 - Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ + real-data-gaps closed ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
@@ -517,7 +561,7 @@ docker compose down
 ## Repo map (what exists — all built unless noted)
 
 - `packages/shared` — canonical row types + placeholder `DENIAL_REASON_CODES` (8 fake `TWD-*`, `TODO(nphies-creds)`; replaced by B2).
-- `packages/fhir` — R4 parse + base-R4 validate (`@medplum/fhirtypes` for types only); `validateAgainstNphiesProfile()` is a creds-gated stub (real IG validation = B6).
+- `packages/fhir` — R4 parse + full base-R4 validate down to every SHALL leaf element (`@medplum/fhirtypes` for types only; audited + hardened 2026-07-17, was top-level-only before); `validateAgainstNphiesProfile()` is a creds-gated stub, boundary confirmed license-gated-too (real IG validation = B6).
 - `packages/normalizer` — FHIR pair → canonical rows, denials exploded.
 - `packages/db` — **Drizzle** schema + migrations **through `0009`**, **RLS (FORCE + non-superuser `taweed_app` role)**, `withSession` → `withTenant` (auth-derived tenant), `insertNormalizedClaim`. **EXECUTE:** `0004` adds `claims.data_origin` (CHECK synthetic|production) + nullable real signal columns; `0005` adds `recovery_baselines`. **AI-0:** `0006` adds `llm_calls` (append-only LLM audit, hashes only), `flag_explanations` (AI-1 dedupe cache), `tenant_ai_settings` (per-tenant AI kill switch). **AI-2/AI-3:** `0007` adds `appeal_suggestions` + rule-authoring columns; `0008` backfills `rules.status` as the single source of rule liveness. **AI-4:** `0009` adds `eob_extractions` (`pending_review`/`approved`/`rejected`, mutable — not append-only like `llm_calls`). All tenant-scoped tables RLS ENABLE+FORCE + tenant_isolation policy. *(The custom migrate runner applies all `drizzle/*.sql` sorted.)*
 - `packages/audit` — **BUILT.** Append-only PHI audit log; tenant from the active RLS GUC; PHI-leak guard. Written on every PHI read/write/export.

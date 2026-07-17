@@ -252,15 +252,15 @@ export function csvRowsToClaims(
       });
     }
 
-    // FHIR ClaimResponse.outcome: no denial -> "complete"; denied amount equal
-    // to the total -> "error" (fully rejected, not partially adjudicated);
-    // any lesser denied amount -> "partial".
-    const outcome: ClaimResponseRow["outcome"] =
-      denialCheck.deniedAmount === null
-        ? "complete"
-        : denialCheck.deniedAmount === totalAmount
-          ? "error"
-          : "partial";
+    // FHIR ClaimResponse.outcome (required binding to RemittanceOutcome,
+    // hl7.org/fhir/R4/valueset-remittance-outcome.html): "complete" means
+    // adjudication finished without errors — it says nothing about whether
+    // the claim was paid, partially denied, or denied in full. "error" means
+    // the *processing itself* failed (e.g. a malformed claim); "partial"
+    // means adjudication is still in progress. A CSV row that carries a
+    // (possibly full) denial amount was still successfully adjudicated, so
+    // its outcome is "complete" regardless of how much was denied.
+    const outcome: ClaimResponseRow["outcome"] = "complete";
 
     const response: ClaimResponseRow = {
       id: newId(),
