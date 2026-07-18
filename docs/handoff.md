@@ -877,4 +877,18 @@ IMPLEMENT:
   tooling-script parse error unrelated to this diff, not fixed as out of scope) /
   `pnpm --filter @taweed/web build` all confirmed green on the pushed tip before pushing.
 
+- **As of this writing (after the size-diversity fixtures / extractEob maxTokens-fix push,
+  2026-07-18, same day), `back-up` = `82bf051`** (the pre-push `main`/`origin/main` tip — the
+  prior push's own doc-sync commit) **and `main`/`origin/main` = `121806f`**
+  (`fix: extractEob maxTokens truncation on large documents + size-diversity test fixtures`, a
+  plain commit on `main` directly, no merge branch, no divergence — `git fetch` immediately before
+  pushing showed 0 behind/1 ahead). `back-up` confirmed one commit behind `main`. `git push -f
+  origin back-up` succeeded on the first attempt this time (no classifier block) — the user's
+  request that triggered this push explicitly pre-authorized "commit and push and if needed force
+  push backup," so no separate real-time go-ahead was needed. Local `pnpm typecheck` / full `pnpm
+  test` (157 suites / 1033 tests, all pass) / `pnpm test:int` (9 suites / 42 tests, all pass, DB
+  re-seeded after) / `pnpm lint` (clean on every file this pass touched) / `pnpm --filter
+  @taweed/web build`, PLUS the real 44-item × 2-tier live `AI_EVALS_LIVE=1` eval itself (both
+  tests passing clean post-fix), all confirmed green on the pushed tip before pushing.
+
 - **Isolated feature work** (e.g. EXECUTE): create a fresh worktree + branch (`superpowers:using-git-worktrees`), build, merge to `main`, then delete the worktree + branch. NOTE: gitignored local docs (`docs/NEXT_STEP_PROMPT.md`, `docs/blocker.md`, `design/`, …) do **not** sync between a worktree and `main` — edit them directly in whichever dir you read from.
