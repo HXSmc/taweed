@@ -1018,4 +1018,30 @@ IMPLEMENT:
   2-8 are PAUSED, GLM 5h quota hit 100% mid-item-1** — resume once a confirmed reset lands (see
   `resume.md` at repo root if this session is picking back up from that pause).
 
+- **As of this writing (after the audit-workflow items 2-5 pushes, 2026-07-18, later the same
+  session — GLM quota reset + upgraded Lite→Pro mid-pause), `back-up` = `f4a3217`** (the pre-push
+  `main`/`origin/main` tip — item 4's dependency-audit doc commit) **and `main`/`origin/main` =
+  `80d854e`** (`fix: audit-workflow item 5 — 3 WCAG AA findings in tenant-switcher branch
+  selector`, a plain commit on `main` directly, no merge branch). `back-up` confirmed one commit
+  behind `main`; `git push -f origin back-up` succeeded on the first attempt (no classifier block).
+  This entry covers 4 pushes that landed without an intermediate `back-up` sync each time (items
+  2-4 were docs-only/read-only passes, low risk; item 5 is the first with real source changes
+  since the item-1 entry above, so `back-up` is caught up now):
+  - Item 2 (security, 4 parallel GLM finders) — `1948c5c`, 0 confirmed findings, read-only.
+  - Item 3 (API/server-action auth-check, 1 GLM finder) — `3723cad`, 0 confirmed across 22
+    entrypoints, read-only.
+  - Item 4 (dependency CVEs, agy 3-agent research) — `f4a3217`, 0 confirmed current
+    vulnerabilities; agy's 4 "active CVE" claims all independently verified wrong (real CVEs
+    misapplied to the wrong installed version) — see `docs/audit docs/deps.md` pass #17.
+  - Item 5 (WCAG AA, 1 GLM finder + hub live chrome-devtools verify + 1 GLM fixer) — `80d854e`, 3
+    confirmed findings in the new branch-scoping `tenant-switcher.tsx`, all fixed and
+    hub-live-reverified (real accessible-name tree + real computed-style contrast) — see
+    `docs/audit docs/a11y.md` pass #18.
+  Gates confirmed green on `80d854e` before pushing: typecheck (root + `apps/web`) clean; full
+  unit suite **1053/1053** (158 files); `apps/web` production build green. Integration suite not
+  re-run for item 5 (UI-only fix, no DB/backend code touched — re-wiping the shared local Postgres
+  would be disproportionate; items 2-4 were read-only, no gates needed beyond what each pass
+  documents). Items 6-8 (minimap, ponytail, UI anti-slop) + item 10 (final summary) remain; item 9
+  (production readiness) stays skipped per the standing not-public-facing gate.
+
 - **Isolated feature work** (e.g. EXECUTE): create a fresh worktree + branch (`superpowers:using-git-worktrees`), build, merge to `main`, then delete the worktree + branch. NOTE: gitignored local docs (`docs/NEXT_STEP_PROMPT.md`, `docs/blocker.md`, `design/`, …) do **not** sync between a worktree and `main` — edit them directly in whichever dir you read from.
