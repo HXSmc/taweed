@@ -1041,7 +1041,53 @@ IMPLEMENT:
   unit suite **1053/1053** (158 files); `apps/web` production build green. Integration suite not
   re-run for item 5 (UI-only fix, no DB/backend code touched — re-wiping the shared local Postgres
   would be disproportionate; items 2-4 were read-only, no gates needed beyond what each pass
-  documents). Items 6-8 (minimap, ponytail, UI anti-slop) + item 10 (final summary) remain; item 9
-  (production readiness) stays skipped per the standing not-public-facing gate.
+  documents).
+
+- **As of this writing (after the audit-workflow items 6-8 pushes, 2026-07-18, completing the
+  9-item queue — item 9 stays skipped per the standing not-public-facing gate), `back-up` =
+  `39560b8`** (the pre-push `main`/`origin/main` tip — item 7's fix commit) **and
+  `main`/`origin/main` = `050565f`** (`docs: audit-workflow item 8 (UI anti-slop) — 0 confirmed
+  findings`, a plain commit on `main` directly, no merge branch). `back-up` confirmed one commit
+  behind `main`; `git push -f origin back-up` succeeded on the first attempt (no classifier
+  block). This entry covers 3 pushes:
+  - Item 6 (codebase minimap, 1 GLM re-map spoke + 1 GLM fix spoke) — `de37531`: new Docker
+    subsystem documented; backlog cross-checked (0 resolved, 2 sharpened); 1 safe fix landed
+    (duplicated branch-scope block → `resolveBranchScope` helper); 1 candidate (Dockerfile COPY
+    list) deliberately deferred as unverifiable on this host (`docker build` hangs here).
+  - Item 7 (ponytail over-engineering, hub-run + 1 GLM fix spoke) — `39560b8`: 1 dead field
+    removed (`LlmProvider.capabilities`, never read at runtime, -39 lines); 1 candidate REJECTED
+    (2 EOB-extraction fallback-ladder adapter stubs — same deliberate external-blocker-gated
+    pattern as `packages/platform`, an Explore agent had wrongly flagged them as dead).
+  - Item 8 (UI anti-slop, 1 GLM finder + hub grep spot-check) — `050565f`: 0 confirmed findings
+    out of 8 AI-SaaS-template tells across the landing page, login page, and 3 dashboard pages.
+  Gates confirmed green on `050565f` before pushing: typecheck clean; full unit suite **1051/1051**
+  (2 fewer than item 5's count — the 2 dead-field test blocks item 7 correctly removed); `apps/web`
+  production build green. See `docs/audit docs/{minimap,ponytail-debt,ui-slop}.md` (minimap/
+  ponytail-debt/ui-slop are gitignored, local-only) and `audit.md` passes #19-21 for full detail.
+  **This completes all 9 queued items** (1-8 done, 9 skipped) — item 10 (final `audit.md` summary)
+  follows this same push.
+
+- **As of this writing (after the CI-failure catch + fix + item-10 summary pushes, 2026-07-18 into
+  2026-07-19, same session), `back-up` = `1ef7b72`** (the lint-fix commit itself) **and
+  `main`/`origin/main` = `4bdf920`** (`docs: audit-workflow item 10 — queue completion summary`).
+  **Real CI failure caught this window**: item 7's fix (`39560b8`) shipped a real
+  `@typescript-eslint/no-unused-vars` error (`createAnthropicProvider` imported but unused after
+  its only consuming test block was deleted) — missed locally because the known
+  `.claude/**`-untracked-harness lint noise crowded out the real error in the same `pnpm lint`
+  output, and lint wasn't re-run after item 7's fix (typecheck/tests/build were, lint was assumed
+  clean from the established baseline). **Caught via a CI-failure email the user forwarded**, not
+  by the hub's own verification — fixed same session (`1ef7b72`), re-verified in isolation
+  (`eslint packages/ai/test/anthropic-1p.test.ts` clean, root typecheck clean, the specific test
+  file 10/10), pushed. **CI confirmed green** on both the fix commit and every commit after it
+  (`a796b65`, `4bdf920`) via `gh api .../actions/runs` polling before this `back-up` sync — not
+  assumed from local gates alone this time. `back-up` confirmed one commit behind `main` (an
+  earlier self-correction was needed mid-sync: a `git branch -f back-up` was first run from `main`'s
+  own new tip, briefly pointing `back-up` at the same commit as `main` — caught and re-pointed to
+  the correct one-behind commit before push, same class of mistake this file's own 2026-07-18 AI-4
+  entry already documents). Lesson recorded in `docs/audit docs/audit.md`'s Learnings: **never skip
+  `pnpm lint` after any spoke fix touching source, even when local output "looks like the usual
+  baseline" — read the whole output, don't pattern-match.**
+  This closes out the full 2026-07-18 `/audit-workflow` 9-item queue (items 1-8 done, 9 skipped
+  per the standing gate, item 10 this summary) — genuinely done, CI-verified, nothing pending.
 
 - **Isolated feature work** (e.g. EXECUTE): create a fresh worktree + branch (`superpowers:using-git-worktrees`), build, merge to `main`, then delete the worktree + branch. NOTE: gitignored local docs (`docs/NEXT_STEP_PROMPT.md`, `docs/blocker.md`, `design/`, …) do **not** sync between a worktree and `main` — edit them directly in whichever dir you read from.
