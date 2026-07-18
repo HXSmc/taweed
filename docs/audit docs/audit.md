@@ -36,6 +36,7 @@
 | 13 | Incremental re-run: diff-scoped bugs + security (CSP/CI/Docker) | 2026-07-14 | `bugs.md` + `secure.md` (root, gitignored at the time) | **0 confirmed, 0 refuted** — clean pass; Dockerfile-runs-as-root noted FYI | unit 982/982, typecheck green, lint clean (CI) |
 | 14 | **Full `/audit-workflow` queue via GLM hub-spoke orchestrator, item 1 (bugs)** | 2026-07-18 | `bugs.md` | 4 confirmed + 1 carried-over (5 total), all fixed | item 1 DONE: tsc clean, unit+int 1092/1092, lint baseline, build green. |
 | 15 | **Same queue, item 2 (security)** — 4 parallel GLM finders by area (injection/authn/secrets/access-control), diff-scoped since pass #13 + full sweep | 2026-07-18 | `secure.md` | **0 confirmed, 28 considered-and-refuted** — clean pass; branch-scoping IDOR verified safe; one human-sign-off item flagged (`listDemoAccounts` guard reversal, sound tradeoff) | read-only, no fix phase needed; GLM 5h at 6% after (Pro-tier quota, upgraded from Lite this same day) |
+| 16 | **Same queue, item 3 (API/server-action auth-check)** — 1 GLM finder, exhaustive per-export enumeration | 2026-07-18 | (no dedicated file, matches pass #3/#9 convention) | **0 confirmed across 22 entrypoints** (2 routes + 17 gated actions + 3 deliberate no-check) — 3rd consecutive clean result for this exact re-audit (after #3's original 15 fixes, #9's 0-finding re-check) | read-only, no fix phase needed |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -141,6 +142,25 @@ first.
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #16 — full `/audit-workflow` GLM hub-spoke run, item 3 API auth-check (2026-07-18)
+
+- **A narrowly-scoped, single finder spoke is the right fleet size for a fully-enumerable
+  surface** (22 entrypoints — 2 routes + 11 action files), matching pass #3/#9's precedent of
+  right-sizing the fleet to the surface, not to how thorough the pass "feels." One spoke,
+  20-minute budget, exhaustive per-export table — cheaper and just as conclusive as a larger
+  fleet would have been here.
+- **A different framing lens on the same code can still be worth running even right after a
+  broader pass already covered the same files** — item 2's access-control spoke and this item's
+  "missing auth check" spoke both read every Server Action, but the second was told to check
+  ordering specifically (is the gate the FIRST awaited statement, before any side effect) which
+  the first hadn't been asked to verify explicitly. Both came back clean, which is itself useful
+  confirmation, not a wasted duplicate pass — the two lenses ask genuinely different questions
+  even over identical files.
+- **`authorizeAction()` collapses "authenticated" and "authorized for this module" into one call**
+  (`getSession()` internally, then a capability check) — worth noting explicitly in a per-entrypoint
+  table so "Auth" and "AuthZ" columns don't look like two separate checks when they're actually one
+  function doing both, fail-closed if session is null.
 
 ### Pass #15 — full `/audit-workflow` GLM hub-spoke run, item 2 security (2026-07-18)
 
