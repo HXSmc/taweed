@@ -51,10 +51,4 @@ describe("FixtureProvider (CI never calls the live API)", () => {
     expect(res.parsed).toBeNull();
     expect(res.rawOutput).toBe("");
   });
-
-  it("advertises no Batches/Files capability (not ZDR-eligible)", () => {
-    const provider = createFixtureProvider({});
-    expect(provider.capabilities).toEqual({ batches: false, files: false });
-    expect(provider.name).toBe("fixture");
-  });
 });

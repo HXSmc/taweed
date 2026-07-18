@@ -73,7 +73,6 @@ function stub(assist: AppealAssist, verify: AppealVerify): {
   const provider: LlmProvider = {
     name: "stub",
     mapModelId: (m) => `stub-${m}`,
-    capabilities: { batches: false, files: false },
     client: {
       async parseStructured<T>(req: StructuredRequest<T>) {
         calls += 1;

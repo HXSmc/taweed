@@ -72,6 +72,5 @@ export function createFixtureProvider(fixtures: FixtureMap): LlmProvider {
     name: "fixture",
     client,
     mapModelId: mapTaweedModel,
-    capabilities: { batches: false, files: false },
   };
 }

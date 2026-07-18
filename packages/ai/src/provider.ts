@@ -70,13 +70,4 @@ export interface LlmProvider {
   name: string;
   client: LlmClient;
   mapModelId(model: TaweedModel): string;
-  /**
-   * Batches is NOT ZDR-eligible, so `batches` DECLARES that this provider
-   * keeps it off for PHI-adjacent calls (plan 04 §3.3). This is NOT an
-   * enforced runtime gate — no code path currently issues a Batches request,
-   * so nothing reads this field today. Any future Batches-based feature MUST
-   * check `capabilities.batches` (and add an explicit ZDR gate) before
-   * routing a PHI-adjacent call through it.
-   */
-  capabilities: { batches: boolean; files: boolean };
 }

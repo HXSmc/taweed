@@ -74,19 +74,6 @@ describe("supportsInferenceGeo", () => {
   });
 });
 
-describe("createAnthropicProvider capabilities", () => {
-  it("declares batches=false — Batches is not ZDR-eligible for this PHI-adjacent provider", () => {
-    // Arrange
-    const provider = createAnthropicProvider({ apiKey: "sk-test" });
-
-    // Act
-    const { capabilities } = provider;
-
-    // Assert
-    expect(capabilities).toEqual({ batches: false, files: true });
-  });
-});
-
 describe("mapParseResponse", () => {
   it("maps a parsed response and coalesces null usage to 0", () => {
     const res: ParseResponseLike<{ answer: string }> = {

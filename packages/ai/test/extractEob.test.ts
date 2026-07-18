@@ -101,7 +101,6 @@ function stubProviderReturning(rawOutput: unknown): LlmProvider {
   return {
     name: "stub",
     mapModelId: (m) => `stub-${m}`,
-    capabilities: { batches: false, files: false },
     client: {
       async parseStructured<T>(req: StructuredRequest<T>) {
         const result = req.schema.safeParse(rawOutput);

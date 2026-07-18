@@ -40,6 +40,7 @@
 | 17 | **Same queue, item 4 (dependency CVEs)** — agy 3-agent research + hub independent NVD/GHSA verification | 2026-07-18 | `deps.md` (moved from `docs/deps.md` into `docs/audit docs/`) | **0 confirmed current vulnerabilities** (matches `pnpm audit`'s clean 812-dep read); agy's 4 "active CVE" + 1 abandoned-package claims all independently verified WRONG (real CVEs, misapplied versions, or a nonexistent dependency) — 2 genuine future-upgrade landmines captured (vitest→v4 needs ≥4.1.6, react→v19 needs ≥19.2.1, a CISA-KEV pre-auth RCE below that) | hub verified every claim directly against NVD/GHSA before writing anything; no fix needed |
 | 18 | **Same queue, item 5 (WCAG AA)** — 1 GLM code-level finder + hub live chrome-devtools verification, 1 GLM fixer | 2026-07-18 | `a11y.md` (moved from `docs/a11y.md` into `docs/audit docs/`) | **3 confirmed findings**, all in the new branch-scoping `tenant-switcher.tsx` (accessible-name loss below `sm`, `menuitem`+`aria-current` instead of `menuitemradio`+`aria-checked`, dark-theme contrast fail same root cause as finding #5) — all 3 fixed + hub-live-reverified via chrome-devtools (real a11y tree + computed-style contrast) | typecheck clean, unit 1053/1053, build green; int suite not re-run (UI-only fix, destructive DB wipe disproportionate) |
 | 19 | **Same queue, item 6 (codebase minimap)** — 1 GLM targeted re-map spoke + 1 GLM fix spoke (W-1 only, W-2 deferred) | 2026-07-18 | `minimap.md` (moved from `docs/minimap.md` into `docs/audit docs/`, stays untracked/local) | New Docker subsystem added (0 CI validation + 2 destructive-default env flags flagged); branch-scoping/`validate-r4.ts` descriptions patched; backlog cross-checked (0 resolved, 2 sharpened, 1 got a complementary guard); **1 safe-tier fix landed** (duplicated branch-scope block → `resolveBranchScope` helper); **1 candidate (Dockerfile COPY list) deliberately deferred** — unverifiable on this host (`docker build` hangs), correctly caught before being marked fixed | typecheck clean, unit 1053/1053, build green |
+| 20 | **Same queue, item 7 (ponytail over-engineering)** — hub-run `/ponytail-audit` (native plugin, per skill instruction — not spoke-delegated) + 1 GLM fix spoke | 2026-07-18 | `ponytail-debt.md` (new, gitignored) | 2 raw candidates; **1 REJECTED** (2 EOB-extraction fallback-ladder adapter stubs — hub caught these as the same deliberate external-blocker-gated pattern as `packages/platform`, explicitly excluded from scope, an Explore agent had wrongly flagged them); **1 confirmed + fixed** (dead `capabilities` field on `LlmProvider`, never read at runtime) | typecheck clean, unit 1051/1051 (2 fewer — dead tests correctly removed), build green |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -145,6 +146,33 @@ first.
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #20 — full `/audit-workflow` run, item 7 ponytail (2026-07-18)
+
+- **The same "deliberate external-blocker stub" exclusion rule this pass was explicitly told to
+  respect (`packages/platform`'s KMS/object-store split) applies just as strongly to code gated
+  behind a DIFFERENT-looking TODO prefix.** An Explore subagent flagged
+  `AzureDocIntelOcrAdapter`/`SelfHostedVlmAdapter` as dead speculative stubs (zero callers, zero
+  wiring) — but both files' own doc comments cite a real, named, gated production-route decision
+  ("AI-4 fallback-ladder seam... gated on BLK-AI-1/3/4"), the exact same shape as the excluded
+  platform pattern, just tagged `TODO(ai-route)` instead of `TODO(ksa-region)`. **Don't pattern-match
+  the exclusion rule to a literal string prefix — match it to the underlying shape (interface + one
+  real implementation + N deliberately-inert alternatives, each tied to a named external/business
+  blocker). A subagent given the rule can still misapply it; the hub verifying every candidate
+  against the actual source (not trusting the agent's classification) caught this before it became
+  a wrong "fix."**
+- **Ponytail found almost nothing after 6 prior audit passes this session (2 raw candidates, 1
+  rejected) — this is the expected, correct outcome for a codebase this recently and thoroughly
+  gone over**, not a sign the pass was too shallow. The one real finding (a dead `capabilities`
+  field, -39 lines, 0 behavior change) is exactly the size and shape ponytail audits should
+  converge to on a codebase that's already lean — small, safe, easily verified, not a systemic
+  problem requiring a bigger sweep.
+- **A field can be "set by both implementations of an interface" and still be completely dead** —
+  `capabilities` was populated consistently and even had its own doc comment describing intended
+  future use, which made it LOOK deliberate/load-bearing at a glance. Only a grep for actual
+  *reads* (not writes) of the field surfaced that nothing branches on it — the doc comment's own
+  honest admission ("this is NOT an enforced runtime gate") was the tell, once actually read
+  carefully rather than skimmed as "ah, this must matter."
 
 ### Pass #19 — full `/audit-workflow` run, item 6 codebase minimap (2026-07-18)
 

@@ -73,7 +73,6 @@ function makeProvider(behavior: "throws" | "ok"): LlmProvider {
   return {
     name: "stub",
     mapModelId: (m) => `stub-${m}`,
-    capabilities: { batches: false, files: false },
     client: {
       async parseStructured<T>() {
         if (behavior === "throws") {
@@ -210,7 +209,6 @@ describe("runStructured — audit-write-failure logging never leaks the raw erro
 const STUB_PROVIDER: LlmProvider = {
   name: "stub",
   mapModelId: (m) => `stub-${m}`,
-  capabilities: { batches: false, files: false },
   client: {
     async parseStructured() {
       throw new Error("not used in these tests");

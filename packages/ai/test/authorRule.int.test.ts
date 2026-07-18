@@ -45,7 +45,6 @@ function stubProvider(behavior: "ok" | "throws"): {
   const provider: LlmProvider = {
     name: "stub",
     mapModelId: (m) => `stub-${m}`,
-    capabilities: { batches: false, files: false },
     client: {
       async parseStructured<T>() {
         calls += 1;
