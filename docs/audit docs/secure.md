@@ -1,9 +1,83 @@
 # Security Audit — Taweed
 
 > Living findings ledger. See `audit.md` (same directory) for the full pass history/index and
-> conventions. Newest pass first. (Item 2 of the 2026-07-18 `/audit-workflow` queue has not run
-> yet as of this merge — this file currently ends with pass #13; a new dated section will be
-> prepended above when that pass runs.)
+> conventions. Newest pass first.
+
+## Pass #15 — 2026-07-18 (item 2 of the full `/audit-workflow` GLM hub-spoke run)
+
+Ran as 4 parallel GLM find-only spokes by area (injection / authn-session / secrets /
+access-control), per the skill's own item-2 wording — same file-ownership-partition pattern item 1
+(bugs) used. Each spoke read `secure.md`/`audit.md` first so nothing already fixed/refuted/gated
+gets re-reported; each was told to prioritize the files changed since pass #13 (`cf86b60`,
+2026-07-14 → HEAD: 66 files, +2727/-143 — the branch-scoping feature, item-1's bug fixes, FHIR R4
+validation, AI-4 eval scoring, EOB extraction, Docker containerization, Node/pnpm bumps) while still
+sweeping the whole relevant surface, not just the diff.
+
+**Result: 0 confirmed findings across all 4 areas, 28 candidates considered and refuted with
+real reasoning (not templated zeros — every refutation cites the actual code read).**
+
+### Injection (9 considered, 0 confirmed)
+Swept all ~76 `sql\`...\`` sites (drizzle-orm@0.45.2 `${}` interpolation confirmed parameter-bound,
+not concatenated, including the two priority sites — `recovery.ts`'s new `FOR UPDATE OF d` lock and
+the branch-scoping column-selection ternaries), zero `child_process`/`eval`/`Function` hits, the one
+`dangerouslySetInnerHTML` (static theme-init constant, already recorded safe), the `appeals-composer`
+HTML export (blob: URL only, fully `esc()`-escaped), `object-store.ts`'s `tenantKey` (no filesystem
+sink today — the real S3 impl is `TODO(ksa-region)/DEPLOY`, flagged as a *future* concern only), CSV
+formula-injection (money fields regex-validated; free-text fields aren't scrubbed but **no CSV/Excel
+export sink exists in the app today** — flagged as a future concern if export is ever added), and the
+new `validate-r4.ts`/`parse.ts` FHIR path plus `ingest.ts`'s `JSON.parse` (both read-only typed-field
+access, no eval, no prototype-pollution-capable spread into shared state).
+
+### Authn/session (5 considered, 0 confirmed)
+Zero commits landed to `auth.ts`/`dev-auth-secret.ts`/`actions/auth.ts`/`db.ts` since pass #13 — a
+fresh independent re-check confirmed pass #2's fixes all still hold (fail-closed `DEV_AUTH_ENABLED`
+allow-list, fail-closed `RESOLVED_AUTH_SECRET`, Postgres-backed rate limiting — now with an
+*additional* two-layer throttle inside `authorize()` itself closing a single-global-key
+availability gap, `trustHost: true` still low-risk with no OAuth provider added).
+
+**One item worth a human sign-off, not a security regression:** `listDemoAccounts()`
+(`apps/web/lib/db.ts:111-112`) had pass #2's strict `NODE_ENV==="development"`-only guard
+**deliberately reverted** in commit `62d0beb` (`fix(ci): listDemoAccounts() diverged from
+DEV_AUTH_ENABLED, broke E2E login`) to `if (!DEV_AUTH_ENABLED) return [];` — broader, matching the
+passwordless-login gate itself. Reasoning holds: the account-enumeration exposure this loosens is
+strictly dominated by the passwordless sign-in the same flag already grants in that configuration
+(`TAWEED_ENABLE_DEV_AUTH=1` on a deployed host can already sign in as anyone; listing the accounts
+adds nothing an attacker doesn't already have). Documented in-place at `db.ts:92-110`. Recorded here
+so a human can explicitly agree with the tradeoff; not actioned as a finding.
+
+### Secrets (7 considered, 0 confirmed)
+No hardcoded credentials (high-entropy pattern sweep clean; only documented dev placeholders exist).
+No new unredacted cleartext-error logging since pass #13 (`redactAuditError`/`describeErrorForLog`
+still cover the relevant sites; a few pre-existing raw-`err` logs predate pass #13 and are the same
+already-known low-risk class, not new). No migration past `0011_rate_limit_windows.sql`. `server-only`
+guard holds on every secret-reader reachable from the Next app; two modules
+(`apps/web/lib/auth.ts`, `packages/db/src/client.ts`) lack the guard but are pre-existing
+(2026-07-04/07-10) and out of this pass's "changed since #13" scope — noted as a cheap
+defense-in-depth item worth adding opportunistically, not a regression. No repeat of pass #2's
+fail-open-default pattern in any new code.
+
+### Access control (7 considered, 0 confirmed)
+**Priority check — branch-scoping IDOR (NEW surface since pass #13): SAFE, verified end to end.**
+`resolveBranchId` only ever receives the caller's own RLS-scoped branch list (`getBranches(tenantId)`
+runs under `withSession`), and returns the raw `?branch=` param only if it matches an entry in that
+list — a cross-tenant or fabricated branch id resolves to `undefined` ("all branches"), never used as
+a filter. All 4 call sites (appeals/recovery/scrubber/analytics pages) pass the *resolved* id, not
+the raw param, into their data functions. Defense-in-depth holds even if this were wrong: every
+downstream query still runs under `withSession(tenantId)`, so RLS independently excludes cross-tenant
+rows regardless.
+
+Every `(app)` page's RBAC gate re-confirmed correct against the current `rbac.ts` MATRIX (no new role
+or cell added since pass #13). Every Server Action re-confirmed to authenticate + authorize before
+data access, including `recovery.ts` post item-1's `FOR UPDATE OF d` lock (access-control logic
+unchanged by that fix). Every ID-taking path confirmed RLS-scoped (`withSession(tenantId)`), so a
+guessed/enumerated cross-tenant ID matches no row rather than leaking data.
+
+### Verification
+Read-only pass — all 4 spokes touched zero source files (find-only, as the skill requires). No fix
+phase needed since nothing was confirmed. Hub reviewed all 4 reports directly against the actual code
+(not taken on faith) before writing this section.
+
+---
 
 ## Pass #13 — 2026-07-14 (incremental security re-check, diff-scoped: CSP/CI/Docker)
 

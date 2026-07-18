@@ -34,7 +34,8 @@
 | 11 | Incremental re-run: WCAG AA | 2026-07-10 (~23:00) | `docs/a11y.md` (updated in place, findings #23-24) | 2 confirmed+fixed; both prior "Considered" loose ends closed clean via live re-check | unit 933/933, typecheck green |
 | 12 | Incremental re-run: codebase minimap | 2026-07-10/11 (~23:30) | `minimap.md` (overwritten — superseded pass #6's stale snapshot) | 24 weaknesses found (9 fixed safe-tier; 15 flagged for planning) | unit 977+/977+, typecheck green |
 | 13 | Incremental re-run: diff-scoped bugs + security (CSP/CI/Docker) | 2026-07-14 | `bugs.md` + `secure.md` (root, gitignored at the time) | **0 confirmed, 0 refuted** — clean pass; Dockerfile-runs-as-root noted FYI | unit 982/982, typecheck green, lint clean (CI) |
-| 14 | **Full `/audit-workflow` queue via GLM hub-spoke orchestrator, item 1 (bugs)** | 2026-07-18 | `bugs.md` | 4 confirmed + 1 carried-over (5 total), all fixed | **item 1 DONE**: tsc clean, unit+int 1092/1092, lint baseline, build green. **Items 2-8 PAUSED — GLM 5h quota hit 100% mid-item-1** (est. reset ~23:35 KSA); resume once confirmed reset. |
+| 14 | **Full `/audit-workflow` queue via GLM hub-spoke orchestrator, item 1 (bugs)** | 2026-07-18 | `bugs.md` | 4 confirmed + 1 carried-over (5 total), all fixed | item 1 DONE: tsc clean, unit+int 1092/1092, lint baseline, build green. |
+| 15 | **Same queue, item 2 (security)** — 4 parallel GLM finders by area (injection/authn/secrets/access-control), diff-scoped since pass #13 + full sweep | 2026-07-18 | `secure.md` | **0 confirmed, 28 considered-and-refuted** — clean pass; branch-scoping IDOR verified safe; one human-sign-off item flagged (`listDemoAccounts` guard reversal, sound tradeoff) | read-only, no fix phase needed; GLM 5h at 6% after (Pro-tier quota, upgraded from Lite this same day) |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -140,6 +141,37 @@ first.
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #15 — full `/audit-workflow` GLM hub-spoke run, item 2 security (2026-07-18)
+
+- **GLM upgraded Lite→Pro same day, mid-queue.** Item 1 paused on 100% GLM 5h quota; user
+  confirmed the reset AND a Pro upgrade in the same message before resuming item 2. Pro's much
+  larger cap (~400/5h vs Lite's much smaller pool) meant 4 parallel find-only spokes cost only
+  ~6% of the 5h window combined — a materially different risk profile than item 1's run. Don't
+  assume Lite-era caution (halve waves at 70%, etc.) still applies at the same thresholds without
+  re-checking `glm-usage.sh` — the number moves much slower now.
+- **The loop-guard Stop hook fires on every turn-end regardless of whether real async work is in
+  flight**, not just during a multi-hour quota pause. It fired repeatedly while 4 background
+  spokes were genuinely running within their 15-20min budgets (a short, bounded wait, not a
+  quota-exhaustion pause). The same fix applies at any timescale: delete `.orchestrator/state/
+  loop.lock` to release the hook while genuinely waiting on tracked background work (a `Monitor`
+  watch or backgrounded Bash calls), and recreate it the moment real hub work resumes (reviewing
+  reports, writing findings, firing the next spoke). Don't conflate "hook fires" with "must do
+  more work right now" — if the only real signal is a background task/Monitor notification, wait
+  for that, don't manufacture busywork to satisfy the hook every turn.
+- **A "0 confirmed findings" result across all 4 areas is a legitimate, valuable outcome for a
+  codebase this heavily pre-audited** (this is the 4th security pass total, after #2/#8/#13) —
+  distinguishable from a lazy zero because every one of the 28 "considered" items cites the exact
+  file:line read and the specific reasoning for refuting it, not a templated dismissal. The one
+  genuinely NEW surface since the last pass (branch-scoping's `?branch=` param) got real
+  end-to-end scrutiny (traced `resolveBranchId` → `getBranches` → RLS) rather than being waved
+  through because "everything else came back clean."
+- **A spoke can find and document a real, sound engineering tradeoff that isn't a security
+  regression but still deserves a human's explicit sign-off** (`listDemoAccounts()`'s guard
+  reversal in `62d0beb`, done to unbreak CI/E2E, correctly reasoned as safe by both the committer
+  and this pass's independent spoke) — worth recording distinctly from an actual finding so it
+  doesn't get silently relied upon as "still strictly gated per pass #2" by a future reader who
+  only skims the pass #2 entry.
 
 ### Pass #14 — full `/audit-workflow` GLM hub-spoke run, item 1 (2026-07-18)
 
