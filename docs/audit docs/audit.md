@@ -61,6 +61,48 @@ production-guard follow-up flagged in pass #1's finding #16 ("noted, not fixed")
 of this pass — nobody in passes #2-#13 touched `packages/platform`. Being closed as part of this
 pass too (mirrors the already-fixed `DevPassthroughKms` pattern exactly).
 
+## Queue completion summary — 2026-07-18 full `/audit-workflow` run (item 10)
+
+Started paused mid-item-1 on a GLM 5h-quota exhaustion (Lite tier); resumed same day after the
+user confirmed both a quota reset AND an account upgrade to GLM Pro, with an explicit instruction
+to route all volume strictly to GLM spokes going forward. Items 1-8 completed in order; item 9
+skipped per the standing public-facing gate below; this section is item 10.
+
+| Item | Outcome | Findings (confirmed/considered) | Fixed | Gates |
+|---|---|---|---|---|
+| 1. Bugs | ✅ done | 4 confirmed + 1 carried-over = 5 | 5/5 | unit+int 1092/1092, build green |
+| 2. Security | ✅ done, clean | 0 confirmed / 28 considered | n/a | read-only |
+| 3. API auth | ✅ done, clean | 0 confirmed / 22 entrypoints checked | n/a | read-only |
+| 4. Dependency CVEs | ✅ done, clean | 0 confirmed / 5 agy claims caught wrong | n/a | read-only |
+| 5. WCAG AA | ✅ done | 3 confirmed | 3/3 | typecheck, unit 1053/1053, build green |
+| 6. Minimap | ✅ done | 5 new weaknesses (2 fix-now, 3 planning) | 1/2 (1 deferred, unverifiable) | typecheck, unit 1053/1053, build green |
+| 7. Ponytail | ✅ done | 2 candidates (1 rejected, 1 confirmed) | 1/1 | typecheck, unit 1051/1051, build green |
+| 8. UI anti-slop | ✅ done, clean | 0 confirmed / 8 tells checked | n/a | read-only |
+| 9. Production readiness | ⏭️ SKIPPED | not public-facing yet — see gate below | — | — |
+
+**Post-hoc catch:** item 7's fix introduced a real CI-breaking lint error (unused import) that
+local verification missed (the known `.claude/**` noise masked it) — caught via a CI-failure email
+from the user, fixed same session (`1ef7b72`), re-verified in isolation, and recorded as a
+Learnings entry above so the underlying gap (skipping `pnpm lint` after a "small" fix) doesn't
+recur.
+
+**Total real findings this run: 4 (item 1) + 3 (item 5) + 1 (item 6, W-1) + 1 (item 7) = 9 fixed**,
+plus 1 item-6 candidate correctly deferred as unverifiable rather than shipped blind, plus 2
+item-7 candidates correctly rejected/scoped (1 as a deliberate stub, plus the dead-field one that
+WAS confirmed). Items 2/3/4/8 came back genuinely clean — expected for a codebase already through
+20 prior audit passes, not a sign of a shallow run (each pass's own reasoning/evidence is recorded
+above, not just a bare "0 findings").
+
+**GLM spend:** all volume routed to GLM (Pro tier after the mid-run upgrade) per explicit user
+instruction — zero hub-side (Sonnet/Claude) implementation this run past the pause point; hub did
+only planning, spec-writing, live chrome-devtools verification (item 5), independent NVD/GHSA
+fact-checking (item 4), and gate-running/review. GLM 5h usage stayed low throughout (6% after the
+first wave, well under any warning threshold) thanks to the Pro-tier headroom.
+
+**Next full re-run:** target the same incremental-diff-scoping approach passes #13/#15/#19 used —
+re-map/re-audit only what changed since this run's tip (`a796b65` / whatever commit lands item 10's
+final push), not a full re-sweep, unless a major feature lands that touches broad surface area.
+
 ## Public-facing gate (added 2026-07-18, applies to item 9 — production readiness)
 
 **Decision: NOT public-facing yet — item 9 has NEVER been run, skipped this run per the user's
