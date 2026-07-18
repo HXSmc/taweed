@@ -31,6 +31,27 @@ import { ConfidenceBadge } from "@/components/modules/eob-review/confidence-badg
 
 const NONE_VALUE = "__none__";
 
+// A CSV may contain two identically-named columns. Keying the override
+// Select's options on the raw header string — as both the React key AND the
+// Radix Select value — collides on duplicates: Radix dedupes equal item
+// values, so the second same-named column becomes unreachable in the
+// dropdown (silently unmappable). Disambiguate internally with a stable
+// per-column token derived from the column's array index, and translate
+// to/from the real header name at the boundaries. The value handed to
+// onConfirm stays the raw header name, so the downstream mapping logic
+// (applyMappingOverrides / csvRowsToClaims, which resolve columns by name)
+// is unaffected — including the common no-duplicates case.
+const tokenForIndex = (index: number): string => `__col_${index}__`;
+const indexFromToken = (token: string): number | null => {
+  const match = /^__col_(\d+)__$/.exec(token);
+  return match ? Number(match[1]) : null;
+};
+const tokenForHeader = (headers: string[], name: string | null | undefined): string => {
+  if (!name) return NONE_VALUE;
+  const index = headers.indexOf(name);
+  return index === -1 ? NONE_VALUE : tokenForIndex(index);
+};
+
 export interface CsvMappingPanelProps {
   headers: string[];
   suggestions: MappingSuggestion[];
@@ -67,7 +88,7 @@ export function CsvMappingPanel({
   // fires onConfirm itself.
   const [selections, setSelections] = React.useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    for (const s of suggestions) initial[s.field] = s.sourceColumn ?? NONE_VALUE;
+    for (const s of suggestions) initial[s.field] = tokenForHeader(headers, s.sourceColumn);
     return initial;
   });
 
@@ -78,10 +99,18 @@ export function CsvMappingPanel({
     // (applyMappingOverrides's contract — see packages/ingest/src/mapping.ts),
     // which is exactly the silent-no-op bug this fixes: a reviewer clearing a
     // wrong auto-detected mapping must have that clear actually committed.
+    // The stored selection is an internal column token; translate it back to
+    // the real header name here so downstream name-keyed resolution is
+    // preserved (see tokenForIndex / tokenForHeader above).
     const overrides: Partial<Record<CanonicalField, string | null>> = {};
     for (const s of suggestions) {
       const selected = selections[s.field];
-      overrides[s.field] = selected && selected !== NONE_VALUE ? selected : null;
+      if (!selected || selected === NONE_VALUE) {
+        overrides[s.field] = null;
+        continue;
+      }
+      const index = indexFromToken(selected);
+      overrides[s.field] = index !== null ? (headers[index] ?? null) : null;
     }
     onConfirm(overrides);
   };
@@ -142,8 +171,8 @@ export function CsvMappingPanel({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE_VALUE}>{t("noneOption")}</SelectItem>
-                        {headers.map((h) => (
-                          <SelectItem key={h} value={h}>
+                        {headers.map((h, index) => (
+                          <SelectItem key={tokenForIndex(index)} value={tokenForIndex(index)}>
                             {h}
                           </SelectItem>
                         ))}

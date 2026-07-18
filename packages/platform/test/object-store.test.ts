@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { InMemoryObjectStore, tenantKey } from "@taweed/platform";
 
 // EXECUTE C — object store is a typed swap (local dev stub now, S3-compatible
@@ -33,5 +33,37 @@ describe("InMemoryObjectStore", () => {
 describe("tenantKey", () => {
   it("namespaces a key under its tenant", () => {
     expect(tenantKey("t1", "bundles/a.json")).toBe("t1/bundles/a.json");
+  });
+});
+
+describe("InMemoryObjectStore production guard", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalDevStoreFlag = process.env.TAWEED_ENABLE_DEV_OBJECT_STORE;
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+    if (originalDevStoreFlag === undefined) {
+      delete process.env.TAWEED_ENABLE_DEV_OBJECT_STORE;
+    } else {
+      process.env.TAWEED_ENABLE_DEV_OBJECT_STORE = originalDevStoreFlag;
+    }
+  });
+
+  it("refuses to construct in production without the explicit override", () => {
+    process.env.NODE_ENV = "production";
+    delete process.env.TAWEED_ENABLE_DEV_OBJECT_STORE;
+    expect(() => new InMemoryObjectStore()).toThrow(/non-persistent|not.*production/i);
+  });
+
+  it("allows construction in production when TAWEED_ENABLE_DEV_OBJECT_STORE=1 is set", () => {
+    process.env.NODE_ENV = "production";
+    process.env.TAWEED_ENABLE_DEV_OBJECT_STORE = "1";
+    expect(() => new InMemoryObjectStore()).not.toThrow();
+  });
+
+  it("allows construction outside production regardless of the override", () => {
+    process.env.NODE_ENV = "test";
+    delete process.env.TAWEED_ENABLE_DEV_OBJECT_STORE;
+    expect(() => new InMemoryObjectStore()).not.toThrow();
   });
 });

@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ArrowRight } from "lucide-react";
 import { requireSession } from "@/lib/session";
+import { isVisible } from "@/lib/rbac";
 import { getRecovery } from "@/lib/data";
 import { formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
@@ -57,10 +58,15 @@ export default async function OverviewPage({
         </div>
       </section>
 
-      {/* Forward loop (peak-end): the last feeling is agency. */}
+      {/* Forward loop (peak-end): the last feeling is agency. The owner-report
+          card 404s for roles with recovery hidden (rbac), so only render it
+          when the role can actually see recovery — the scrubber card always
+          shows. */}
       <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
         <ForwardCard href="/scrubber" label={t("runScrubber")} />
-        <ForwardCard href="/recovery/owner-report" label={t("buildReport")} />
+        {isVisible(session.role, "recovery") && (
+          <ForwardCard href="/recovery/owner-report" label={t("buildReport")} />
+        )}
       </div>
     </div>
   );

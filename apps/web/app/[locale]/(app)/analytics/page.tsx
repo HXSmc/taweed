@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/session";
+import { isVisible } from "@/lib/rbac";
 import { getAnalytics, getBranches, resolveBranchId } from "@/lib/data";
 import { formatMoney, formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
@@ -82,10 +83,14 @@ export default async function AnalyticsPage({
           <div className="flex flex-wrap items-center gap-3">
             {/* rcm lands here by default (rbac.landingModule) and has no other
                 route to the owner report, which otherwise only links from an
-                Overview card rcm never sees on landing. */}
-            <Button variant="secondary" asChild>
-              <Link href="/recovery/owner-report">{t("buildOwnerReport")}</Link>
-            </Button>
+                Overview card rcm never sees on landing. Roles with recovery
+                hidden (rbac) hit notFound() on the owner-report page, so don't
+                offer them the link at all. */}
+            {isVisible(session.role, "recovery") && (
+              <Button variant="secondary" asChild>
+                <Link href="/recovery/owner-report">{t("buildOwnerReport")}</Link>
+              </Button>
+            )}
             <Button variant="secondary" asChild>
               <Link href="/analytics/audit-report">{t("buildAuditReport")}</Link>
             </Button>

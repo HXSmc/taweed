@@ -69,11 +69,22 @@ export async function markAppealOutcome(
 
   const resolution = await withSession(session.tenantId, async (db) => {
     // Look up the appealed amount + the owning denial (RLS-scoped) — the
-    // ceiling for recovery.
+    // ceiling for recovery. SELECT ... FOR UPDATE locks the owning denials row
+    // for the rest of this transaction, serializing concurrent
+    // markAppealOutcome calls that share this denial_id: the second caller
+    // blocks here until the first commits, so its sibling-recovered sum read
+    // below reflects the first caller's committed write instead of racing on
+    // a stale 0. Closes the TOCTOU double-recovery finding
+    // (docs/audit docs/bugs.md #1) the same way onboarding.ts serializes its
+    // read-then-write — via a transaction-scoped row lock rather than a
+    // separate advisory lock, since the denials row is the natural contention
+    // point and this adds no extra round-trip.
     const rows = await db.execute<{ denied_amount: string; denial_id: string }>(sql`
       SELECT d.denied_amount, d.id AS denial_id FROM appeals a
         JOIN denials d ON d.id = a.denial_id
-       WHERE a.id = ${appealId} LIMIT 1`);
+       WHERE a.id = ${appealId}
+       LIMIT 1
+      FOR UPDATE OF d`);
     const appeal = rows.rows[0];
     // No such appeal for this tenant (stale/wrong/deleted id, or RLS-scoped out):
     // do NOTHING. Otherwise the UPDATE below matches 0 rows yet we'd still write a

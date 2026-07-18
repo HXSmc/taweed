@@ -164,6 +164,7 @@ describe("normalize — required line amounts (BLK-1)", () => {
 
   it("throws instead of folding a missing item.unitPrice to 0.00", () => {
     const pair = claimPair({
+      total: { value: 100, currency: "SAR" },
       item: [
         {
           sequence: 1,
@@ -177,8 +178,42 @@ describe("normalize — required line amounts (BLK-1)", () => {
     expect(() => normalize(pair, CTX)).toThrow(/unit price/i);
   });
 
+  it("throws instead of folding a missing Claim.total to 0.00", () => {
+    const pair = claimPair({
+      id: "claim-no-total",
+      // total intentionally omitted; lines are otherwise complete.
+      item: [
+        {
+          sequence: 1,
+          productOrService: { coding: [{ code: "SBS-0001" }] },
+          quantity: { value: 1 },
+          unitPrice: { value: 100 },
+          net: { value: 100 },
+        },
+      ],
+    });
+    expect(() => normalize(pair, CTX)).toThrow(/total amount/i);
+  });
+
+  it("throws instead of folding a missing item.net (line amount) to 0.00", () => {
+    const pair = claimPair({
+      total: { value: 100, currency: "SAR" },
+      item: [
+        {
+          sequence: 1,
+          productOrService: { coding: [{ code: "SBS-0001" }] },
+          quantity: { value: 1 },
+          unitPrice: { value: 100 },
+          // net intentionally omitted.
+        },
+      ],
+    });
+    expect(() => normalize(pair, CTX)).toThrow(/net amount/i);
+  });
+
   it("throws when two claim items share the same sequence, instead of silently colliding", () => {
     const pair = claimPair({
+      total: { value: 125, currency: "SAR" },
       item: [
         {
           sequence: 1,
@@ -203,7 +238,12 @@ describe("normalize — required line amounts (BLK-1)", () => {
 describe("normalize — EXECUTE B5 real signal columns", () => {
   function claimPair(claim: Record<string, unknown>): ClaimPair {
     return {
-      claim: { resourceType: "Claim", status: "active", ...claim },
+      claim: {
+        resourceType: "Claim",
+        status: "active",
+        total: { value: 0, currency: "SAR" },
+        ...claim,
+      },
       claimResponse: { resourceType: "ClaimResponse", outcome: "complete" },
     } as unknown as ClaimPair;
   }

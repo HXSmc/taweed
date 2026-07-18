@@ -88,6 +88,12 @@ export function normalize(
 ): NormalizedClaim {
   const { claim, claimResponse } = pair;
 
+  if (claim.total?.value === undefined) {
+    throw new Error(
+      `claim ${claim.id ?? "(unknown)"} is missing a total amount`,
+    );
+  }
+
   const claimRow: ClaimRow = {
     id: newId(),
     tenant_id: ctx.tenantId,
@@ -98,7 +104,7 @@ export function normalize(
     nphies_claim_id: claim.id ?? null,
     status: toClaimStatus(claim.status),
     submitted_at: claim.created ?? null,
-    total_amount: moneyStr(claim.total?.value),
+    total_amount: moneyStr(claim.total?.value), // guarded above (fail-loud on missing total)
     currency: claim.total?.currency ?? DEFAULT_CURRENCY,
     data_origin: ctx.dataOrigin,
     preauth_present: preauthPresent(claim),
@@ -122,6 +128,9 @@ export function normalize(
     }
     if (item.unitPrice?.value === undefined) {
       throw new Error(`line ${lineNumber} unit price is missing`);
+    }
+    if (item.net?.value === undefined) {
+      throw new Error(`line ${lineNumber} net amount is missing`);
     }
     const line: ClaimLineRow = {
       id: newId(),

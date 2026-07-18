@@ -29,9 +29,28 @@ export interface S3ObjectStoreConfig {
   serverSideEncryption: "AES256" | "aws:kms";
 }
 
-/** Dev/test object store — in-process, per-tenant namespaced. Not for production. */
+/**
+ * Dev/test object store — in-process, per-tenant namespaced. Not for production:
+ * bytes live in plain process memory (no persistence, no encryption at rest), so
+ * — mirroring how kms.ts's DevPassthroughKms fails closed in production — the
+ * constructor refuses to run in production unless TAWEED_ENABLE_DEV_OBJECT_STORE=1
+ * is explicitly set. This cannot ship as the live object store by accident.
+ * TODO(ksa-region)/DEPLOY: swap for the real S3-compatible client; delete this stub.
+ */
 export class InMemoryObjectStore implements ObjectStore {
   private readonly blobs = new Map<string, Uint8Array>();
+
+  constructor() {
+    const isProd = process.env.NODE_ENV === "production";
+    const devStoreEnabled = !isProd || process.env.TAWEED_ENABLE_DEV_OBJECT_STORE === "1";
+    if (!devStoreEnabled) {
+      throw new Error(
+        "InMemoryObjectStore is a non-persistent, unencrypted dev/test stub and must not " +
+          "be used in production. Set TAWEED_ENABLE_DEV_OBJECT_STORE=1 to override explicitly, " +
+          "or wire a real ObjectStore implementation.",
+      );
+    }
+  }
 
   async put(tenantId: string, key: string, bytes: Uint8Array): Promise<void> {
     this.blobs.set(tenantKey(tenantId, key), bytes);

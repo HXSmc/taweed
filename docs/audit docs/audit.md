@@ -1,63 +1,68 @@
 # Audit runbook — Taweed
 
-> Living reference for repeat audit passes (bugs, security, authz, deps, a11y, mapping). Read this
-> first before launching a new audit workflow — it exists to make the next pass faster, not to
-> re-derive repo layout/tooling from scratch every time. Update it (§Learnings) after each pass.
+> Living reference for repeat audit passes (bugs, security, authz, deps, a11y, mapping, ponytail,
+> UI-slop, prod-readiness). Read this first before launching a new audit workflow — it exists to
+> make the next pass faster, not to re-derive repo layout/tooling from scratch every time. Update
+> it (§Learnings) after each pass.
+>
+> **Location note (2026-07-18): all audit bookkeeping files now live in `docs/audit docs/`**
+> (`audit.md` — this file, `bugs.md`, `secure.md`, `minimap.md`, and any future
+> `ponytail-debt.md`/`ui-slop.md`/`prod-readiness.md`), consolidated per explicit user instruction
+> from previously scattered locations (`docs/audit.md`, `docs/bugs.md`, `docs/secure.md`,
+> `docs/minimap.md`, plus a separately-gitignored root `/bugs.md`/`/secure.md` pair from a
+> 2026-07-10/14 incremental pass — see pass #7/#8/#13 below and the "convention conflict" note,
+> now resolved by this consolidation). **`docs/audit docs/` is gitignored as a directory
+> (`.gitignore`), but `audit.md`/`bugs.md`/`secure.md` are force-added (`git add -f`) so they stay
+> tracked in git** — same pattern this repo already uses for `docs/blocker.md`. `minimap.md` stays
+> genuinely untracked (always was, per its own convention below — a snapshot, not a findings
+> ledger).
 
 ## Audit history at a glance
 
 | # | Pass | Date | Output | Confirmed / found | Verification |
 |---|---|---|---|---|---|
-| 1 | Bug hunt | 2026-07-08 | `docs/bugs.md` | 21 confirmed, 1 refuted (of 22) | unit 483/483, int 37/37, build green |
-| 2 | Security (injection/authn/secrets/access) | 2026-07-08 | `docs/secure.md` | 10 confirmed + 1 confirmed-clean | unit 533/533, int 42/42, build green |
+| 1 | Bug hunt | 2026-07-08 | `bugs.md` | 21 confirmed, 1 refuted (of 22) | unit 483/483, int 37/37, build green |
+| 2 | Security (injection/authn/secrets/access) | 2026-07-08 | `secure.md` | 10 confirmed + 1 confirmed-clean | unit 533/533, int 42/42, build green |
 | 3 | API/server-action auth-check audit | 2026-07-08 | (fixed inline, no dedicated doc) | 15 missing-auth-check findings, all fixed | typecheck/lint/tests green |
 | 4 | Dependency audit (CVEs, abandonment, license) | 2026-07-08 | `docs/deps.md` | 10 advisories → 0; several floor-hygiene + watch-items | unit/int green, build green |
 | 5 | WCAG AA accessibility audit | 2026-07-09/10 | `docs/a11y.md` | 25 confirmed and fixed | unit 668/668, int 42/42, build green |
-| 6 | Codebase minimap (subsystems/connections/weaknesses) | 2026-07-10 (~02:18) | `docs/minimap.md` (gitignored, local-only) | 14 of 30 candidates confirmed+fixed, 16 deferred | unit 708/708, int 42/42, build green |
-| 7 | **Incremental re-run: bug hunt** | 2026-07-10 (~20:00) | `bugs.md` (**repo root, gitignored** — see convention-conflict note below) | 10 confirmed, 1 refuted (of 11) | unit 919/919, root+web typecheck green |
-| 8 | **Incremental re-run: security** | 2026-07-10 (~21:56) | `secure.md` (**repo root, gitignored**) | 3 confirmed, 2 refuted (of 5) | unit 928/928, prod build green |
-| 9 | **Incremental re-run: API/server-action auth-check** | 2026-07-10 (~22:33) | (no dedicated file — 0 findings) | 0 findings across all 22 entrypoints (prior sweep's 15 fixes hold, no regressions) | — |
-| 10 | **Incremental re-run: dependency audit** | 2026-07-10 (~22:33) | (no dedicated file) | 0 CVEs (807 deps); 15 safe patch/minor bumps applied; 14 majors + next-auth governance risk flagged | unit 933/933, typecheck green |
-| 11 | **Incremental re-run: WCAG AA** | 2026-07-10 (~23:00) | `docs/a11y.md` (updated in place, findings #23-24) | 2 confirmed+fixed; both prior "Considered" loose ends closed clean via live re-check | unit 933/933, typecheck green |
-| 12 | **Incremental re-run: codebase minimap** | 2026-07-10/11 (~23:30) | `docs/minimap.md` (overwritten — superseded pass #6's stale snapshot) | 24 weaknesses found (9 fixed safe-tier, incl. a re-dispatched agent + 2 follow-up fixes; 15 flagged for planning) | unit 977+/977+, typecheck green |
-| 13 | **Incremental re-run: diff-scoped bugs + security (CSP/CI/Docker)** | 2026-07-14 | `bugs.md` + `secure.md` (repo root, gitignored) | **0 confirmed, 0 refuted** — clean pass; auth/RBAC spot-check (4 server actions) holds; Dockerfile-runs-as-root noted as non-blocking FYI | unit 982/982, root + web typecheck green, lint clean (CI) |
+| 6 | Codebase minimap (subsystems/connections/weaknesses) | 2026-07-10 (~02:18) | `minimap.md` (gitignored, local-only) | 14 of 30 candidates confirmed+fixed, 16 deferred | unit 708/708, int 42/42, build green |
+| 7 | Incremental re-run: bug hunt | 2026-07-10 (~20:00) | `bugs.md` (root, gitignored at the time) | 10 confirmed, 1 refuted (of 11) | unit 919/919, root+web typecheck green |
+| 8 | Incremental re-run: security | 2026-07-10 (~21:56) | `secure.md` (root, gitignored at the time) | 3 confirmed, 2 refuted (of 5) | unit 928/928, prod build green |
+| 9 | Incremental re-run: API/server-action auth-check | 2026-07-10 (~22:33) | (no dedicated file — 0 findings) | 0 findings across all 22 entrypoints (prior sweep's 15 fixes hold, no regressions) | — |
+| 10 | Incremental re-run: dependency audit | 2026-07-10 (~22:33) | (no dedicated file) | 0 CVEs (807 deps); 15 safe patch/minor bumps applied; 14 majors + next-auth governance risk flagged | unit 933/933, typecheck green |
+| 11 | Incremental re-run: WCAG AA | 2026-07-10 (~23:00) | `docs/a11y.md` (updated in place, findings #23-24) | 2 confirmed+fixed; both prior "Considered" loose ends closed clean via live re-check | unit 933/933, typecheck green |
+| 12 | Incremental re-run: codebase minimap | 2026-07-10/11 (~23:30) | `minimap.md` (overwritten — superseded pass #6's stale snapshot) | 24 weaknesses found (9 fixed safe-tier; 15 flagged for planning) | unit 977+/977+, typecheck green |
+| 13 | Incremental re-run: diff-scoped bugs + security (CSP/CI/Docker) | 2026-07-14 | `bugs.md` + `secure.md` (root, gitignored at the time) | **0 confirmed, 0 refuted** — clean pass; Dockerfile-runs-as-root noted FYI | unit 982/982, typecheck green, lint clean (CI) |
+| 14 | **Full `/audit-workflow` queue via GLM hub-spoke orchestrator, item 1 (bugs)** | 2026-07-18 | `bugs.md` | 4 confirmed + 1 carried-over (5 total), all fixed | **item 1 DONE**: tsc clean, unit+int 1092/1092, lint baseline, build green. **Items 2-8 PAUSED — GLM 5h quota hit 100% mid-item-1** (est. reset ~23:35 KSA); resume once confirmed reset. |
 
-**Passes #7-#12 (2026-07-10 evening / 2026-07-11) are an incremental re-run, not a redundant one.**
-They ran *after* the same day's AI-4 real-data-gaps and EXECUTE-UI-tail work landed (~07:50+,
-*after* pass #6's ~02:18 snapshot) — genuinely new code (onboarding corridor, audit-report/
-owner-report pages, eob-review approve flow) that passes #1-#6 never saw. Every overlapping-file
-finding was cross-checked against the committed `docs/bugs.md`/`docs/secure.md` before write-up to
-confirm it's a **complementary refinement** of an already-fixed issue, not a duplicate or a
-conflict (e.g. pass #7's `recovery.ts` TOCTOU race is a race condition *in* the sibling-aware
-ceiling logic pass #1 added — see `docs/bugs.md` #15 vs. this session's `bugs.md` #6; pass #7's
-`parse.ts` fullUrl-leak finding is a residual gap in the id-collision detector pass #1's `bugs.md`
-#13 added). Pass #9 (0 findings) is a *positive* confirmation, not a gap — it's exactly what you'd
-expect from re-scanning code whose auth gaps a prior pass (#3) already closed.
+**Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
+convention conflict now resolved (see the location note at the top of this file) — folded into
+this file's history for continuity, content not otherwise altered.**
 
-**Convention conflict — flagged for a human decision, not resolved unilaterally:** passes #1-#6
-followed this repo's established convention of committing findings docs (`docs/bugs.md`,
-`docs/secure.md` tracked in git, per the §Conventions section below). Passes #7-#8's queuing
-instructions said "(ignore all .md in git)" for the bug-hunt/minimap tasks specifically; the
-session that ran them read this as "exclude `*.md` files from the audit *scope*" (consistent with
-task 6's separate, explicit "(ignore in git)" instruction for the minimap specifically — if task
-7's queue meant "gitignore the output" too, why say it differently and only for the minimap?) but
-erred toward the safer reading and gitignored `bugs.md`/`secure.md` at the repo root instead of
-appending to the tracked `docs/` versions. **Net effect: two parallel sets of findings docs exist**
-— `docs/bugs.md`/`docs/secure.md` (tracked, passes #1-#2) and root `bugs.md`/`secure.md`
-(gitignored, passes #7-#8). Recommend: fold the root files' *new* findings into the tracked
-`docs/` versions (as new numbered entries continuing each file's sequence) next time this runbook
-is used, then delete the root copies — but that's a decision for whoever's driving the next pass,
-not something this pass did unprompted to already-committed history.
+**Pass #14 (2026-07-18) is the first pass run through the dedicated `/audit-workflow` GLM
+hub-spoke skill** (4 parallel find-only spokes by area instead of a broader finder fleet;
+find→verify→fix→test with the hub reviewing every diff and running gates itself, GLM doing the
+volume). Findings: TOCTOU race in `markAppealOutcome` (a NEW instance of the same risk class
+pass #1's finding #15 already partially addressed — that pass added the sibling-sum ceiling guard
+but explicitly left "no DB integration test covers this call site" as a tracked follow-up; this
+pass closes that follow-up with a real lock); a silent zero-fold in `packages/normalizer`'s
+`normalize.ts` (same defect class as pass #1's #3/#11, in a different file/path, untracked until
+now); a clinician-facing dead-end CTA (RBAC/UX, new); a duplicate-CSV-header Select collision
+(new, low severity). Also confirmed via independent verification that the `InMemoryObjectStore`
+production-guard follow-up flagged in pass #1's finding #16 ("noted, not fixed") was STILL open as
+of this pass — nobody in passes #2-#13 touched `packages/platform`. Being closed as part of this
+pass too (mirrors the already-fixed `DevPassthroughKms` pattern exactly).
 
-All passes used the same core method: parallel finder/mapper agents by area → each candidate
-adversarially re-verified by an independent agent (default-to-refute) → every CONFIRMED finding
-fixed with a regression test (or, for money/PHI-path findings — see the money-path policy note
-added in §Learnings below — reported + a `test.fails()` regression test only, gated for human
-sign-off) → full typecheck+lint+unit+build re-run before calling it done. Passes #1-#5 are
-committed to git (`docs/*.md` + the code fixes); #6/#12's `minimap.md` is intentionally local-only
-(see its own file header) but its code fixes are committed like the others. Passes #7-#8's `bugs.md`/
-`secure.md` are local-only per the convention-conflict note above; their code fixes are NOT yet
-committed as of this writing (push/commit is user-gated, same as every other pass).
+## Public-facing gate (added 2026-07-18, applies to item 9 — production readiness)
+
+**Decision: NOT public-facing yet — item 9 has NEVER been run, skipped this run per the user's
+explicit confirmation.** Reason: no live deployed URL (infra/Terraform not applied — `BLK-8` OCI
+Riyadh creds still open), KSA-resident OIDC still blocked (`BLK-7`, dev-only Auth.js credentials
+today), pre-revenue/founder-led per `docs/handoff.md`. **Action required: run item 9 once the app
+is actually deployed** (real domain/hosting live, real auth provider swapped in) — don't skip it
+again once that's true, and don't assume this note is stale without re-checking deployment status
+first.
 
 ## Repo shape (so a finder agent doesn't have to rediscover it)
 
@@ -86,6 +91,12 @@ committed as of this writing (push/commit is user-gated, same as every other pas
   real signal is `unevaluable`, never fabricated. Don't flag this pattern as a bug; it's intentional.
 - **AI-4 is intentionally NOT PHI-free** — see `docs/review.md` §2.6 item 2 before flagging it as an
   inconsistency with AI-1/2/3's PHI-free posture.
+- **Branch-scoping (design-brief §7, 2026-07-18):** Analytics, Scrubber, Appeals, Recovery all have
+  real `?branch=<id>` filtering via `resolveBranchId` (RLS-validated); only Ingest doesn't (no
+  `branch_id` column on `eob_extractions`, a schema decision, not a bug — don't re-flag).
+  `appeals/page.tsx`/`scrubber/page.tsx` correctly have NO `isVisible()` RBAC gate — `rbac.ts`'s
+  `MATRIX` never marks either module `"hidden"` for any role. Don't re-flag either without new
+  evidence (verified independently twice now, by two different passes).
 
 ## Tooling gotchas (burn once, not every audit)
 
@@ -102,12 +113,16 @@ committed as of this writing (push/commit is user-gated, same as every other pas
 - **pnpm lives at `~/.local/bin/pnpm`**, not on PATH.
 - **Node is v20.2.0** — below Next 16's floor (intentionally pinned to Next 15), which blocks this
   repo's own local `node_modules/playwright` binary. **This does NOT block `mcp__chrome-devtools__*`
-  tools** — they're a separate, externally-driven browser connection and work fine (confirmed twice
-  now: 2026-07-08's auth-check pass, and 2026-07-10/11's incremental a11y pass, which drove real
-  navigation + clicks + axe-core injection against a `pnpm --filter @taweed/web dev` server started
-  on a spare port). Use chrome-devtools MCP for any a11y/visual audit that needs a live browser;
-  reserve "code-level pass only, say so explicitly" for when chrome-devtools MCP itself is
-  unavailable, not for this Node-version reason.
+  tools** — they're a separate, externally-driven browser connection and work fine (confirmed
+  repeatedly, including 2026-07-18's branch-scoping live verification). Use chrome-devtools MCP for
+  any a11y/visual audit that needs a live browser; reserve "code-level pass only, say so
+  explicitly" for when chrome-devtools MCP itself is unavailable, not for this Node-version reason.
+- **`.next` cache corruption from hot-reload churn recurs** — if chrome-devtools hits a fresh 500
+  or "Build Error" on a dev server inherited from a prior session, `kill` it, `rm -rf
+  apps/web/.next`, restart, don't debug the code.
+- **glm-code spokes do NOT have chrome-devtools MCP (or any Claude-Code-specific MCP) access** —
+  that's a hub-only capability. Never put a live-browser-verification acceptance criterion in a
+  glm-code spec; the hub does that step itself after the spoke's code fix lands.
 - **Docker `docker info`/`ps`/`exec` can hang on this host**; the Postgres container and port work
   fine regardless — probe with `nc -z localhost 5432` instead of trusting `docker compose ps`.
 - **Integration tests are destructive** (`pnpm test:int` wipes + re-migrates the shared local DB) —
@@ -115,15 +130,60 @@ committed as of this writing (push/commit is user-gated, same as every other pas
 
 ## Conventions for audit output files
 
-- `docs/bugs.md`, `docs/secure.md` — tracked in git (like `docs/review.md`). One entry per
-  **verified** finding only (CONFIRMED, not just plausible) — severity, file:line, repro/failure
-  scenario, fix applied, and the test that now guards it.
-- A gitignored `minimap.md`-style file (mapping the codebase) stays **local-only** — add its exact
-  name to `.gitignore` when created, same pattern as `docs/NEXT_STEP_PROMPT.md`/`docs/blocker.md`.
-- This file (`docs/audit.md`) is the one meta-doc that persists across passes — update its
-  §Learnings section after every audit run, not just at the very end of a queued batch.
+- `audit.md`, `bugs.md`, `secure.md` (all under `docs/audit docs/`, 2026-07-18) — tracked in git
+  via `git add -f` (the directory itself is gitignored) — same pattern as `docs/blocker.md`. One
+  entry per **verified** finding only (CONFIRMED, not just plausible) — severity, file:line,
+  repro/failure scenario, fix applied, and the test that now guards it.
+- `minimap.md` (same directory) stays **genuinely untracked** (a snapshot, not a findings ledger —
+  goes stale fast, the fix commits are the durable record).
+- This file (`audit.md`) is the one meta-doc that persists across passes — update its §Learnings
+  section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #14 — full `/audit-workflow` GLM hub-spoke run, item 1 (2026-07-18)
+
+- **A GLM spoke can complete its ENTIRE task (code fix + tests, all acceptance criteria) and still
+  die with a 0-byte log and no report, if the account's 5h GLM quota crosses 100% right at the
+  report-writing step.** Happened to 2 of 4 fix spokes in this pass (`recovery.ts` TOCTOU,
+  clinician CTA). `ps` showed the underlying process as `claude -p ...` (not literally `glm-code` —
+  a naive `ps aux | grep glm-code` finds nothing even while spokes are genuinely running/dying;
+  grep on the task id or just `claude -p` instead). Never conclude "the spoke did nothing" from a
+  missing report alone — check `git status`/`git diff` for its owned files first (this exact
+  lesson is already recorded in this file's own pass #1 Learnings; it applied again, this time
+  root-caused specifically to quota exhaustion rather than a transient stream stall).
+- **Once GLM quota is confirmed at/near 100% (`~/.claude/orchestrator/state/glm-usage.sh`), Limit
+  Looping applies to spokes exactly like it applies to the Claude hub's own 5h wall — stop firing
+  NEW spokes immediately, finish verifying what already landed (fixes already made don't need GLM
+  to verify — tsc/vitest/lint/build are all hub-side, zero GLM cost), then pause the remaining
+  queue items until a confirmed reset.** Killed one spoke process that was still alive but visibly
+  hung (0 CPU growth, quota-exhausted) rather than waiting on it indefinitely.
+- **This runbook already existed at `docs/audit.md` when this pass started — and was almost
+  missed.** The `/audit-workflow` skill's own instructions say "use audit.md at repo root... create
+  if missing," which was read as license to create a brand-new file at repo root without first
+  searching for an existing one at `docs/audit.md`. Only caught because the user explicitly asked
+  to consolidate scattered audit-*.md files into one directory, which surfaced this file mid-pass.
+  **Always `ls`/`find` for an existing `audit.md` (root AND `docs/`) before creating one — the
+  skill's "create if missing" is conditional on actually checking first, not a license to assume.**
+- **A "gitignored" instruction in a skill/task prompt can conflict with an established, tracked
+  convention already in the repo — check history before trusting the prompt's literal wording.**
+  This exact conflict is pre-documented in this file's own pass #7/#8/#13 entries (the "convention
+  conflict" note): a queue instruction said "gitignore this" for a repo that already tracked
+  `docs/bugs.md`/`docs/secure.md` in git. Resolved this time by consolidating into one
+  git-tracked-via-force-add location rather than perpetuating two parallel copies.
+- **File-ownership partitioning across 4 parallel find-only spokes, by package/directory area,
+  produced zero overlapping findings and zero file collisions** — each spoke's area
+  (`apps/web/lib`+actions, `apps/web/app`+components, `ingest`+`normalizer`+`fhir`+`db`,
+  `appeals`+`rules-engine`+`analytics`+`ai`+`shared`) was a clean partition of the whole non-test
+  codebase; `packages/platform` was the one area NOT assigned to any spoke (an oversight, caught
+  only because this runbook's own pass #1 history flagged an open follow-up there) — **when
+  partitioning by directory, cross-check the partition covers every `packages/*` + `apps/*`
+  directory, not just the ones that seem interesting.**
+- **A finder spoke's "0 confirmed findings" report, when it shows real depth of investigation
+  (traces every candidate, cites specific line numbers, explains why each was refuted), is a
+  legitimate outcome for a heavily-audited area — not a sign the spoke did nothing.** Distinguish
+  from a lazy/templated zero by checking whether the "considered and refuted" section has real
+  specificity (matches this pass's `packages/{appeals,rules-engine,analytics,ai,shared}` spoke).
 
 ### Pass #13 — diff-scoped incremental re-audit (2026-07-14)
 
@@ -262,7 +322,7 @@ committed as of this writing (push/commit is user-gated, same as every other pas
   real AND that unifying it wouldn't change behavior (e.g., the regex needed to stay byte-identical
   after consolidation — a bare `grep -c` count would have missed a subtly different regex at one
   of the sites, which didn't happen here but was worth checking explicitly).
-- **`docs/minimap.md` (gitignored, local-only per the existing convention) is genuinely different
+- **`minimap.md` (gitignored, local-only per the existing convention) is genuinely different
   content from the committed audit docs** — it's a snapshot understanding of the system shape, not
   a findings ledger, so it goes stale faster and shouldn't be tracked in git; the committed fix
   commit message is the durable record of what actually changed.

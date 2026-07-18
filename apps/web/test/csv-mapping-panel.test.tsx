@@ -236,3 +236,54 @@ describe("CsvMappingPanel — override + confirm/cancel", () => {
     expect(screen.getByRole("button", { name: enMessages.ingest.csvMapping.cancel })).toBeDisabled();
   });
 });
+
+describe("CsvMappingPanel — duplicate header names", () => {
+  afterEach(cleanup);
+
+  // Regression: a CSV with two identically-named columns used to collide on
+  // both the React key and the Radix Select value, so Radix deduped the
+  // options and the second same-named column was silently unreachable in the
+  // override dropdown. The panel now disambiguates options internally by
+  // column index while still displaying the raw header name and still
+  // emitting the raw header name to onConfirm.
+  it("renders both duplicate columns as independently selectable options and maps the second one", async () => {
+    const user = userEvent.setup();
+    const duplicateHeaders = ["Claim ID", "Total Amount", "Claim ID"];
+    const onConfirm = vi.fn();
+    render(
+      <NextIntlClientProvider locale="en" messages={{ ingest: enMessages.ingest }}>
+        <CsvMappingPanel
+          headers={duplicateHeaders}
+          suggestions={[{ field: "deniedAmount", sourceColumn: null, confidence: 0 }]}
+          rowCount={2}
+          onConfirm={onConfirm}
+          onCancel={vi.fn()}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const deniedLabel = enMessages.ingest.csvMapping.overrideLabel.replace(
+      "{field}",
+      enMessages.ingest.csvMapping.fields.deniedAmount,
+    );
+    await user.click(screen.getByRole("combobox", { name: deniedLabel }));
+
+    // Both same-named columns are present as distinct options (not deduped).
+    const claimIdOptions = screen.getAllByRole("option", { name: "Claim ID" });
+    expect(claimIdOptions).toHaveLength(2);
+
+    // The second duplicate is independently selectable — the exact column
+    // that was unreachable before the fix.
+    await user.click(claimIdOptions[1]);
+
+    fireEvent.click(screen.getByRole("button", { name: enMessages.ingest.csvMapping.confirm }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    // The emitted value is the real header name (downstream resolves columns
+    // by name), and the selection actually committed rather than silently
+    // no-op'ing on the unreachable duplicate.
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ deniedAmount: "Claim ID" }));
+    const [overrides] = onConfirm.mock.calls[0] as [Record<string, string | null>];
+    expect(overrides.deniedAmount).not.toBeNull();
+  });
+});

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import * as React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 
 // Regression test (manual-visual finding, /en/overview, both themes): the two
 // "forward loop" CTA links at the bottom of Overview (ForwardCard, page.tsx)
@@ -16,13 +16,18 @@ vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn(async () => ((key: string) => key) as unknown),
   setRequestLocale: vi.fn(),
 }));
+// Role is mutable per-test so the same mock can drive both the owner case
+// (both CTAs visible) and the clinician case (recovery hidden in rbac.MATRIX,
+// owner-report CTA must drop out). rbac is NOT mocked — the page uses the real
+// MATRIX, so the test exercises the real code path.
+let sessionRole: "owner" | "clinician" = "owner";
 vi.mock("@/lib/session", () => ({
   requireSession: vi.fn(async () => ({
     userId: "u1",
     tenantId: "t1",
     tenantName: "Acme Health",
-    role: "owner",
-    email: "owner@acme.test",
+    role: sessionRole,
+    email: `${sessionRole}@acme.test`,
   })),
 }));
 vi.mock("@/lib/data", () => ({
@@ -50,6 +55,12 @@ vi.mock("@/components/money/count-up", () => ({
 import OverviewPage from "../app/[locale]/(app)/overview/page";
 
 describe("Overview page — ForwardCard focus ring", () => {
+  beforeEach(() => {
+    sessionRole = "owner";
+  });
+
+  afterEach(cleanup);
+
   it("uses the shared .focus-ring utility instead of an inline ring-accent focus style", async () => {
     // Arrange + Act: server component — render its resolved element tree.
     render(await OverviewPage({ params: Promise.resolve({ locale: "en" }) }));
@@ -64,5 +75,21 @@ describe("Overview page — ForwardCard focus ring", () => {
       expect(link.className).not.toMatch(/focus-visible:ring-accent/);
       expect(link.className).not.toMatch(/focus-visible:outline-none/);
     }
+  });
+
+  it("does not render the owner-report CTA for roles with recovery hidden (clinician)", async () => {
+    // Arrange: clinician has recovery:"hidden" in rbac.MATRIX, and the
+    // owner-report page notFound()s for it — so Overview must not offer the
+    // dead-end link.
+    sessionRole = "clinician";
+
+    // Act
+    render(await OverviewPage({ params: Promise.resolve({ locale: "en" }) }));
+
+    // Assert: only the scrubber card remains; the owner-report link is gone.
+    expect(screen.queryByRole("link", { name: "buildReport" })).toBeNull();
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "/scrubber");
   });
 });
