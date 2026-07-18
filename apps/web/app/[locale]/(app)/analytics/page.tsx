@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/session";
 import { isVisible } from "@/lib/rbac";
-import { getAnalytics, getBranches, resolveBranchId } from "@/lib/data";
+import { getAnalytics, resolveBranchScope } from "@/lib/data";
 import { formatMoney, formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +29,7 @@ export default async function AnalyticsPage({
   const t = await getTranslations("analytics");
   const tc = await getTranslations("common");
 
-  const branches = await getBranches(session.tenantId);
-  const sp = (await searchParams) ?? {};
-  const branchId = resolveBranchId(sp.branch, branches);
+  const { branchId } = await resolveBranchScope(session.tenantId, searchParams);
 
   const { money, overallRate, byPayer, byBranch, pareto, trend } =
     await getAnalytics(session.tenantId, branchId);

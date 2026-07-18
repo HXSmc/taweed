@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ShieldAlert } from "lucide-react";
 import { requireSession } from "@/lib/session";
-import { getScrubRows, getBranches, resolveBranchId } from "@/lib/data";
+import { getScrubRows, resolveBranchScope } from "@/lib/data";
 import { recordPhiAccess } from "@/lib/audit";
 import { formatMoney, toNumber } from "@/lib/money";
 import { PageHeader } from "@/components/shell/page-header";
@@ -22,9 +22,10 @@ export default async function ScrubberPage({
   const session = await requireSession(locale);
   const t = await getTranslations("scrubber");
 
-  const branches = await getBranches(session.tenantId);
+  // `sp` is kept locally because the scrubber also reads the global `?q=`
+  // search param below; only the branch-scope resolution is shared.
   const sp = (await searchParams) ?? {};
-  const branchId = resolveBranchId(sp.branch, branches);
+  const { branchId } = await resolveBranchScope(session.tenantId, searchParams);
 
   let rows = await getScrubRows(session.tenantId, 60, branchId);
   // Reading claim + patient rows is a PHI read — record it (no PHI in the log).

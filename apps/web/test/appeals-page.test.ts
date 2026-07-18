@@ -25,10 +25,29 @@ vi.mock("@/lib/session", () => ({
 vi.mock("@/lib/appeals-data", () => ({
   getAppealables: vi.fn(),
 }));
-vi.mock("@/lib/data", () => ({
-  getBranches: vi.fn(),
-  resolveBranchId: vi.fn(),
-}));
+// The page now calls `resolveBranchScope`; mirror the real helper inside the
+// mock so it composes the mocked getBranches / resolveBranchId — that keeps
+// the existing assertions on those two boundaries meaningful without pulling
+// in the real data.ts (which touches server-only React `cache`).
+vi.mock("@/lib/data", () => {
+  const getBranches = vi.fn();
+  const resolveBranchId = vi.fn();
+  return {
+    getBranches,
+    resolveBranchId,
+    resolveBranchScope: vi.fn(
+      async (
+        tenantId: string,
+        searchParams: Promise<{ branch?: string }> | undefined,
+      ) => {
+        const branches = await getBranches(tenantId);
+        const sp = (await searchParams) ?? {};
+        const branchId = resolveBranchId(sp.branch, branches);
+        return { branches, branchId };
+      },
+    ),
+  };
+});
 vi.mock("@/lib/audit", () => ({
   recordPhiAccess: vi.fn(),
 }));

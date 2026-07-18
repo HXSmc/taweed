@@ -39,6 +39,7 @@
 | 16 | **Same queue, item 3 (API/server-action auth-check)** — 1 GLM finder, exhaustive per-export enumeration | 2026-07-18 | (no dedicated file, matches pass #3/#9 convention) | **0 confirmed across 22 entrypoints** (2 routes + 17 gated actions + 3 deliberate no-check) — 3rd consecutive clean result for this exact re-audit (after #3's original 15 fixes, #9's 0-finding re-check) | read-only, no fix phase needed |
 | 17 | **Same queue, item 4 (dependency CVEs)** — agy 3-agent research + hub independent NVD/GHSA verification | 2026-07-18 | `deps.md` (moved from `docs/deps.md` into `docs/audit docs/`) | **0 confirmed current vulnerabilities** (matches `pnpm audit`'s clean 812-dep read); agy's 4 "active CVE" + 1 abandoned-package claims all independently verified WRONG (real CVEs, misapplied versions, or a nonexistent dependency) — 2 genuine future-upgrade landmines captured (vitest→v4 needs ≥4.1.6, react→v19 needs ≥19.2.1, a CISA-KEV pre-auth RCE below that) | hub verified every claim directly against NVD/GHSA before writing anything; no fix needed |
 | 18 | **Same queue, item 5 (WCAG AA)** — 1 GLM code-level finder + hub live chrome-devtools verification, 1 GLM fixer | 2026-07-18 | `a11y.md` (moved from `docs/a11y.md` into `docs/audit docs/`) | **3 confirmed findings**, all in the new branch-scoping `tenant-switcher.tsx` (accessible-name loss below `sm`, `menuitem`+`aria-current` instead of `menuitemradio`+`aria-checked`, dark-theme contrast fail same root cause as finding #5) — all 3 fixed + hub-live-reverified via chrome-devtools (real a11y tree + computed-style contrast) | typecheck clean, unit 1053/1053, build green; int suite not re-run (UI-only fix, destructive DB wipe disproportionate) |
+| 19 | **Same queue, item 6 (codebase minimap)** — 1 GLM targeted re-map spoke + 1 GLM fix spoke (W-1 only, W-2 deferred) | 2026-07-18 | `minimap.md` (moved from `docs/minimap.md` into `docs/audit docs/`, stays untracked/local) | New Docker subsystem added (0 CI validation + 2 destructive-default env flags flagged); branch-scoping/`validate-r4.ts` descriptions patched; backlog cross-checked (0 resolved, 2 sharpened, 1 got a complementary guard); **1 safe-tier fix landed** (duplicated branch-scope block → `resolveBranchScope` helper); **1 candidate (Dockerfile COPY list) deliberately deferred** — unverifiable on this host (`docker build` hangs), correctly caught before being marked fixed | typecheck clean, unit 1053/1053, build green |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -144,6 +145,45 @@ first.
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #19 — full `/audit-workflow` run, item 6 codebase minimap (2026-07-18)
+
+- **A doc can claim a fix is "done" before the fix actually lands — caught this exact mistake
+  mid-pass, on this session's own minimap update.** While writing up W-1 and W-2 as "fixed this
+  pass" in `minimap.md`, an advisor consult caught that neither fix had actually been dispatched
+  yet — the doc language was written first, ahead of the real work, exactly the anti-pattern this
+  file's own Learnings warn against (see pass #14's "find BEFORE fix" discipline, applied here to
+  claims about fixes too, not just findings). Corrected before it shipped: W-2 was re-evaluated and
+  demoted to needs-planning (see below), and W-1's "fixed" language was only finalized after the
+  fix spoke ran AND the hub independently re-verified typecheck/tests/build. **Hold doc claims of
+  "fixed" to the same evidence-first bar as code claims of "done" — write the aspirational language
+  if you want, but don't let it survive past the point where reality still has to catch up to it.**
+- **A candidate fix can be correct in design but unverifiable in this environment — that alone is
+  reason to defer it, not ship it blind.** W-2 (Dockerfile's hand-enumerated `COPY` list) had a
+  known-good fix pattern (BuildKit `COPY --parents`), but `docker build`/`docker info` are
+  documented as hanging on this host (see Tooling gotchas below) — so the fix could not be
+  confirmed to actually build. Deferred to needs-planning explicitly for that reason, not because
+  the fix idea was wrong. **An unverifiable infra-file edit is worse than a documented gap** — don't
+  let "the fix is probably fine" substitute for real command output, especially for a build-time
+  file no test suite exercises.
+- **A GLM fix spoke can be killed (not time out, not error normally) and still have left complete,
+  correct, real work behind** — `t1784409000w1`'s task-notification came back `status: killed`
+  (not `completed`, and not a timeout the hub itself triggered), with a terse "Execution error" log
+  and no report file. Per this file's own repeated lesson (pass #1, pass #14: "check git diff
+  before assuming a failed agent did nothing"), inspected the actual diff instead of re-firing —
+  all 4 pages + `data.ts` + the mechanically-updated test mocks were complete and correct. The hub
+  ran typecheck + the affected test suites + the full unit suite + build itself (since no spoke
+  report existed to cite) before treating the fix as done. **A "killed" status is not automatically
+  a "died mid-work, nothing happened" signal any more than a timeout or a stalled stream is — the
+  diff is the actual source of truth, every time, regardless of how the spoke's process ended.**
+- **Cross-checking an existing backlog against actual git history (not just re-reading the code) is
+  cheap and catches real drift** — 2 of 14 backlog items sharpened (not just "still true" but
+  measurably worse: `data.ts`'s god-module growing further, `test/synthetic-fhir`'s prod-runtime
+  entanglement deepening via the new Docker image), and 1 item (`@taweed/platform` zero consumers)
+  got a complementary fix (item 1's production guard) that a shallower check might have mistaken
+  for resolving the backlog item — it doesn't; the guard hardens the stub, it doesn't add a real
+  consumer. Explicit evidence-per-item (file:line, what changed) is what makes this distinction
+  possible instead of a vibes-based "yeah I think that's still open."
 
 ### Pass #18 — full `/audit-workflow` run, item 5 WCAG AA (2026-07-18)
 

@@ -38,6 +38,7 @@ vi.mock("@/lib/data", () => ({
   })),
   getBranches: vi.fn(async () => []),
   resolveBranchId: vi.fn(() => undefined),
+  resolveBranchScope: vi.fn(async () => ({ branches: [], branchId: undefined })),
 }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, ...rest }: React.ComponentProps<"a">) => <a {...rest}>{children}</a>,

@@ -26,6 +26,7 @@ vi.mock("@/lib/data", () => ({
   getRecovery: vi.fn(),
   getBranches: vi.fn(() => Promise.resolve([])),
   resolveBranchId: vi.fn(() => undefined),
+  resolveBranchScope: vi.fn(async () => ({ branches: [], branchId: undefined })),
 }));
 vi.mock("@/lib/actions/recovery", () => ({ markAppealOutcomeForm: vi.fn() }));
 vi.mock("@/components/shell/page-header", () => ({

@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Check, TriangleAlert, X } from "lucide-react";
 import { requireSession } from "@/lib/session";
 import { isVisible } from "@/lib/rbac";
-import { getRecovery, getBranches, resolveBranchId, type AppealPipelineRow } from "@/lib/data";
+import { getRecovery, resolveBranchScope, type AppealPipelineRow } from "@/lib/data";
 import { markAppealOutcomeForm } from "@/lib/actions/recovery";
 import { formatMoney, formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
@@ -54,9 +54,10 @@ export default async function RecoveryPage({
   // Branch scope (design-brief §7): resolve the ?branch=<id> param against the
   // tenant's REAL branches (RLS-scoped) so a stale/forged/cross-tenant id is
   // ignored, not trusted as a filter. Same pattern as scrubber/page.tsx.
-  const branches = await getBranches(session.tenantId);
+  // `sp` is kept locally because recovery also reads the `?recoveryError=`
+  // param below; only the branch-scope resolution is shared.
   const sp = (await searchParams) ?? {};
-  const branchId = resolveBranchId(sp.branch, branches);
+  const { branchId } = await resolveBranchScope(session.tenantId, searchParams);
 
   const { money, winRate, medianDays, sharePct, shareSar, rows } =
     await getRecovery(session.tenantId, branchId);

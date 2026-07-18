@@ -491,6 +491,30 @@ export function resolveBranchId(
   return branches.some((b) => b.id === id) ? id : undefined;
 }
 
+/**
+ * Resolve the `?branch=<id>` URL param into a validated branch scope for a
+ * tenant: fetch the tenant's real (RLS-scoped) branches, then narrow the raw
+ * param against them via `resolveBranchId`. Returns both the branch list (in
+ * case the caller needs it for a switcher) and the validated id (`undefined`
+ * ⇒ "All branches"). Pure extraction of the 3-line block that was duplicated
+ * across the appeals / recovery / scrubber / analytics pages — same inputs →
+ * same outputs, no behavior change.
+ *
+ * `searchParams` is typed to the common `{ branch?: string }` shape; pages
+ * whose searchParams carry additional keys (recovery's `recoveryError`,
+ * scrubber's `q`) still satisfy it structurally and keep reading those keys
+ * from their own `sp` binding — this helper only owns the branch resolution.
+ */
+export async function resolveBranchScope(
+  tenantId: string,
+  searchParams: Promise<{ branch?: string }> | undefined,
+): Promise<{ branches: BranchRow[]; branchId: string | undefined }> {
+  const branches = await getBranches(tenantId);
+  const sp = (await searchParams) ?? {};
+  const branchId = resolveBranchId(sp.branch, branches);
+  return { branches, branchId };
+}
+
 export function getRules(tenantId: string) {
   // `status` is the SINGLE source of truth for "is this rule live" — the same
   // gate the scrubber executes on (rules-data.loadApprovedAuthoredRulesTx). The
