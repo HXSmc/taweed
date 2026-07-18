@@ -148,6 +148,29 @@ first.
 
 ## Learnings (append after each pass — newest on top)
 
+### Real CI failure caught post-item-7, fixed same session (2026-07-18)
+
+- **Local `pnpm lint`'s known `.claude/**` untracked-harness-file noise can mask a REAL new error in
+  a committed file, in the exact same run.** Item 7's fix spoke deleted the
+  `describe("createAnthropicProvider capabilities", ...)` block from `anthropic-1p.test.ts` but left
+  the now-unused `createAnthropicProvider` import — a real `@typescript-eslint/no-unused-vars`
+  error. The hub's own post-fix `pnpm lint` run (done after items 5 and 6, but **skipped after item
+  7** — typecheck/tests/build were run instead, lint was assumed clean from the established
+  baseline) would have caught this immediately; skipping it let a real CI-breaking error ship.
+  Caught only because the user forwarded a CI-failure email. **Never skip `pnpm lint` after ANY
+  spoke fix that touches source files, even when the "known baseline" pattern (`.claude/**` noise)
+  makes local lint output look unchanged at a glance — that noise is at the TOP of the output and
+  can visually crowd out a new, real, committed-file error lower down. Read the whole output, don't
+  pattern-match against "it's just the usual 3 problems."**
+- **Fixed immediately** (`1ef7b72`): removed the unused import, re-verified
+  `eslint packages/ai/test/anthropic-1p.test.ts` clean in isolation, root typecheck clean, the
+  specific test file re-run (10/10 pass). Pushed same session.
+- **This is exactly the kind of gap the `/audit-workflow` skill's own "Verify fixes with real
+  test/gate runs the hub executes" rule exists to catch** — and it still slipped through once,
+  proving the rule needs to be followed literally (run every gate, every time) rather than
+  proportionally-skipped based on a pattern-matched "this fix is small, probably fine" judgment.
+  Scale verification thoroughness to risk, not to how big the diff looks.
+
 ### Pass #20 — full `/audit-workflow` run, item 7 ponytail (2026-07-18)
 
 - **The same "deliberate external-blocker stub" exclusion rule this pass was explicitly told to
