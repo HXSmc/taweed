@@ -92,6 +92,16 @@
 > integration-test runs, not re-seeded) fixed via re-seed. 3 parallel Sonnet reviewers (architecture/
 > correctness, security, quality) — all ACCEPT, round 1. Full breakdown in "Where the project
 > stands" below.
+> **2026-07-18: AI-4 eval scoring bug fully fixed + real numbers, plus a 6-domain KSA compliance
+> audit — DONE, pushed (`main` = `ee9c9e5`).** The live scored eval initially reported near-zero
+> accuracy from a corpus-rendering bug (ground-truth `claimId`/`patientRef`/`serviceDate` never
+> printed into the actual PDF the model sees); fixed at the source plus a matching-key fix in
+> `scoring.ts`. Real 40-item × 2-tier run: Sonnet 96.6% overall / 100% amounts (meets both
+> documented targets), Opus 87.1% overall / 100% amounts. Separately, a 6-domain KSA regulatory
+> compliance sweep (SFDA, SAMA, business registration, SDAIA, NPHIES vendor terms, PDPL) found no
+> confirmed non-compliant gap; new items queued in `docs/HUMAN_CONFIRMATION_NEEDED.md` §G. Full
+> breakdown in "Where the project stands" below; branch-scoping is the next buildable item per
+> `docs/NEXT_STEP_PROMPT.md`.
 
 ## Where the project stands
 
@@ -800,5 +810,24 @@ IMPLEMENT:
   # restore if a push goes bad:
   git reset --hard back-up           # (or inspect first: git checkout back-up)
   ```
+
+- **As of this writing (after the AI-4 eval-fix + KSA-compliance-audit push, 2026-07-18),
+  `back-up` = `7d70a60`** (the pre-push `main`/`origin/main` tip — the prior session's
+  `e0ffaa5`-push doc-sync commit) **and `main`/`origin/main` = `ee9c9e5`**
+  (`fix: AI-4 eval scoring bug (corpus never rendered claim identity) + KSA compliance audit`, a
+  plain commit on `main` directly, no merge branch, no divergence from `origin/main` to reconcile —
+  `git fetch` immediately before pushing showed 0 behind/1 ahead). **Self-correction mid-ritual:**
+  the first `git branch -f back-up` was run *after* committing, from `main`'s new tip, so it
+  briefly pointed `back-up` at the same commit as the new `main` (a no-op restore point) instead of
+  the prior tip — caught before the follow-up doc commit, `back-up` re-pointed to `7d70a60` and
+  force-pushed again; confirmed one commit behind `main` (`git merge-base --is-ancestor back-up
+  main`) before writing this note. `git push -f origin back-up` was blocked once by the classifier
+  on the first (corrected) push; the user gave explicit real-time go-ahead and it succeeded on
+  retry — same standing policy as every prior instance (ask in the moment, no written bypass).
+  Local `pnpm typecheck` / full `pnpm test` (157 suites / 1031 tests, all pass) / `pnpm test:int`
+  (9 suites / 42 tests, all pass, DB re-seeded after per the destructive-test convention) /
+  `pnpm lint` (clean on every file this pass touched — one pre-existing, gitignored, untracked
+  tooling-script parse error unrelated to this diff, not fixed as out of scope) /
+  `pnpm --filter @taweed/web build` all confirmed green on the pushed tip before pushing.
 
 - **Isolated feature work** (e.g. EXECUTE): create a fresh worktree + branch (`superpowers:using-git-worktrees`), build, merge to `main`, then delete the worktree + branch. NOTE: gitignored local docs (`docs/NEXT_STEP_PROMPT.md`, `docs/blocker.md`, `design/`, …) do **not** sync between a worktree and `main` — edit them directly in whichever dir you read from.
