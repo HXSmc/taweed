@@ -23,6 +23,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -72,5 +74,34 @@ describe("DropdownMenu — rendering and interaction", () => {
 
     expect(onSelectExport).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("menuitem", { name: "Export" })).not.toBeInTheDocument();
+  });
+});
+
+// RadioGroup/RadioItem wrappers (a11y.md finding #18/F2): the tenant branch
+// switcher is a single-select, so it needs menuitemradio semantics. Verify the
+// wrapper renders Radix's radio role and reflects the checked state.
+describe("DropdownMenu — radio group", () => {
+  afterEach(cleanup);
+
+  it("renders radio items with the selected one aria-checked", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu>
+        <DropdownMenuTrigger>Pick</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuRadioGroup value="b">
+            <DropdownMenuRadioItem value="a">Alpha</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="b">Beta</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Pick" }));
+    const alpha = await screen.findByRole("menuitemradio", { name: "Alpha" });
+    const beta = screen.getByRole("menuitemradio", { name: "Beta" });
+
+    expect(alpha).toHaveAttribute("aria-checked", "false");
+    expect(beta).toHaveAttribute("aria-checked", "true");
   });
 });

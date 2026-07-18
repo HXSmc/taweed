@@ -5,8 +5,9 @@ import { useTranslations } from "next-intl";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -19,6 +20,15 @@ import {
 // getRecovery `branchId` params and the scope-cut comment on getAnalytics) —
 // only Ingest still shows this same switcher in its command-bar chrome without
 // filtering on it.
+
+// WCAG AA (a11y.md finding #18/F3): bare `text-accent` on `bg-surface-1` is
+// 5.90:1 in light theme but only ~3.15:1 in dark, where `--accent` (#2557e4)
+// is not redefined while `--accent-subtle` is retuned darker. Same root cause
+// as badge.tsx (finding #5) — swap to the solid accent fill in `.dark`
+// (bg-accent/text-accent-fg, ~5.9:1 AA) and keep the subtle pairing for light.
+const activeItemClass =
+  "font-medium bg-accent-subtle text-accent dark:bg-accent dark:text-accent-fg";
+
 export function TenantSwitcher({
   tenantName,
   branches,
@@ -48,27 +58,39 @@ export function TenantSwitcher({
       <DropdownMenuTrigger className="focus-ring flex items-center gap-2 rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-body hover:bg-surface-2">
         <Building2 className="size-4 text-muted" aria-hidden />
         <span className="max-w-[10rem] truncate font-medium">{tenantName}</span>
-        <span className="hidden text-muted sm:inline">· {scopeLabel}</span>
+        {/* Scope must stay in the trigger's accessible name at every viewport.
+            `sr-only` keeps it in the a11y tree unconditionally; the second
+            span is the visually-responsive copy (shown at `sm`+, hidden on
+            phone) marked `aria-hidden` so it isn't announced twice. Mirrors
+            the rail.tsx fix (a11y.md finding #15). */}
+        <span className="sr-only">· {scopeLabel}</span>
+        <span className="hidden text-muted sm:inline" aria-hidden="true">
+          · {scopeLabel}
+        </span>
         <ChevronDown className="size-4 text-muted" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[14rem]">
         <DropdownMenuLabel>{tenantName}</DropdownMenuLabel>
-        <DropdownMenuItem
-          className="font-medium text-accent"
-          aria-current={selectedId ? undefined : "true"}
-          onSelect={() => selectBranch(null)}
+        <DropdownMenuRadioGroup
+          value={selectedId ?? ""}
+          onValueChange={(id) => selectBranch(id || null)}
         >
-          {t("allBranches")}
-        </DropdownMenuItem>
-        {branches.map((b) => (
-          <DropdownMenuItem
-            key={b.id}
-            aria-current={b.id === selectedId ? "true" : undefined}
-            onSelect={() => selectBranch(b.id)}
+          <DropdownMenuRadioItem
+            value=""
+            className={!selectedId ? activeItemClass : undefined}
           >
-            {b.name}
-          </DropdownMenuItem>
-        ))}
+            {t("allBranches")}
+          </DropdownMenuRadioItem>
+          {branches.map((b) => (
+            <DropdownMenuRadioItem
+              key={b.id}
+              value={b.id}
+              className={b.id === selectedId ? activeItemClass : undefined}
+            >
+              {b.name}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

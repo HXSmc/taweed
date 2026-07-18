@@ -38,6 +38,7 @@
 | 15 | **Same queue, item 2 (security)** — 4 parallel GLM finders by area (injection/authn/secrets/access-control), diff-scoped since pass #13 + full sweep | 2026-07-18 | `secure.md` | **0 confirmed, 28 considered-and-refuted** — clean pass; branch-scoping IDOR verified safe; one human-sign-off item flagged (`listDemoAccounts` guard reversal, sound tradeoff) | read-only, no fix phase needed; GLM 5h at 6% after (Pro-tier quota, upgraded from Lite this same day) |
 | 16 | **Same queue, item 3 (API/server-action auth-check)** — 1 GLM finder, exhaustive per-export enumeration | 2026-07-18 | (no dedicated file, matches pass #3/#9 convention) | **0 confirmed across 22 entrypoints** (2 routes + 17 gated actions + 3 deliberate no-check) — 3rd consecutive clean result for this exact re-audit (after #3's original 15 fixes, #9's 0-finding re-check) | read-only, no fix phase needed |
 | 17 | **Same queue, item 4 (dependency CVEs)** — agy 3-agent research + hub independent NVD/GHSA verification | 2026-07-18 | `deps.md` (moved from `docs/deps.md` into `docs/audit docs/`) | **0 confirmed current vulnerabilities** (matches `pnpm audit`'s clean 812-dep read); agy's 4 "active CVE" + 1 abandoned-package claims all independently verified WRONG (real CVEs, misapplied versions, or a nonexistent dependency) — 2 genuine future-upgrade landmines captured (vitest→v4 needs ≥4.1.6, react→v19 needs ≥19.2.1, a CISA-KEV pre-auth RCE below that) | hub verified every claim directly against NVD/GHSA before writing anything; no fix needed |
+| 18 | **Same queue, item 5 (WCAG AA)** — 1 GLM code-level finder + hub live chrome-devtools verification, 1 GLM fixer | 2026-07-18 | `a11y.md` (moved from `docs/a11y.md` into `docs/audit docs/`) | **3 confirmed findings**, all in the new branch-scoping `tenant-switcher.tsx` (accessible-name loss below `sm`, `menuitem`+`aria-current` instead of `menuitemradio`+`aria-checked`, dark-theme contrast fail same root cause as finding #5) — all 3 fixed + hub-live-reverified via chrome-devtools (real a11y tree + computed-style contrast) | typecheck clean, unit 1053/1053, build green; int suite not re-run (UI-only fix, destructive DB wipe disproportionate) |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -143,6 +144,37 @@ first.
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #18 — full `/audit-workflow` run, item 5 WCAG AA (2026-07-18)
+
+- **A code-level GLM finder (no chrome-devtools access) plus a hub live-verification pass in
+  parallel is an effective split for accessibility auditing new UI.** The spoke correctly identified
+  both F1 (accessible-name loss) and F2 (`aria-current`/`menuitem` vs `aria-checked`/`menuitemradio`)
+  from source alone — sound static reasoning about the ACCNAME hidden-text rule and the WAI-ARIA APG
+  pattern, no browser needed. But F3 (the dark-theme contrast fail) was only findable live — the
+  spoke correctly flagged it as "cannot measure, needs live verification" rather than guessing a
+  ratio, and the hub's chrome-devtools measurement confirmed it as a real, high-severity finding the
+  code-only pass structurally could not have caught on its own.
+  **Neither approach alone would have gotten all 3 — running the code-level pass in parallel with,
+  not instead of, a hub live-verification pass on any brand-new UI is the right default for a11y
+  audits, not sequential-then-decide-if-needed.**
+- **A single new interactive component (this pass) generated 3 confirmed findings, all instances of
+  defect classes this repo had already fixed elsewhere** (F1 mirrors finding #15's
+  `hidden`-vs-`sr-only` mistake in `rail.tsx`; F3 mirrors finding #5's `--accent` dark-mode gap in
+  `badge.tsx`). **A previously-fixed defect class is not a one-time fix — it's a pattern that can
+  recur in every NEW component that doesn't know about the earlier fix.** Worth explicitly
+  cross-checking new UI against the full list of previously-fixed defect *classes* (not just
+  specific files), not just assuming "we already fixed contrast/hidden-vs-sr-only" once and it stays
+  fixed everywhere going forward.
+- **Hit the same `.next` cache-corruption tooling gotcha twice in one pass** (once on the initial
+  live-check, once again after the fix landed and the dev server needed a fresh look) — the fix
+  (`rm -rf apps/web/.next` + restart, never debug the code) held both times, reinforcing this is a
+  genuine environment quirk, not something to chase further.
+- **Skipping a destructive integration-test re-run for a UI-only fix is the right proportionality
+  call, not corner-cutting** — this fix touched zero DB/backend code; re-wiping the shared local
+  Postgres to re-run `packages/db/test/*.int.test.ts` (which this change cannot possibly affect)
+  would have been pure overhead. Reserve the full destructive integration suite for changes that
+  actually touch DB/backend logic (as item 1's TOCTOU fix correctly did).
 
 ### Pass #17 — full `/audit-workflow` run, item 4 dependency CVEs via agy (2026-07-18)
 

@@ -49,7 +49,11 @@ describe("TenantSwitcher — branch selection", () => {
 
   it("shows 'All branches' in the trigger label when no branch is selected", () => {
     render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
-    expect(screen.getByText(/All branches/)).toBeInTheDocument();
+    // The scope now lives in two spans (sr-only + visual), so query via the
+    // trigger's accessible name rather than the duplicated text node.
+    expect(
+      screen.getByRole("button", { name: /All branches/ }),
+    ).toBeInTheDocument();
   });
 
   it("navigates with ?branch=<id> when a branch is selected", async () => {
@@ -57,7 +61,7 @@ describe("TenantSwitcher — branch selection", () => {
     render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
 
     await user.click(screen.getByRole("button", { name: /Noor Polyclinic/ }));
-    const item = await screen.findByRole("menuitem", { name: "Riyadh, Al Malaz" });
+    const item = await screen.findByRole("menuitemradio", { name: "Riyadh, Al Malaz" });
     await user.click(item);
 
     expect(mockedPush).toHaveBeenCalledWith("/en/analytics?branch=branch-riyadh");
@@ -69,7 +73,7 @@ describe("TenantSwitcher — branch selection", () => {
     render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
 
     await user.click(screen.getByRole("button", { name: /Noor Polyclinic/ }));
-    const item = await screen.findByRole("menuitem", { name: "All branches" });
+    const item = await screen.findByRole("menuitemradio", { name: "All branches" });
     await user.click(item);
 
     expect(mockedPush).toHaveBeenCalledWith("/en/analytics");
@@ -81,7 +85,7 @@ describe("TenantSwitcher — branch selection", () => {
     render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
 
     await user.click(screen.getByRole("button", { name: /Noor Polyclinic/ }));
-    const item = await screen.findByRole("menuitem", { name: "Mecca, Al Aziziyah" });
+    const item = await screen.findByRole("menuitemradio", { name: "Mecca, Al Aziziyah" });
     await user.click(item);
 
     const calledWith = mockedPush.mock.calls[0]![0] as string;
@@ -92,6 +96,69 @@ describe("TenantSwitcher — branch selection", () => {
   it("shows the selected branch's name in the trigger label", () => {
     mockedSearchParamsString = "branch=branch-mecca";
     render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
-    expect(screen.getByText(/Mecca, Al Aziziyah/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Mecca, Al Aziziyah/ }),
+    ).toBeInTheDocument();
+  });
+});
+
+// WCAG AA (a11y.md finding #18): three confirmed findings — F1 scope dropped
+// from the trigger's accessible name below `sm`, F2 single-select used
+// menuitem/aria-current instead of menuitemradio/aria-checked, F3 selected
+// branch's text-accent failed AA in dark theme.
+describe("TenantSwitcher — accessibility fixes (a11y.md finding #18)", () => {
+  afterEach(cleanup);
+  beforeEach(() => {
+    mockedPush.mockClear();
+    mockedSearchParamsString = "";
+  });
+
+  // F1: the scope must remain in the trigger's accessible name at every
+  // viewport. JSDOM applies no CSS, so assert the underlying structure: an
+  // `sr-only`-classed span carrying the scope text exists unconditionally,
+  // separate from the responsive `aria-hidden` visual copy.
+  it("F1 — keeps the scope in an sr-only span so it's in the a11y tree at all widths", () => {
+    const { container } = render(
+      <TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />,
+    );
+    const srOnlyScope = container.querySelector("span.sr-only");
+    expect(srOnlyScope).not.toBeNull();
+    expect(srOnlyScope!.textContent).toMatch(/All branches/);
+
+    // The visually-responsive copy is hidden from the a11y tree (no double
+    // announcement) and retains the `hidden ... sm:inline` responsive classes.
+    const visualScope = container.querySelector('span[aria-hidden="true"]');
+    expect(visualScope).not.toBeNull();
+    expect(visualScope!.textContent).toMatch(/All branches/);
+    expect(visualScope).toHaveClass("sm:inline");
+  });
+
+  // F2: the branch list is a single-select, so it must surface as
+  // menuitemradio with aria-checked on the selected option.
+  it("F2 — renders branch items as menuitemradio and marks the selected one aria-checked", async () => {
+    mockedSearchParamsString = "branch=branch-riyadh";
+    const user = userEvent.setup();
+    render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
+
+    await user.click(screen.getByRole("button", { name: /Noor Polyclinic/ }));
+    const riyadh = await screen.findByRole("menuitemradio", { name: "Riyadh, Al Malaz" });
+    const mecca = screen.getByRole("menuitemradio", { name: "Mecca, Al Aziziyah" });
+
+    expect(riyadh).toHaveAttribute("aria-checked", "true");
+    expect(mecca).toHaveAttribute("aria-checked", "false");
+  });
+
+  // F3: the selected item must not use bare `text-accent` (fails AA in dark);
+  // it uses the bg-accent/text-accent-fg pairing in `.dark`.
+  it("F3 — selected item uses the AA-safe accent-fg/accent-bg pairing, not bare text-accent", async () => {
+    mockedSearchParamsString = "branch=branch-riyadh";
+    const user = userEvent.setup();
+    render(<TenantSwitcher tenantName="Noor Polyclinic" branches={BRANCHES} />);
+
+    await user.click(screen.getByRole("button", { name: /Noor Polyclinic/ }));
+    const riyadh = await screen.findByRole("menuitemradio", { name: "Riyadh, Al Malaz" });
+
+    expect(riyadh.className).toContain("dark:bg-accent");
+    expect(riyadh.className).toContain("dark:text-accent-fg");
   });
 });

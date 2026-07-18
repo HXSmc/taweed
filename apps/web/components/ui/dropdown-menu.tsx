@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export const DropdownMenu = DropdownPrimitive.Root;
 export const DropdownMenuTrigger = DropdownPrimitive.Trigger;
 export const DropdownMenuGroup = DropdownPrimitive.Group;
+export const DropdownMenuRadioGroup = DropdownPrimitive.RadioGroup;
 
 export const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownPrimitive.Content>,
@@ -40,6 +41,21 @@ export const DropdownMenuItem = React.forwardRef<
   />
 ));
 DropdownMenuItem.displayName = "DropdownMenuItem";
+
+export const DropdownMenuRadioItem = React.forwardRef<
+  React.ElementRef<typeof DropdownPrimitive.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownPrimitive.RadioItem>
+>(({ className, ...props }, ref) => (
+  <DropdownPrimitive.RadioItem
+    ref={ref}
+    className={cn(
+      "flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body text-text outline-none data-[highlighted]:bg-surface-2",
+      className,
+    )}
+    {...props}
+  />
+));
+DropdownMenuRadioItem.displayName = "DropdownMenuRadioItem";
 
 export const DropdownMenuLabel = ({
   className,
