@@ -196,6 +196,25 @@ function buildHtmlTemplate(spec: EobScenarioSpec, extraction: EobExtraction): st
   let slot = 0;
   const fmt = (value: number | string): string => formatDigits(value, spec.digitSet, slot++);
   const sar = (halalas: number): string => fmt((halalas / 100).toFixed(2));
+  const isAr = spec.language === "ar";
+  // Per-claim identity block (claim id, patient ref, service date), mirroring
+  // buildTextLayer's info above — previously ONLY buildTextLayer rendered
+  // these, so the vision-model corpus (rasterize.ts renders THIS template,
+  // never textLayer, to the PDF the model actually sees) never made
+  // patientRef/serviceDate/the internal claimId visible at all, and the eval
+  // scored the model as wrong for correctly emitting null/omitting them
+  // (confirmed live 2026-07-18: scoring.ts's claim-matching also broke on
+  // claimId specifically, since that field is genuinely never legible on a
+  // real remittance either — kept matching on nphiesClaimId there, but the
+  // OTHER two fields are legitimately printable, so print them for real).
+  const claimBlocks = extraction.claims
+    .map(
+      (claim) => `
+      <p>${isAr ? "مطالبة" : "Claim"}: ${claim.nphiesClaimId} (${claim.claimId})</p>
+      <p>${isAr ? "المريض" : "Patient"}: ${claim.patientRef}</p>
+      <p>${isAr ? "تاريخ الخدمة" : "Service Date"}: ${fmt(claim.serviceDate)}</p>`,
+    )
+    .join("");
   const rows = extraction.claims
     .flatMap((claim) =>
       claim.lines.map(
@@ -227,6 +246,7 @@ function buildHtmlTemplate(spec: EobScenarioSpec, extraction: EobExtraction): st
   <p>Payer / الدافع: ${extraction.payerName} (${extraction.payerNphiesId})</p>
   <p>Remittance Date / تاريخ التسوية: ${fmt(extraction.remittanceDate)}</p>
   <p>Total Paid / إجمالي المسدد: ${sar(extraction.remittanceTotalPaidHalalas)} SAR</p>
+  ${claimBlocks}
   <table>
     <thead>
       <tr>

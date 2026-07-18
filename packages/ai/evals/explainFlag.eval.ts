@@ -74,7 +74,11 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
         tenantId: tenant,
         pool: appPool,
         flag: FLAG,
+        // See extractEob.eval.ts's identical fix (2026-07-18) for why
+        // process.env must be spread first — a bare literal here fully
+        // replaces process.env for this call, hiding ANTHROPIC_API_KEY.
         env: {
+          ...process.env,
           TAWEED_AI_ENABLED: "true",
           TAWEED_AI_EXPLAIN_ENABLED: "true",
         },

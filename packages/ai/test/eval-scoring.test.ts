@@ -86,6 +86,12 @@ describe("scoreEobExtraction", () => {
   it("reports a hallucinated claim without inflating the denominator", () => {
     const actual = clone(GROUND_TRUTH);
     const hallucinated = structuredClone(actual.claims[0]!);
+    // Matching is keyed by nphiesClaimId (see scoring.ts's claimKey) — a
+    // claim identity is only genuinely novel/hallucinated if THAT field
+    // differs, not claimId alone (claimId isn't reliably legible on a real
+    // document, see scoring.ts's file-header comment for why it's not the
+    // match key).
+    hallucinated.nphiesClaimId = "NPHIES-CLM-hallucinated-999";
     hallucinated.claimId = "claim-hallucinated-999";
     actual.claims.push(hallucinated);
     const truthOnly = scoreEobExtraction(GROUND_TRUTH, GROUND_TRUTH);

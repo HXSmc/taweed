@@ -9,6 +9,8 @@
 > **🔬 Research update 2026-07-01** (two deep-research passes, ~200 agents total — full log in `RESEARCH_FINDINGS_2026-07-01.md`). Resolved: **CHI annual-report PDFs found + read in full** (A1/A2), **Oracle Cloud Riyadh region confirmed LIVE** (C3), **Waseel pricing confirmed primary** (D1), **clearinghouse does NOT confirmedly remove your PKI/conformance duties** (B1/B2/B3), **D2 vendor depth**, **F1–F3 artifacts**. Remaining items are now human-action calls (CHI direct ask; NPHIES/Waseel scope call; counsel), not research gaps.
 >
 > **🔬 Double-check pass 2026-07-02** (third deep-research pass, ~100 agents): every remaining ❌/🔒 verdict **re-tested and STANDS — nothing could be confirmed or denied beyond what's below.** New this pass: (1) CHI's open-data **Statistics & Indicators page has NO denial figures** (3-0 verified) but CHI runs a formal **Data Sharing Request channel — DMO@chi.gov.sa** (Data Management Office); (2) a **peer-reviewed Nov 2025 paper** (Al-Kahtani, *Insurance Markets & Companies*) cites the national denied-SAR figure as **3.5–4.5B, sourced ONLY to the Glance Care vendor page**, and states empirical KSA rejection-rate data is sparse — the vendor-trace is now academically corroborated; (3) **B1/B2 docs are Academy-gated, not secret**: NPHIES Academy hosts a mandatory **"System Vendors Onboarding Course"** (v-academy.nphies.sa, course 11) + **"Registering in nphies Platform"** (course 6, incl. "nphies Registration Guide V1.3") — detailed PKI/sandbox steps sit behind course completion + portal registration; **NPHIES onboarding email = onboarding@chi.gov.sa (920033808)**; (4) contact emails for all action-plan targets found — see **"Emails to send"** section below the Quick action plan.
+>
+> **🔬 KSA regulatory compliance audit 2026-07-18** (6 parallel Opus research agents, agy + WebSearch, primary-source-verified — new **§G** section below). Covers ground never touched before: SFDA medical-device classification (**RESOLVED, COMPLIANT** — all 4 AI features are administrative/billing, primary-confirmed against SFDA's own MDS-G027 guidance), business/vendor registration (forks entirely on **founder nationality — your own self-disclosure, item #9** in the action plan), SAMA payment-services licensing (**RESOLVED, COMPLIANT** — the success-fee model never touches a regulated payment activity), SDAIA AI-specific law (**RESOLVED, COMPLIANT** — no binding AI law exists in KSA beyond PDPL, SDAIA's AI principles are voluntary), and two genuinely new, previously-untracked items: the **NPHIES portal's binding Terms & Conditions** (liability waiver + indemnity + suspend-without-notice, §G8) and the **72-hour SDAIA breach-notification requirement** (§G13, no materiality threshold, no exemptions). **No confirmed NON-COMPLIANT gap found anywhere in the product.** C1's PDPL entry corrected/sharpened (no adequacy list actually exists; PDPL enforcement is confirmed ACTIVE, not theoretical — 48 SDAIA violation decisions in 2025-2026). Emails 2 and 6 extended in place with the new questions rather than duplicated.
 
 ---
 
@@ -69,9 +71,9 @@
 ## C. Compliance & hosting (mostly RESOLVED — residual human checks)
 
 ### C1. 🟡✅→🔒 PDPL cross-border — framework confirmed, operational sign-off needed
-- **What's confirmed (3-0):** SDAIA Transfer Regulation — no localization ban; adequacy list; SCC/BCR/Certificate safeguards; **sensitive/health data gets the stricter path.** Keep PHI **in-Kingdom** = clean.
-- **What to do (human):** have **KSA privacy counsel** review your final data-flow + write the **DPA** (data processing agreement) wording with clinics, and confirm nothing in your stack quietly sends PHI abroad (logging, analytics, backups, email).
-- **Why it matters:** the law is clear; the *implementation* (your actual architecture) still needs a lawyer's eyes before GA.
+- **What's confirmed (3-0, sharpened 2026-07-18 — see §G10/G11):** SDAIA Transfer Regulation — no localization ban; **no SDAIA adequacy list has actually been published** (the earlier "adequacy list" phrasing here was ambiguous — there is nothing to check a destination against; every cross-border transfer of sensitive data, including to the US, must rely on an Appropriate Safeguard instead: Saudi SCCs, Binding Common Rules, or a Certificate of Accreditation); SCC is the applicable safeguard for a US-based subprocessor like Anthropic. **Sensitive/health data gets the stricter path** and is barred from the lighter "Exempt Cases" derogations. Keep PHI **in-Kingdom** = clean; the `inference_geo="us"` pin on AI calls (`packages/ai/src/anthropic-1p.ts`) is a real cross-border transfer once real PHI flows, not yet (synthetic/PHI-free only today, BLK-AI-1/2). **PDPL's Executive Regulations are confirmed FINALIZED and FULLY ENFORCED as of 14 Sept 2024** — no grace period remains; SDAIA issued 48 confirmed-violation decisions across 2025-2026, so this is live enforcement, not theoretical.
+- **What to do (human):** have **KSA privacy counsel** review your final data-flow + write the **DPA** (data processing agreement) wording with clinics, confirm nothing in your stack quietly sends PHI abroad (logging, analytics, backups, email), draft the Saudi SCC form for the Anthropic transfer, produce the mandatory SDAIA cross-border risk assessment (Feb 2025 guideline, §G12), set up a 72-hour breach-notification runbook (§G13), and make the controller-vs-processor call (§G14) — all now folded into **Email 6**.
+- **Why it matters:** the law is clear; the *implementation* (your actual architecture) still needs a lawyer's eyes before GA — and enforcement is now active, not a future risk.
 
 ### C2. 🟢✅ CBAHI — resolved (no action)
 - **Confirmed (3-0):** CBAHI accredits **facilities/providers, not software vendors.** No CBAHI requirement on you. (Nice-to-have: support clinics' accreditation/data-quality goals as a selling point.)
@@ -124,6 +126,68 @@
 
 ---
 
+## G. KSA regulatory compliance audit *(2026-07-18 pass — 6 parallel Opus research agents, agy + WebSearch, primary-source-verified)*
+
+> Covers ground A-F never touched: SFDA medical-device classification, business/vendor registration, SAMA payment-services licensing, SDAIA AI-specific law, NPHIES vendor legal/liability terms, and a freshness check on the existing PDPL research (C1). **Net result: no confirmed NON-COMPLIANT gap product-wide.** Two real, previously-untracked items surfaced: the NPHIES portal's binding Terms & Conditions (G8), and the 72-hour SDAIA breach-notification requirement (G13) — both now actioned via Email 2/Email 6 above.
+
+### G1. 🟢✅ SFDA medical-device (SaMD) classification — RESOLVED, primary-confirmed
+- **What's confirmed:** SFDA guidance **MDS-G027** ("Guidance on Digital Health Products," v1.0, 11/8/2025) and **MDS-G23** (SaMD framework) — both downloaded and text-extracted directly, not a vendor summary. The test is **medical purpose** (diagnose/treat/mitigate/cure/prevent), not "does a human review the output." MDS-G027 verbatim: *"A HIT product does not qualify as a medical device if it is: intended solely for administrative or communication support, such as... billing processing."* All 4 AI features (AI-1 explain, AI-2 appeal-assist, AI-3 rule-authoring, AI-4 EOB extraction) are revenue-cycle/billing functions with no clinical diagnostic/therapeutic purpose — **none require SFDA SaMD registration.** AI-2 (drafting appeal arguments referencing medical necessity) was scrutinized hardest as the closest call and still lands outside: it compiles arguments from clinical decisions already made by the clinician, serves a reimbursement purpose, and is a human-reviewed DRAFT — it doesn't interpret new patient data to recommend clinical management.
+- **What to do:** nothing — this closes cleanly. Optional: if ever genuinely uncertain on a specific feature, SFDA's Medical Devices Sector takes inquiries at ☎ 19999 or via the Medical Devices e-services portal (no existing contact in this doc covers SFDA — this would be a new one, not currently needed).
+
+### G2. 🟡⚠️ Product copy invokes the wrong SFDA exemption frame — wording fix, not a legal gap
+- **What's confirmed:** `apps/web/messages/en.json` (lines ~67, ~417) and `docs/03_design_brief.md` (~293, ~307) say **"Not an SFDA medical device. Decision support with human review."** The conclusion is right; the *stated reason* is wrong — "decision support" is literally SFDA's name for a **regulated** category (clinical decision support is a named example of what typically IS SaMD). Taweed is exempt because it's **administrative/billing software with no medical purpose**, not because a human reviews it (human review is SFDA's mitigation for software that already IS medical-purpose).
+- **What to do:** reword the `notDevice`/`trustDevice` copy strings to lead with "administrative/revenue-cycle software — no medical purpose" rather than "decision support." No code/architecture change, a copy edit. Not urgent, not blocking.
+
+### G3. 🔴❌ Founder nationality — THE master variable for every business-registration question below
+- **What's confirmed:** every downstream answer (MISA license or not, tax regime, capital/ownership rules) forks entirely on whether the founder is a **Saudi/GCC national** or a **foreign (non-GCC) national**. This is not researchable — it's a self-disclosure only the founder can provide.
+- **What to do (human, you):** state your own nationality status. Everything in G4-G6 below is written conditionally until this is answered.
+
+### G4. 🟡⚠️ Business registration path — MISA vs CR, sequencing, and a startup-friendly option (conditional on G3)
+- **What's confirmed:** **Saudi/GCC founder** → standard KSA Commercial Registration (CR) only, no MISA license needed. **Foreign (non-GCC) founder** → a **MISA investment license is a mandatory prerequisite obtained BEFORE the CR** (fixed sequence: MISA → CR → ZATCA/GOSI/bank/labor file; Ministry of Commerce won't issue a CR without it first). Software/SaaS qualifies for a **100%-foreign-ownership MISA Services license** — no local partner required — and minimum capital is largely waived for IT services (unlike trading). If foreign and pre-revenue/bootstrapped, the **MISA Entrepreneur License** is the better instrument: waives the large capital deposit, reduced fees for 3 years, no parent-company requirement — but requires a support letter from a MISA-accredited incubator/accelerator/VC first.
+- **What to do:** once G3 is answered — Saudi/GCC path is straightforward (standard CR, a formation agent can handle it directly); foreign path should route through a MISA-accredited formation agent, and if bootstrapped, start the incubator-support-letter conversation now (Monsha'at / Saudi VC programs) since that's the long pole for the Entrepreneur License.
+
+### G5. 🔴⚠️ No pre-entity pilot carve-out — the free-audit GTM pulls the entity requirement earlier than "first invoice"
+- **What's confirmed:** operating commercially in KSA without a CR/license is prohibited (Anti-Commercial Concealment Law — fines to SAR 5M, imprisonment, deportation, entity closure, for the foreign-founder case specifically). The product's own GTM wedge (`01_market_and_gtm.md` §7-8) is a **free audit on the clinic's own real NPHIES `ClaimResponse` data** — that's real PHI, which triggers PDPL + a DPA (C1/BLK-AI-1), and **a DPA needs a legal entity to be a party to it.** So the practical "you need an entity" moment arrives at **first real-clinic-data**, before the first invoice, not at "first commercial contract" as the GTM plan implicitly assumes.
+- **What to do:** do not ingest a real clinic's `ClaimResponse` data until (a) an entity exists to sign the DPA and (b) PDPL sign-off per C1. A pre-entity pilot is only safe on **synthetic/de-identified data** — which the product's own `data_origin` synthetic/production gate already enforces, so the engineering control already matches this legal constraint; just don't let a sales process outrun it.
+
+### G6. 🟢✅ ZATCA tax + VAT + e-invoicing — informational, plan-ahead not urgent
+- **What's confirmed:** general taxpayer registration (Zakat if Saudi/GCC-owned, 20% corporate income tax if foreign-owned) is required at CR issuance regardless of revenue (~60 days). **VAT** is mandatory above SAR 375,000 annual taxable supplies, voluntary between SAR 187,500-375,000, standard rate 15%. **E-invoicing (Fatoora) Phase 2** now applies from the same SAR 375,000 line (Wave 24), ≥6 months notice before a business is pulled in. At the modeled ACV (SAR 80-150k/client), Taweed crosses mandatory VAT at roughly **3-5 paying clients**.
+- **What to do:** nothing now (pre-revenue, below every threshold). Register as a taxpayer at CR issuance regardless. Put "VAT registration + Fatoora-compliant invoicing" on the first-revenue checklist, expected around the 3-5th paying client.
+
+### G7. 🟢✅ SAMA payment-services licensing — RESOLVED, outside scope
+- **What's confirmed:** Taweed's revenue model (a base fee + 10-15% of recovered SAR, billed separately to the clinic) does not touch any of the 12 activities SAMA's Payments Law Article 6 defines as regulated "payment services" (deposits, transfers, card acquiring, e-money, payment initiation, etc.) — the insurer pays the clinic directly, Taweed is never in the payment path. Article 7(9) also excludes technical-service-provider support from "related payment services," though Taweed doesn't even need that exclusion since it never touches the payment ecosystem at all. SAMA's debt-collection regime doesn't apply either (binds only collection on behalf of SAMA-supervised banks/finance companies; Taweed isn't a collection agency — it never contacts debtors or holds funds).
+- **What to do:** nothing required. **To keep this status:** never provide payment links/gateway APIs that capture insurer↔clinic funds, never hold funds in an escrow/pass-through account even briefly, and always bill the clinic as a separate, standard B2B invoice — never blend the fee into the payment flow itself. A one-line perimeter confirmation from KSA financial-services counsel before GA is cheap insurance (folded into Email 6's engagement, not a separate ask) but the finding stands regardless.
+
+### G8. 🔴✅→🔒 NPHIES portal Terms & Conditions — CONFIRMED binding agreement with real business-risk terms
+- **What's confirmed (genuinely new, verified by direct fetch of the live page):** `nphies.sa/terms-and-conditions` is a real, binding legal document, not boilerplate — *"every user of the portal is subject to these terms of use"* and *"your access... constitutes unconditional acceptance."* It includes: a liability-limitation clause (portal *"is not responsible in any way for any loss or damage"*, services *"as is"*), an **indemnity clause running in NPHIES's favor** (users agree *"not to take action against NPHIES or demand compensation... for liability"*), and a **unilateral suspend/terminate-without-notice** right for any reason.
+- **What to do:** get this in front of counsel as part of Email 6's scope (item 5) before connecting — it's a real business-risk document worth a lawyer's read, not a code fix. Also treat the suspend-without-notice right as a live operational dependency once connected (§G9's Q8 asks NPHIES directly whether there's a published basis for suspension).
+
+### G9. 🟡🔒 NPHIES vendor liability/insurance, separate vendor agreements, post-cert compliance regime — unconfirmed, routed to Email 2
+- **What's confirmed:** no PUBLIC primary source (CHI, Saudi Insurance Authority, NPHIES IG) requires a vendor to carry professional-indemnity insurance, post a bond, sign a separate indemnity undertaking, or sign a distinct vendor DPA/NDA/code-of-conduct with CHI/NPHIES beyond the portal ToU (§G8) — but the actual System Vendor Certification pack is Academy-login-gated, so absence-in-public-sources is evidence of gating, not evidence the requirement doesn't exist. Same for any post-certification ongoing compliance/re-certification/de-listing regime — nothing public, but the real material is gated. (One correction: an earlier research pass's claim that `provider-contract-suspended` is a vendor de-listing mechanism is wrong — it's a `siteEligibility` CodeSystem value describing a provider↔payer contract status, unrelated to vendor compliance.)
+- **What to do:** now folded into **Email 2** (questions 6-8) — no new contact needed, same `onboarding@chi.gov.sa` inbox already being emailed for B1/B2. Also worth self-enrolling in NPHIES Academy course #11 (System Vendors Onboarding) — the gated material likely answers all three questions directly, same logic as the existing "do 1b, don't wait for the reply" note on Email 2.
+
+### G10. 🟢✅→🔒 PDPL Executive Regulations — CONFIRMED finalized and in ACTIVE enforcement (sharpens C1)
+- **What's confirmed:** PDPL entered force 14 Sept 2023; the compliance grace period ended 14 Sept 2024 — **there is no ongoing grace period now**, mid-2026 is squarely in active enforcement. The Implementing Regulations and the Data Transfer Regulations (issued Aug/Sept 2024) are both in force, not draft. Enforcement is real: SDAIA's committees issued **48 confirmed-violation decisions across 2025-2026** (no-legal-basis processing, unauthorized disclosure, missing safeguards, unconsented marketing).
+- **What to do:** no new action beyond what C1 already schedules (counsel review before GA) — but note the risk framing has changed from "the law is clear, get ahead of it" to "this is now actively enforced," which raises the priority of closing C1 before any real-PHI operation, not just before GA.
+
+### G11. 🟡⚠️ No SDAIA adequacy list exists — corrects C1's ambiguous wording (already fixed above)
+- **What's confirmed:** SDAIA has never published a list of adequate jurisdictions — there is nothing to check the US (or any destination) against. C1's original phrasing ("adequacy list; SCC/BCR/Certificate safeguards") read as if a usable list exists; it doesn't. Every cross-border transfer of Taweed's kind must rely on an Appropriate Safeguard instead — Saudi SCCs (Controller-to-Processor form) being the applicable one for a third-party vendor like Anthropic (Binding Common Rules excludes third-party vendors). This is not a new problem — BLK-AI-1/2 already require SCC + counsel sign-off — just a wording fix so a future reader doesn't go looking for a list that doesn't exist.
+- **What to do:** C1's wording above is already corrected. No new blocker.
+
+### G12. 🔴🔒 SDAIA Risk Assessment Guideline (Feb 2025) — mandatory for the Anthropic health-data transfer, not previously tracked
+- **What's confirmed:** SDAIA issued a "Risk Assessment Guideline for Transferring Personal Data Outside the Kingdom" (Feb 2025) plus a self-assessment tool on the National Data Governance Platform (dgp.sdaia.gov.sa). The underlying risk-assessment obligation is **mandatory** (not just the guideline) whenever (a) relying on an Appropriate Safeguard — which Taweed must, per G11 — or (b) the transfer involves sensitive data, health data explicitly named. Taweed hits both triggers. Sensitive-data transfers are also barred from the lighter "Exempt Cases" derogations (the "direct benefit" and scientific-research exemptions explicitly can't involve sensitive data) — there's no shortcut around the full safeguards + risk-assessment path for PHI.
+- **What to do:** now folded into Email 6 (item 4) — produce the SDAIA risk assessment for the Anthropic transfer using the dgp.sdaia.gov.sa tool, as part of the same counsel engagement already planned for the DPA/SCC work.
+
+### G13. 🔴🔒 72-hour SDAIA breach notification — new operational requirement, not previously tracked
+- **What's confirmed:** controllers must notify SDAIA **within 72 hours** of becoming aware of a breach, **with no materiality threshold** (stricter than GDPR/US HHS — every breach size is notifiable) and no exemptions on notifying affected data subjects "without undue delay" where harm is possible. This is a genuine product/ops gap for a PHI product, not just a legal one — there is currently no documented breach-response runbook anywhere in this repo's docs.
+- **What to do:** now folded into Email 6 (item 6) — get counsel's help drafting a breach-response runbook (detection → 72h SDAIA notification → data-subject notification) before any real-PHI operation. Whether Taweed (processor) or the clinic (controller) owns the SDAIA-facing notification is the same determination as G14, but Taweed as processor must still notify the clinic fast enough for the clinic to hit the 72h clock either way — build the runbook regardless of how G14 resolves.
+
+### G14. 🟡🔒 Controller-vs-processor determination + possible registration/DPO duties — counsel question, not yet confirmed
+- **What's confirmed:** controllers processing sensitive data or doing cross-border transfers must register on SDAIA's National Data Governance Platform; DPO appointment is mandatory for large-scale sensitive-data processing or cross-border transfers, with the DPO registered with SDAIA. On its face Taweed's activities (sensitive health data + US cross-border) hit these triggers — **but** these duties attach to the **controller**, and in the clinic-SaaS model the clinic is likely the controller with Taweed as processor, so whether registration/DPO duties land on Taweed at all turns entirely on that determination. Proposed 2025 amendments that would consolidate these rules were still unpublished as of May 2026 — treat as an emerging, not yet fully settled, duty.
+- **What to do:** now folded into Email 6 (item 7) — ask counsel to make the controller-vs-processor call first, then confirm whether registration/DPO attaches to Taweed specifically.
+
+---
+
 ## Quick action plan (do these first)
 
 | # | Action | Who to contact | Unblocks |
@@ -137,6 +201,9 @@
 | 6 | Run free denial audits on real clinic data → **Email 7** | **Design-partner clinics** | A1, A2 (your best path) |
 | 7 | Verify branch counts/insured-mix; confirm "Nabda" | **Manual / each clinic** | E1, E2 |
 | 8 | 🆕 Get written OK to bundle NPHIES IG artifacts into product/CI → **Email 5** | **`onboarding@chi.gov.sa` / `support@nphies.sa`** (HL7 Saudi Arabia has no public email — still "in establishment") | F3 |
+| 9 | 🆕 **State your own nationality (Saudi/GCC vs foreign)** — the master variable for the entire business-registration path; nothing external can answer this | **You (self-disclosure)** | G3, G4 |
+| 10 | 🆕 Ask vendor liability/insurance, separate CHI/NPHIES vendor agreement, post-cert compliance regime (Q6-8, now folded into Email 2) | **`onboarding@chi.gov.sa`** (same as #2) | G9 |
+| 11 | 🆕 SCC + risk-assessment for the Anthropic transfer, NPHIES ToU business-risk review, 72h breach-notification runbook, controller/processor + DPO call (items 4-7, now folded into Email 6) | **KSA privacy counsel** (same as #4) | G8, G12, G13, G14 |
 
 ### 🧍 Better done IN PERSON / by phone than by email *(added 2026-07-02)*
 - **#6 design partners** — KSA physician-owners close on **warm referral + WhatsApp + a visit**, not cold email. Use Email 7 only as the door-opener or follow-up after a call; a 15-min in-clinic demo of the free audit beats any sequence.
@@ -205,9 +272,10 @@ Thank you,
 [COMPANY] — [PHONE]
 ```
 
-### Email 2 — NPHIES onboarding: vendor certification, PKI, sandbox *(unblocks B1 + B2)*
+### Email 2 — NPHIES onboarding: vendor certification, PKI, sandbox *(unblocks B1 + B2 + G9)*
 **To:** `onboarding@chi.gov.sa` · **CC:** `support@nphies.sa` · **Follow-up ☎:** 920033808 (or onboarding call center 920004299)
 **🏆 Send the ARABIC version** — same reasoning as Email 1 (CHI-domain government inbox). Technical terms (PKI, sandbox, FHIR) stay in English inside the Arabic text — that's how NPHIES's own docs write them. **Do 1b (Academy self-enrollment) the same day; don't wait for the reply.**
+**🆕 Updated 2026-07-18** with 3 new questions (6-8) from the KSA compliance audit pass — see **§G9** below for why: the System Vendor Certification pack is Academy-login-gated, so these can't be closed by research alone.
 
 **Arabic (recommended):**
 ```text
@@ -224,6 +292,9 @@ Thank you,
 ٣. اختبارات المطابقة (Conformance): ما نطاق حالات الاختبار المطلوبة؟ وهل المراجعة آلية أم يدوية؟ وما المدة المعتادة حتى صدور الاعتماد؟
 ٤. في حال الربط عبر وسيط معتمد (Clearinghouse مثل واصل): هل يظل على المورد استكمال اعتماد موردي الأنظمة وشهادة PKI الخاصة به، أم يغني الربط عبر الوسيط عن ذلك؟
 ٥. هل يُشترط وجود مكتب رسمي داخل المملكة لاعتماد المورد؟ وما إثباتات ذلك المطلوبة؟
+٦. هل يُشترط على المورد حمل تأمين مسؤولية مهنية، أو تقديم ضمان مالي، أو توقيع تعهد بالمسؤولية/التعويض مع مجلس الضمان الصحي/نفيس كشرط لاعتماد النظام؟ وإن وُجد، ما الحدود والصيغة المطلوبة؟
+٧. بخلاف الموافقة على شروط استخدام بوابة نفيس، هل يُطلب من المورد المعتمد توقيع اتفاقية منفصلة مع مجلس الضمان الصحي/نفيس — اتفاقية مشاركة بيانات، أو تعهد أمن معلومات، أو اتفاقية عدم إفشاء، أو مدونة سلوك للموردين؟ يُرجى مشاركة النموذج إن وُجد.
+٨. بعد الحصول على الاعتماد، هل توجد إعادة اعتماد دورية، أو مراجعة/تدقيق امتثال مستمر، أو التزام بمستوى خدمة (SLA)، أو أساس منشور لتعليق/إلغاء اعتماد المورد؟
 
 نقدّر توجيهنا لأي دليل رسمي يغطي هذه النقاط.
 
@@ -245,6 +316,9 @@ I'm [YOUR NAME], founder of a Saudi software company building a denial-managemen
 3. Conformance testing: what is the required test-case scope, is review automated or manual, and what is the typical time to certification?
 4. If we route through a licensed clearinghouse (e.g., Waseel): does the vendor still complete its own vendor certification and PKI, or does clearinghouse routing replace those obligations?
 5. Is an official office inside Saudi Arabia required for vendor certification, and what proof is needed?
+6. Does system-vendor certification require the vendor to hold professional-indemnity insurance, post a financial bond, or sign an indemnity/liability undertaking with CHI/NHIC? If so, what limits/form?
+7. Beyond accepting the NPHIES portal's Terms of Use, must a certified system vendor sign any separate agreement with CHI/NHIC/NPHIES — a data-sharing agreement, information-security undertaking, NDA, or vendor code-of-conduct? Please share the template.
+8. After certification, is there periodic re-certification, an ongoing compliance/security audit, an uptime/SLA obligation, or a published basis on which a vendor's certification can be suspended or revoked?
 
 We'd appreciate a pointer to any official guide covering these points.
 
@@ -389,9 +463,10 @@ Many thanks,
 [COMPANY] — [PHONE]
 ```
 
-### Email 6 — KSA privacy counsel: PDPL review + DPA *(actions C1)*
+### Email 6 — KSA privacy counsel: PDPL review + DPA *(actions C1 + G8 + G12 + G13 + G14)*
 **To:** `[law firm — get a referral first; e.g., a KSA-licensed firm with SDAIA/PDPL practice]`
 **🏆 Send the ENGLISH version** — KSA corporate/tech law firms run engagement intake in English, and legal precision matters more than rapport here. ⚠️ **Better in person:** use this email as the follow-up brief after a referral or scoping call, not as the opener (see in-person list above).
+**🆕 Updated 2026-07-18** with 4 new scope items (4-7) from the KSA compliance audit pass — see **§G** below for the research behind each. This firm can likely also give a one-line read on the **founder-nationality-dependent business-registration path (§G2/G3)** and the **SAMA perimeter check (§G6)** in the same engagement — worth asking, not urgent enough to be a numbered item here.
 
 **English (recommended):**
 ```text
@@ -406,6 +481,10 @@ We're looking to engage counsel for a fixed-scope review before GA:
 1. Data-flow review: confirm no PHI crosses the border (including logging, analytics, backups, and transactional email).
 2. Draft our standard Data Processing Agreement (DPA) with clinics under PDPL.
 3. Flag any SDAIA registration/notification duties that apply to us as a processor.
+4. Confirm the Saudi Standard Contractual Clauses (SCC) form needed for our US-based LLM subprocessor (Anthropic) transfer, and produce the SDAIA cross-border risk assessment required for sensitive/health data transfers (using the dgp.sdaia.gov.sa tool).
+5. Review the NPHIES portal's Terms & Conditions (nphies.sa/terms-and-conditions) — it's a binding agreement with a liability waiver, an indemnity clause running in NPHIES's favor, and a suspend-without-notice right; we'd like your read on the business risk before we connect.
+6. Help us draft a breach-notification runbook meeting SDAIA's 72-hour notification requirement (no materiality threshold, no exemptions) — detection through SDAIA notification through data-subject notification.
+7. Make the controller-vs-processor determination for our clinic relationship, and tell us whether that triggers National Data Governance Platform registration or a mandatory DPO appointment on our side.
 
 Could you share your availability for a 30-minute scoping call and an estimate for the above?
 
@@ -427,6 +506,10 @@ Best regards,
 ١. مراجعة تدفق البيانات: التأكد من عدم خروج أي بيانات صحية خارج المملكة (شاملًا السجلات والتحليلات والنسخ الاحتياطي والبريد).
 ٢. صياغة اتفاقية معالجة البيانات (DPA) الموحدة مع العيادات وفق نظام حماية البيانات الشخصية.
 ٣. تحديد أي التزامات تسجيل أو إشعار لدى سدايا تنطبق علينا كمعالج بيانات.
+٤. تحديد الصيغة المناسبة من العقود النموذجية السعودية (SCC) اللازمة لنقل البيانات إلى مزود نموذج اللغة الأمريكي (Anthropic)، وإعداد تقييم مخاطر النقل عبر الحدود المطلوب من سدايا للبيانات الحساسة/الصحية (باستخدام أداة dgp.sdaia.gov.sa).
+٥. مراجعة الشروط والأحكام الخاصة ببوابة نفيس (nphies.sa/terms-and-conditions) — فهي اتفاقية ملزمة تتضمن إخلاء مسؤولية، وبندًا للتعويض لصالح نفيس، وحق تعليق الوصول دون إشعار مسبق؛ نرغب برأيكم في المخاطر التجارية قبل الربط.
+٦. المساعدة في صياغة خطة استجابة للإبلاغ عن الاختراقات تتوافق مع مهلة الإبلاغ لسدايا خلال ٧٢ ساعة (دون حد أدنى للجسامة ودون استثناءات) — من الاكتشاف إلى إشعار سدايا إلى إشعار أصحاب البيانات.
+٧. تحديد ما إذا كنا نُعد "متحكمًا" أو "معالجًا" في علاقتنا مع العيادات، وهل يستوجب ذلك التسجيل في منصة الحوكمة الوطنية للبيانات أو تعيين مسؤول حماية بيانات (DPO) من جانبنا.
 
 هل يمكن ترتيب مكالمة تعريفية لمدة ٣٠ دقيقة مع تقدير مبدئي للتكلفة؟
 

@@ -124,7 +124,16 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
             pool: appPool,
             model: tier,
             input: { pdfBase64, docId: `${item.scenario}-${item.seed}` },
+            // Must spread process.env first — extractEob's env param fully
+            // replaces process.env when provided (see extractEob.ts's
+            // `opts.env ?? process.env`), so a bare literal here silently
+            // hides ANTHROPIC_API_KEY from resolveAiProvider even when it's
+            // genuinely set in the shell (confirmed live 2026-07-18: the
+            // describe.skipIf gate reads process.env directly and passed,
+            // proving the key was present, while extractEob() still threw
+            // "ANTHROPIC_API_KEY is not set" from inside this shadowed object).
             env: {
+              ...process.env,
               TAWEED_AI_ENABLED: "true",
               TAWEED_AI_EXTRACT_EOB_ENABLED: "true",
             },
@@ -147,7 +156,14 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
         expect(report.scenarioCount).toBe(corpus.length);
         expect(scores.length).toBe(corpus.length);
       },
-      120_000,
+      // 40 sequential real API calls at ~10-15s each (PDF render + vision
+      // extraction) need well over 120s — confirmed live 2026-07-18 that the
+      // prior 120_000 value made a full CORPUS_SIZE run fail immediately on
+      // the very first item's "Request timed out" (the SDK's own per-call
+      // timeout firing against whatever budget vitest's outer test deadline
+      // left it, not a real network/API issue — corpus sizes of 1 and 5 both
+      // ran cleanly under the old value once isolated).
+      900_000,
     );
   },
 );

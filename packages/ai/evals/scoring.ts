@@ -7,7 +7,15 @@
 // the live-gated `evals` vitest project.
 //
 // Matching policy (deliberate, not positional): claims are matched by
-// `claimId` and lines by `claimLineRef`, NOT by array index. A model that
+// `nphiesClaimId` (falling back to `claimId` only if null — same fallback
+// production code already uses, see eob-to-normalized.ts/assist-appeal.ts's
+// `nphiesClaimId ?? claimId`) and lines by `claimLineRef`, NOT by array
+// index or by `claimId` alone. `claimId` is an internal identifier that is
+// NOT necessarily legible on the source document (confirmed live 2026-07-18:
+// the synthetic corpus's rendered remittance only ever printed
+// `nphiesClaimId`, not the internal `claimId`, so keying the match on
+// `claimId` alone made every claim in a 40-item live run fail to match at
+// all — a scoring-harness bug, not a model-accuracy result). A model that
 // reorders, drops, or merges claims/lines would make positional (index-based)
 // comparison silently score every subsequent field as wrong for the wrong
 // reason — the numbers would look like an accuracy problem when the real
@@ -55,6 +63,12 @@ function combine(...scores: FieldScore[]): FieldScore {
     (acc, s) => ({ correct: acc.correct + s.correct, total: acc.total + s.total }),
     { correct: 0, total: 0 },
   );
+}
+
+// The stable claim identity for matching — see the file header's matching-
+// policy comment for why this isn't just `claim.claimId`.
+function claimKey(claim: EobClaim): string {
+  return claim.nphiesClaimId ?? claim.claimId;
 }
 
 interface LineScore {
@@ -142,15 +156,15 @@ export function scoreEobExtraction(
   );
 
   const actualClaimsById = new Map(
-    actual.claims.map((claim) => [claim.claimId, claim] as const),
+    actual.claims.map((claim) => [claimKey(claim), claim] as const),
   );
   const claimScores = expected.claims.map((claim) =>
-    scoreClaim(claim, actualClaimsById.get(claim.claimId)),
+    scoreClaim(claim, actualClaimsById.get(claimKey(claim))),
   );
 
-  const expectedClaimIds = new Set(expected.claims.map((claim) => claim.claimId));
+  const expectedClaimIds = new Set(expected.claims.map((claim) => claimKey(claim)));
   const hallucinatedClaims = actual.claims.filter(
-    (claim) => !expectedClaimIds.has(claim.claimId),
+    (claim) => !expectedClaimIds.has(claimKey(claim)),
   ).length;
   const hallucinatedLines = claimScores.reduce(
     (sum, s) => sum + s.hallucinatedLines,

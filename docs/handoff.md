@@ -604,6 +604,60 @@
   untouched. Architecture review independently traced `eob-review.ts` to confirm no failed
   extraction can reach the outcome-fix call site. Gates fresh before validation: typecheck clean,
   full suite 454/1076/1073/0/3 (same as above), lint at baseline, production build green.
+- **2026-07-18: AI-4 live eval actually run for the first time — real bug found + fixed, plus a
+  more consequential scoring bug found and FULLY FIXED (2026-07-18, same session, on explicit user
+  instruction to not stop at "needs a design decision").** `packages/ai/evals/extractEob.eval.ts`'s
+  `AI_EVALS_LIVE=1` run was first blocked by a one-line bug: its `env: {...}` object passed to
+  `extractEob()` fully shadowed `process.env`, so `ANTHROPIC_API_KEY` was never seen even though
+  it was genuinely set — same bug in `explainFlag.eval.ts`. Fixed both by spreading
+  `...process.env` first. The file's hardcoded `120_000`ms per-tier test timeout also proved too
+  short for 40 sequential real API calls (~10-15s each) and was bumped to `900_000`. **The deeper
+  root cause, now fixed at the source:** `test/synthetic-eob/src/generate.ts`'s `buildHtmlTemplate`
+  (what's actually rasterized into the PDF the vision model sees) never rendered `patientRef`,
+  `serviceDate`, or the internal `claimId` — only `buildTextLayer` (a separate ground-truth
+  representation, used for a different production cross-check, never fed to the vision model) had
+  them. The model correctly couldn't produce fields it could never see; `scoring.ts`'s
+  claim-matching (keyed by the invisible `claimId`) then cascaded every nested score to ~0.
+  **Fix:** `buildHtmlTemplate` now renders a per-claim identity block (mirroring
+  `buildTextLayer`'s existing bilingual EN/AR content) so the document genuinely contains what the
+  ground truth expects; `scoring.ts`'s claim-matching now keys on `nphiesClaimId` (falling back to
+  `claimId`) — the always-legible identity, matching the exact fallback pattern already used in
+  production (`eob-to-normalized.ts`/`assist-appeal.ts`'s `nphiesClaimId ?? claimId`). One test
+  fixture (`eval-scoring.test.ts`'s hallucinated-claim case) updated to match the new, correct
+  semantics — it previously only varied `claimId`, which the new matching key no longer treats as
+  the discriminator. **Verified progressively:** 3-item real run → 97.0% overall / 100% amounts /
+  0 hallucinated; 5-item → consistent; then the complete real 40-item × 2-tier corpus (real
+  Anthropic API, ~978s wall time): **Sonnet 96.6% overall / 100% amounts (meets/exceeds both
+  documented targets, 98%/95%), 0 hallucinated claims** — `packages/ai/evals/.output/
+  extractEob-sonnet.json`. **Opus 87.1% overall / 100% amounts** (codes 183/375 vs Sonnet's
+  343/375 — a genuine model-behavior difference on code-field formatting, not a scoring bug, noted
+  as a minor follow-up in `docs/NEXT_STEP_PROMPT.md`, not blocking). **AI-4 is confirmed working
+  well — this was a broken measurement the whole time, never a broken feature.** All unit tests
+  green (`eval-scoring.test.ts` 11/11, `test/synthetic-eob` 20/20), typecheck clean.
+- **2026-07-18, same day: KSA regulatory compliance audit — 6 parallel Opus agents (agy +
+  WebSearch, primary-source-verified), zero GLM.** Covers SFDA medical-device classification,
+  business/vendor registration, SAMA payment-services licensing, SDAIA AI-specific law, NPHIES
+  vendor legal/liability terms, and a PDPL freshness check — none previously covered in
+  `docs/HUMAN_CONFIRMATION_NEEDED.md`/`docs/blocker.md` except PDPL itself (sharpened, not
+  replaced). **No confirmed NON-COMPLIANT gap found anywhere in the product.** Highlights: SFDA
+  SaMD exclusion for all 4 AI features confirmed against SFDA's own MDS-G027 guidance (downloaded
+  + text-extracted directly, not a vendor summary) — administrative/billing software, not a
+  medical device, verdict holds even on AI-2's closest-call scrutiny. SAMA payment-licensing
+  confirmed out of scope (the success-fee revenue model never touches a regulated payment
+  activity under Payments Law Article 6). SDAIA AI law confirmed non-binding/voluntary only — no
+  dedicated KSA AI law exists yet. Two genuinely new, previously-untracked findings: the NPHIES
+  portal's Terms & Conditions (`nphies.sa/terms-and-conditions`) is a real binding agreement with
+  a liability waiver, an indemnity clause favoring NPHIES, and a suspend-without-notice right
+  (verified by direct fetch of the live page) — now a counsel-review item; and SDAIA's 72-hour
+  breach-notification requirement (no materiality threshold, no exemptions) was never captured
+  anywhere in the docs — now a runbook item. PDPL's existing C1 entry corrected (no SDAIA
+  adequacy list actually exists — the old wording was ambiguous) and sharpened (Executive
+  Regulations confirmed finalized and in ACTIVE enforcement since 14 Sept 2024, not a future risk
+  — 48 SDAIA violation decisions across 2025-2026). Business-registration findings all fork on
+  **founder nationality**, which no doc states — flagged as the single highest-value thing the
+  user must self-disclose. Emails 2 (NPHIES onboarding) and 6 (KSA counsel) extended in place with
+  the new questions (bilingual, matching the file's existing format) rather than duplicated — see
+  `docs/HUMAN_CONFIRMATION_NEEDED.md` §G for the full 14-item breakdown.
 - Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ + real-data-gaps closed ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
