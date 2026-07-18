@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/session";
 import { getAppealables } from "@/lib/appeals-data";
+import { getBranches, resolveBranchId } from "@/lib/data";
 import { recordPhiAccess } from "@/lib/audit";
 import { PageHeader } from "@/components/shell/page-header";
 import { AppealsComposer } from "@/components/modules/appeals-composer";
@@ -9,8 +10,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AppealsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  // Optional only so direct unit-test invocation (which calls the component
+  // with just `params`) stays safe; Next.js always supplies searchParams at
+  // runtime.
+  searchParams?: Promise<{ branch?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -18,7 +24,14 @@ export default async function AppealsPage({
   const t = await getTranslations("appeals");
   const tr = await getTranslations("roles");
 
-  const queue = await getAppealables(session.tenantId);
+  // Resolve the optional ?branch=<id> param against this tenant's real branches
+  // (RLS-scoped), then narrow the appeal queue to it. resolveBranchId ignores
+  // attacker-supplied / stale / cross-tenant ids — see data.ts.
+  const branches = await getBranches(session.tenantId);
+  const sp = (await searchParams) ?? {};
+  const branchId = resolveBranchId(sp.branch, branches);
+
+  const queue = await getAppealables(session.tenantId, 100, branchId);
   // The queue joins the patients table (member id) — audit the PHI read.
   await recordPhiAccess("read", "appeal-queue", session.tenantId);
 

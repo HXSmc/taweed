@@ -49,7 +49,11 @@ vi.mock("next-intl/server", () => ({
   setRequestLocale: vi.fn(),
 }));
 vi.mock("@/lib/session", () => ({ requireSession: vi.fn() }));
-vi.mock("@/lib/data", () => ({ getRecovery: vi.fn() }));
+vi.mock("@/lib/data", () => ({
+  getRecovery: vi.fn(),
+  getBranches: vi.fn(() => Promise.resolve([])),
+  resolveBranchId: vi.fn(() => undefined),
+}));
 vi.mock("@/lib/actions/recovery", () => ({ markAppealOutcomeForm: vi.fn() }));
 vi.mock("@/components/shell/page-header", () => ({
   PageHeader: () => null,

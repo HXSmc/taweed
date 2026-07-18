@@ -55,9 +55,18 @@ const DENIAL_JOIN = sql`
   JOIN providers pr ON pr.id = c.provider_id
   JOIN patients pat ON pat.id = c.patient_id`;
 
-export function getAppealables(tenantId: string, limit = 100): Promise<AppealableRow[]> {
+export function getAppealables(
+  tenantId: string,
+  limit = 100,
+  branchId?: string,
+): Promise<AppealableRow[]> {
   return withSession(tenantId, async (db) => {
     // Appealable = denials with no won appeal yet, highest SAR first.
+    // Optional branch narrowing (parameterized; RLS still scopes to this
+    // tenant, so a cross-tenant branch id simply matches no claims — never a
+    // leak). Mirrors the branch-scope pattern in data.ts's getScrubRows/
+    // getAnalytics. See resolveBranchId — callers must pass a RESOLVED id.
+    const branchPredicate = branchId ? sql` AND c.branch_id = ${branchId}` : sql``;
     const res = await db.execute<DenialJoinRow>(sql`
       SELECT d.id AS denial_id, c.id AS claim_id, c.nphies_claim_id,
              p.name AS payer_name, pr.name AS provider_name, pat.pseudonym AS member_id,
@@ -66,7 +75,7 @@ export function getAppealables(tenantId: string, limit = 100): Promise<Appealabl
       ${DENIAL_JOIN}
       WHERE NOT EXISTS (
         SELECT 1 FROM appeals a WHERE a.denial_id = d.id AND a.status = 'won'
-      )
+      )${branchPredicate}
       ORDER BY d.denied_amount DESC
       LIMIT ${limit}`);
     return res.rows.map((r) => ({

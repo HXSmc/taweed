@@ -13,11 +13,12 @@ import {
 // Two-level tenant/branch scope (design-brief §7). Tenant is fixed to the session
 // (one contract); branches are a single-select filter over the tenant's real
 // branches, persisted to the `?branch=` URL param so it's shareable and survives
-// a reload. CONTAINED scope (deliberate, not the full design-brief spec): only
-// the Analytics and Scrubber pages actually read this param and narrow their
-// data (see lib/data.ts's getAnalytics/getScrubRows `branchId` param and the
-// scope-cut comment on getAnalytics) — Ingest, Appeals, and Recovery show this
-// same switcher in their command-bar chrome but do not filter on it.
+// a reload. CONTAINED scope (deliberate, not the full design-brief spec): the
+// Analytics, Scrubber, Appeals, and Recovery pages all read this param and narrow
+// their data (see lib/data.ts's getAnalytics/getScrubRows/getAppealables/
+// getRecovery `branchId` params and the scope-cut comment on getAnalytics) —
+// only Ingest still shows this same switcher in its command-bar chrome without
+// filtering on it.
 export function TenantSwitcher({
   tenantName,
   branches,

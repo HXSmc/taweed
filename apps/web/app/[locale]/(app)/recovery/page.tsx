@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Check, TriangleAlert, X } from "lucide-react";
 import { requireSession } from "@/lib/session";
 import { isVisible } from "@/lib/rbac";
-import { getRecovery, type AppealPipelineRow } from "@/lib/data";
+import { getRecovery, getBranches, resolveBranchId, type AppealPipelineRow } from "@/lib/data";
 import { markAppealOutcomeForm } from "@/lib/actions/recovery";
 import { formatMoney, formatPct, toNumber } from "@/lib/money";
 import { PageHeader, Provenance } from "@/components/shell/page-header";
@@ -31,7 +31,7 @@ export default async function RecoveryPage({
   // Optional only so direct unit-test invocation (which calls the component
   // with just `params`) stays safe; Next.js always supplies searchParams at
   // runtime.
-  searchParams?: Promise<{ recoveryError?: string | string[] }>;
+  searchParams?: Promise<{ recoveryError?: string | string[]; branch?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -51,13 +51,19 @@ export default async function RecoveryPage({
   // adding a new i18n key (the messages JSON is outside this task's scope).
   const tAction = await getTranslations("settings");
 
+  // Branch scope (design-brief §7): resolve the ?branch=<id> param against the
+  // tenant's REAL branches (RLS-scoped) so a stale/forged/cross-tenant id is
+  // ignored, not trusted as a filter. Same pattern as scrubber/page.tsx.
+  const branches = await getBranches(session.tenantId);
+  const sp = (await searchParams) ?? {};
+  const branchId = resolveBranchId(sp.branch, branches);
+
   const { money, winRate, medianDays, sharePct, shareSar, rows } =
-    await getRecovery(session.tenantId);
+    await getRecovery(session.tenantId, branchId);
 
   // Set by markAppealOutcomeForm when a "mark won/lost" mutation failed (RBAC
   // denial, invalid input, throttle, or appeal not found for this tenant) —
   // previously the failure was swallowed and the operator saw nothing happen.
-  const sp = (await searchParams) ?? {};
   const recoveryErrorFlag = Array.isArray(sp.recoveryError)
     ? sp.recoveryError[0]
     : sp.recoveryError;

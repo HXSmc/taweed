@@ -119,10 +119,10 @@ export function getAnalytics(
   //
   // SCOPE CUT (deliberate, not an oversight — mirrors how packages/ingest defers
   // per-row branch/provider/payer/patient attribution): branch filtering is wired
-  // ONLY into Analytics + Scrubber here, where claims.branch_id is the natural
-  // key. Ingest, Appeals, and Recovery are out of scope for this change — their
-  // data fetching is untouched. The URL ?branch=<id> param is still surfaced in
-  // their command bar but has no filtering effect on those modules.
+  // into Analytics, Scrubber, Appeals, and Recovery here, where claims.branch_id
+  // is the natural key. Ingest remains out of scope — its data fetching is
+  // untouched. The URL ?branch=<id> param is still surfaced in Ingest's command
+  // bar but has no filtering effect on that module.
   const f = branchId ? { branchIds: [branchId] } : undefined;
   return withSession(tenantId, async (db) => {
     const [money, byPayer, byBranch, pareto, trendPts] = await Promise.all([
@@ -273,7 +273,15 @@ export interface RecoveryBundle {
   rows: AppealPipelineRow[];
 }
 
-async function appealPipelineRows(db: Database, limit = 200): Promise<AppealPipelineRow[]> {
+async function appealPipelineRows(
+  db: Database,
+  limit = 200,
+  branchId?: string,
+): Promise<AppealPipelineRow[]> {
+  // Optional branch narrowing (parameterized; RLS still scopes to this tenant,
+  // so a cross-tenant branch id simply matches no appeals — never a leak).
+  // c.branch_id is reachable via the existing claims join.
+  const where = branchId ? sql` WHERE c.branch_id = ${branchId}` : sql``;
   const rows = await db.execute<{
     appeal_id: string;
     claim_id: string;
@@ -293,6 +301,7 @@ async function appealPipelineRows(db: Database, limit = 200): Promise<AppealPipe
         JOIN claim_lines cl ON cl.id = d.claim_line_id
         JOIN claims c ON c.id = cl.claim_id
         JOIN payers p ON p.id = c.payer_id
+      ${where}
        ORDER BY a.recovered_amount DESC NULLS LAST, d.denied_amount DESC
        LIMIT ${limit}`);
   return rows.rows.map((r) => ({
@@ -307,27 +316,44 @@ async function appealPipelineRows(db: Database, limit = 200): Promise<AppealPipe
   }));
 }
 
-export function getRecovery(tenantId: string): Promise<RecoveryBundle> {
+export function getRecovery(
+  tenantId: string,
+  branchId?: string,
+): Promise<RecoveryBundle> {
+  // Branch scope (design-brief §7): when a single branch is selected, narrow the
+  // headline money KPIs (moneyScope), the pipeline rows, AND the win-rate/median-
+  // days aggregate to that branch's appeals. Same direct-vs-cached split as
+  // getAnalytics: the filtered path calls moneyScope(db, f) directly; the
+  // unfiltered path reuses the cached getMoneyScope wrapper so the layout's
+  // CommandBar and this page share ONE unfiltered MoneyScope read.
+  const f = branchId ? { branchIds: [branchId] } : undefined;
   return withSession(tenantId, async (db) => {
     const [money, baseline, list] = await Promise.all([
-      getMoneyScope(tenantId),
+      branchId ? moneyScope(db, f) : getMoneyScope(tenantId),
       getLatestBaseline(db),
-      appealPipelineRows(db),
+      appealPipelineRows(db, 200, branchId),
     ]);
 
     // Win rate + median days over ALL appeals (not the display-limited/recovered-
-    // biased rows), so the ROI metrics are honest.
+    // biased rows), so the ROI metrics are honest. The branch filter is applied
+    // here too via the same denials→claim_lines→claims join appealPipelineRows
+    // uses, so the ROI stats and the displayed rows always agree on scope.
+    const where = branchId ? sql` WHERE c.branch_id = ${branchId}` : sql``;
     const agg = await db.execute<{
       won: number;
       lost: number;
       median_days: number;
     }>(sql`
       SELECT
-        count(*) FILTER (WHERE status = 'won')::int  AS won,
-        count(*) FILTER (WHERE status = 'lost')::int AS lost,
+        count(*) FILTER (WHERE a.status = 'won')::int  AS won,
+        count(*) FILTER (WHERE a.status = 'lost')::int AS lost,
         COALESCE(percentile_cont(0.5) WITHIN GROUP (
-          ORDER BY EXTRACT(DAY FROM now() - generated_at)), 0)::int AS median_days
-      FROM appeals`);
+          ORDER BY EXTRACT(DAY FROM now() - a.generated_at)), 0)::int AS median_days
+        FROM appeals a
+        JOIN denials d ON d.id = a.denial_id
+        JOIN claim_lines cl ON cl.id = d.claim_line_id
+        JOIN claims c ON c.id = cl.claim_id
+      ${where}`);
     const a = agg.rows[0];
     const won = Number(a?.won ?? 0);
     const lost = Number(a?.lost ?? 0);

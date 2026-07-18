@@ -27,6 +27,8 @@ vi.mock("@/lib/session", () => ({
 }));
 vi.mock("@/lib/data", () => ({
   getRecovery: vi.fn(),
+  getBranches: vi.fn(),
+  resolveBranchId: vi.fn(),
 }));
 vi.mock("@/lib/actions/recovery", () => ({
   markAppealOutcomeForm: vi.fn(),
@@ -56,11 +58,13 @@ vi.mock("@/components/ui/table", () => ({
 }));
 
 import { requireSession } from "../lib/session";
-import { getRecovery } from "../lib/data";
+import { getRecovery, getBranches, resolveBranchId } from "../lib/data";
 import RecoveryPage from "../app/[locale]/(app)/recovery/page";
 
 const mockedRequireSession = vi.mocked(requireSession);
 const mockedGetRecovery = vi.mocked(getRecovery);
+const mockedGetBranches = vi.mocked(getBranches);
+const mockedResolveBranchId = vi.mocked(resolveBranchId);
 
 function makeSession(overrides: Partial<AppSession> = {}): AppSession {
   return {
@@ -84,6 +88,11 @@ const emptyRecovery = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Defaults: no branch param → resolveBranchId returns undefined, so the page
+  // calls getRecovery(tenantId, undefined). Individual tests override these to
+  // exercise the branch-resolution path.
+  mockedGetBranches.mockResolvedValue([]);
+  mockedResolveBranchId.mockReturnValue(undefined);
 });
 
 describe("RecoveryPage — server-enforced RBAC gate on the read path", () => {
@@ -113,10 +122,66 @@ describe("RecoveryPage — server-enforced RBAC gate on the read path", () => {
         RecoveryPage({ params: Promise.resolve({ locale: "en" }) }),
       ).resolves.toBeTruthy();
 
-      // Assert
+      // Assert: no branch param → getRecovery called with (tenantId, undefined).
       expect(mockedGetRecovery).toHaveBeenCalledWith(
         "11111111-1111-4111-8111-111111111111",
+        undefined,
       );
     },
   );
+});
+
+describe("RecoveryPage — ?branch param is resolved before reaching getRecovery", () => {
+  it("passes the resolveBranchId() result (not the raw param) as the second arg to getRecovery", async () => {
+    // Arrange
+    mockedRequireSession.mockResolvedValue(makeSession({ role: "finance" }));
+    mockedGetRecovery.mockResolvedValue(
+      emptyRecovery as unknown as Awaited<ReturnType<typeof getRecovery>>,
+    );
+    mockedGetBranches.mockResolvedValue([
+      { id: "resolved-branch-id", name: "Riyadh", city: null },
+    ]);
+    // resolveBranchId is the security boundary that validates the raw param
+    // against the tenant's real branches — mock it to return a distinct id so
+    // we can assert the RESOLVED value (not "some-id") reaches the data call.
+    mockedResolveBranchId.mockReturnValue("resolved-branch-id");
+
+    // Act
+    await RecoveryPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ branch: "some-id" }),
+    });
+
+    // Assert: the resolved id reaches getRecovery, not the raw "some-id".
+    expect(mockedGetBranches).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+    );
+    expect(mockedResolveBranchId).toHaveBeenCalledWith("some-id", [
+      { id: "resolved-branch-id", name: "Riyadh", city: null },
+    ]);
+    expect(mockedGetRecovery).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      "resolved-branch-id",
+    );
+  });
+
+  it("calls getRecovery with undefined branch when searchParams is absent (direct unit-test invocation)", async () => {
+    // Arrange
+    mockedRequireSession.mockResolvedValue(makeSession({ role: "finance" }));
+    mockedGetRecovery.mockResolvedValue(
+      emptyRecovery as unknown as Awaited<ReturnType<typeof getRecovery>>,
+    );
+
+    // Act — no searchParams passed (optional), as a direct unit test would do.
+    await RecoveryPage({
+      params: Promise.resolve({ locale: "en" }),
+    });
+
+    // Assert: undefined branchId → getRecovery called with two args, second
+    // undefined (resolveBranchId's default mock returns undefined).
+    expect(mockedGetRecovery).toHaveBeenCalledWith(
+      "11111111-1111-4111-8111-111111111111",
+      undefined,
+    );
+  });
 });

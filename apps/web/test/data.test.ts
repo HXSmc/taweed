@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { SQL, StringChunk } from "drizzle-orm";
 
 // Coverage gap fixed: every other test that imports "@/lib/data" (recovery-
 // page.test.ts, settings-page.test.ts, scrubber-table.test.tsx, audit-report-
@@ -93,10 +94,19 @@ let selectQueue: unknown[][] = [];
 // A plain call-count discriminates the two paths without needing to inspect
 // Drizzle's internal eq() expression shape.
 let whereCallCount = 0;
+// Every `db.execute(sql\`...\`)` argument (the raw SQL object), in call order.
+// Shared infra: lets tests assert which bound Param values a raw-SQL query
+// carries (e.g. getAppealables' optional branch_id predicate) — the
+// select-builder `.where()` count above does NOT apply to raw execute() calls.
+// Reset in beforeEach alongside the other queues.
+let executedQueries: unknown[] = [];
 
 function fakeDb() {
   return {
-    execute: vi.fn(async () => executeQueue.shift() ?? { rows: [] }),
+    execute: vi.fn(async (q: unknown) => {
+      executedQueries.push(q);
+      return executeQueue.shift() ?? { rows: [] };
+    }),
     select: () => ({
       from: () => ({
         orderBy: () => ({
@@ -127,6 +137,7 @@ beforeEach(() => {
   executeQueue = [];
   selectQueue = [];
   whereCallCount = 0;
+  executedQueries = [];
   mockedMoneyScope.mockResolvedValue(FAKE_MONEY);
   mockedReasonPareto.mockResolvedValue([]);
   mockedTrend.mockResolvedValue([]);
@@ -412,6 +423,112 @@ describe("getAnalytics branch scoping", () => {
     );
     expect(mockedReasonPareto).toHaveBeenCalledWith(expect.anything(), undefined);
     expect(mockedTrend).toHaveBeenCalledWith(expect.anything(), undefined);
+  });
+});
+
+// Shared by every "branch scoping" describe block below. getAppealables/
+// getRecovery issue raw `db.execute(sql\`...\`)` calls (NOT query-builder
+// .where()), so whereCallCount does not apply. We instead walk the SQL
+// object's public `.queryChunks` tree to recover bound values: drizzle-orm's
+// sql`` tag pushes interpolated `${value}`s in as their raw, unwrapped JS
+// value (a plain string/number — traced against the installed
+// drizzle-orm@0.45.2 `sql()` implementation; there is no special wrapper
+// class for this, `Param` is a distinct thing only produced by explicit
+// `sql.param()` calls, which this codebase never uses), literal SQL text is
+// a StringChunk (skipped), and an embedded `sql\`...\`` (an optional
+// predicate) is a nested SQL we recurse into.
+const boundValuesOf = (query: unknown): unknown[] => {
+  const out: unknown[] = [];
+  const walk = (chunk: unknown): void => {
+    if (chunk instanceof SQL) {
+      for (const c of chunk.queryChunks ?? []) walk(c);
+      return;
+    }
+    if (chunk instanceof StringChunk) return; // literal SQL text, not a value
+    out.push(chunk);
+  };
+  for (const c of (query as SQL)?.queryChunks ?? []) walk(c);
+  return out;
+};
+
+describe("getAppealables branch scoping", () => {
+  it("adds c.branch_id to the executed query when a branchId is provided", async () => {
+    const { getAppealables } = await import("../lib/appeals-data");
+
+    await getAppealables("tenant-a", 100, "branch-1");
+
+    expect(executedQueries).toHaveLength(1);
+    expect(boundValuesOf(executedQueries[0])).toContain("branch-1");
+  });
+
+  it("omits any branch_id predicate when branchId is not provided (All branches)", async () => {
+    const { getAppealables } = await import("../lib/appeals-data");
+
+    await getAppealables("tenant-a", 100);
+
+    expect(executedQueries).toHaveLength(1);
+    // The only bound value in this query is LIMIT (the number 100) — no
+    // branch id string is interpolated when branchId is omitted.
+    expect(boundValuesOf(executedQueries[0])).not.toContain("branch-1");
+  });
+});
+
+describe("getRecovery branch scoping", () => {
+  // getRecovery issues exactly two db.execute() calls when branchId is set
+  // (appealPipelineRows, then the win-rate aggregate) — moneyScope/getLatestBaseline
+  // are mocked and don't reach the db. Both queries must carry the branch id.
+
+  it("moves all three surfaces (money, pipeline rows, win-rate aggregate) onto the branch when a branchId is passed", async () => {
+    // executeQueue order matches getRecovery's call sequence: appealPipelineRows
+    // (inside the opening Promise.all) resolves before the win-rate aggregate
+    // (awaited after Promise.all settles). moneyScope/getLatestBaseline are
+    // mocked, so only these two execute() calls reach the fake db.
+    executeQueue = [
+      { rows: [] }, // appealPipelineRows
+      { rows: [{ won: 1, lost: 0, median_days: 14 }] }, // win-rate aggregate
+    ];
+    const { getRecovery } = await import("../lib/data");
+
+    await getRecovery("tenant-a", "branch-1");
+
+    // Surface 1 — money: direct moneyScope(db, {branchIds}), NOT the cached
+    // getMoneyScope wrapper (same split getAnalytics uses).
+    expect(mockedMoneyScope).toHaveBeenCalledWith(
+      expect.anything(),
+      { branchIds: ["branch-1"] },
+    );
+    // Two raw-SQL executes, in pipeline-rows then aggregate order.
+    expect(executedQueries).toHaveLength(2);
+    // Surface 2 — appealPipelineRows (executedQueries[0]) carries the branch id.
+    expect(boundValuesOf(executedQueries[0])).toContain("branch-1");
+    // Surface 3 — win-rate aggregate (executedQueries[1]) carries the branch id.
+    expect(boundValuesOf(executedQueries[1])).toContain("branch-1");
+  });
+
+  it("leaves all three surfaces unfiltered when no branchId is passed (All branches)", async () => {
+    executeQueue = [
+      { rows: [] }, // appealPipelineRows
+      { rows: [{ won: 0, lost: 0, median_days: 0 }] }, // win-rate aggregate
+    ];
+    const { getRecovery } = await import("../lib/data");
+
+    await getRecovery("tenant-a");
+
+    // Surface 1 — money: routed through the cached getMoneyScope wrapper, which
+    // calls moneyScope(db) with NO filter arg (1 argument, not 2) — distinct
+    // from the branchId path's moneyScope(db, f). Matches getAnalytics'
+    // unfiltered test.
+    expect(mockedMoneyScope).toHaveBeenCalledWith(expect.anything());
+    expect(mockedMoneyScope).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+    );
+    // Surfaces 2 + 3 — neither raw query carries a branch predicate. The
+    // pipeline-rows query's only bound value is LIMIT (the number 200); the
+    // aggregate has no bound values at all when unfiltered.
+    expect(executedQueries).toHaveLength(2);
+    expect(boundValuesOf(executedQueries[0])).not.toContain("branch-1");
+    expect(boundValuesOf(executedQueries[1])).not.toContain("branch-1");
   });
 });
 

@@ -115,6 +115,36 @@
 > walkthrough fixtures (`eob-3-minimal-single-line`, `eob-4-dense-large-remittance`) added to
 > `docs/test-fixtures/` per this repo's fixture-location convention. Full breakdown in "Where the
 > project stands" below.
+> **2026-07-18, later the same day: full branch-scoping (design-brief §7) landed for Appeals +
+> Recovery — Ingest stays a deliberate non-story.** Orchestrated via the GLM hub-spoke
+> orchestrator (2 sequential `glm-code` spokes, one per story — sequential, not parallel, since
+> both touch `apps/web/test/data.test.ts`), hub-verified with fresh evidence at every stage
+> (tsc, full workspace `vitest run`, `lint`, `build`, chrome-devtools MCP live drive-through
+> EN+AR), then 3 parallel Sonnet reviewers (architecture/correctness, security, quality) — all
+> three ACCEPTED, 3 non-blocking nits fixed inline. `getAppealables`/`getRecovery` gained an
+> optional `branchId` param (parameterized, RLS-safe); Recovery's three surfaces (money,
+> pipeline rows, win-rate/median-days aggregate — the last one converted from a bare
+> `FROM appeals` to the same join chain `appealPipelineRows` already used) move together, proven
+> live: Recovered SAR 66,275→20,512, win rate 66.7%→67.1%, Won 25 of 160→25 of 53 for one real
+> seeded branch; command-bar's global money indicator confirmed unfiltered throughout. A real
+> regression was caught and fixed during the hub's own full-suite run (not by either spoke): 4
+> sibling test files (`recovery-page-dark-contrast`, `recovery-pipeline-action-row-aria-label`,
+> `recovery-pipeline-actions-header`, `recovery-pipeline-row-cap-badge`) each separately mock
+> `@/lib/data` for the Recovery page and broke once it started calling `getBranches`/
+> `resolveBranchId` unconditionally — fixed with the same 2-line mock addition across all four.
+> Ingest intentionally NOT touched (`eob_extractions` has no `branch_id` column, no derivable
+> join path — a schema decision, not a story, per the spec's own recommendation). **A reviewer
+> flagged (then the hub independently disproved) a false-positive finding:** the architecture
+> reviewer noted `appeals/page.tsx` has no `isVisible()` RBAC gate despite reading PHI, unlike
+> `recovery/page.tsx`'s explicit check — but `rbac.ts`'s own `MATRIX` shows `appeals` is never
+> `"hidden"` for ANY role (owner/finance/rcm/clinician/admin all get some visible capability
+> level), unlike `recovery` where clinician IS `"hidden"` — so no gate is needed there by design;
+> the write-side is separately gated via `authorizeAction("appeals", ...)` in
+> `lib/actions/{appeals,assist-appeal}.ts`. Verified before writing this note, not left as an
+> open question. 12 files changed, 304 insertions / 34 deletions. Full workspace suite
+> 1083/1083 (0 fail, 3 skipped pre-existing). **Not committed** — awaiting the user's go-ahead
+> per the standing merge/push gate. See the new bullet in "Where the project stands" below and
+> `docs/NEXT_STEP_PROMPT.md` for what comes after.
 
 ## Where the project stands
 
@@ -715,6 +745,49 @@
   user must self-disclose. Emails 2 (NPHIES onboarding) and 6 (KSA counsel) extended in place with
   the new questions (bilingual, matching the file's existing format) rather than duplicated — see
   `docs/HUMAN_CONFIRMATION_NEEDED.md` §G for the full 14-item breakdown.
+- **2026-07-18, later the same day: design-brief §7 branch-scoping landed for Appeals + Recovery
+  (Story A + B), Ingest deliberately left as a non-story.** Orchestrated via the GLM hub-spoke
+  orchestrator: 2 sequential `glm-code` spokes (Story A: Appeals, Story B: Recovery — run
+  sequentially, not in parallel, since both touch `apps/web/test/data.test.ts`'s shared
+  `fakeDb()`/`executedQueries` test infra), each hub-verified independently before the next
+  started. `getAppealables(tenantId, limit, branchId?)` (`apps/web/lib/appeals-data.ts`) adds a
+  parameterized `AND c.branch_id = ${branchId}` inside its existing `WHERE NOT EXISTS(...)`.
+  `getRecovery(tenantId, branchId?)` (`apps/web/lib/data.ts`) moves THREE surfaces together: money
+  (`moneyScope(db,{branchIds})` vs the cached `getMoneyScope`, same split `getAnalytics` uses),
+  `appealPipelineRows(db, 200, branchId)`, and the win-rate/median-days aggregate — converted from
+  a bare `FROM appeals` to the same `appeals a JOIN denials d JOIN claim_lines cl JOIN claims c`
+  chain `appealPipelineRows` already used (safe: every FK in that chain is NOT NULL, confirmed
+  against `packages/db/src/schema.ts`, so the new INNER JOINs cannot silently drop a row).
+  `getOwnerReportData`'s own `appealPipelineRows(db)` call stays untouched (single-arg,
+  unfiltered), forever. Both `appeals/page.tsx` and `recovery/page.tsx` resolve `?branch=` via the
+  existing `getBranches`+`resolveBranchId` pattern (same security boundary Scrubber/Analytics
+  already use) before passing it downstream — never the raw param. `tenant-switcher.tsx` and
+  `getAnalytics`'s scope-cut doc-comments narrowed: only Ingest remains unfiltered now (no
+  `branch_id` column on `eob_extractions`, no derivable join path — a schema decision per the
+  spec, not part of this task). Live-verified via chrome-devtools MCP, both EN + AR, both
+  filtered/unfiltered states: Appeals queue 100→79 denials for a real seeded branch; Recovery's
+  ROI header + pipeline table moved together (Recovered SAR 66,275→20,512, win rate 66.7%→67.1%,
+  Won 25 of 160→25 of 53); the command-bar's own global money indicator stayed unchanged
+  throughout (confirmed correct, not a bug — it's fed by the layout's separate unfiltered
+  `getMoneyScope` call). A real regression was caught by the hub's own full-workspace `vitest run`
+  (neither spoke ran the full suite, only their own scoped files) — 4 sibling test files
+  (`recovery-page-dark-contrast.test.tsx`, `recovery-pipeline-action-row-aria-label.test.tsx`,
+  `recovery-pipeline-actions-header.test.tsx`, `recovery-pipeline-row-cap-badge.test.tsx`) each
+  separately mock `@/lib/data` for the Recovery page and broke once it started calling
+  `getBranches`/`resolveBranchId` unconditionally; fixed with the same 2-line mock-factory
+  addition across all four. 3 parallel Sonnet reviewers (architecture/correctness, security,
+  quality) ran against the full diff — **all three ACCEPTED**; 3 non-blocking nits from the
+  quality pass (duplicated test-helper, an inaccurate drizzle-internals comment, a copy-paste
+  comment drift) fixed inline before this sync. **A reviewer false-positive, checked and
+  disproved, not a real gap:** the architecture reviewer flagged `appeals/page.tsx` as missing an
+  `isVisible()` RBAC gate unlike `recovery/page.tsx` — but `rbac.ts`'s `MATRIX` shows `appeals` is
+  never `"hidden"` for any role (unlike `recovery`, where clinician is), so no gate applies there
+  by design; the write-side is separately gated via `authorizeAction("appeals", ...)`. Gates:
+  `pnpm tsc --noEmit` clean; full workspace
+  `pnpm vitest run` **1083/1083** (0 fail, 3 skipped, pre-existing skips); `pnpm lint` at the known
+  pre-existing baseline (1 unrelated ECC-tooling error + 2 warnings); `pnpm --filter @taweed/web
+  build` succeeds, all routes compile. 12 files changed, 304 insertions / 34 deletions. **Not
+  committed** — awaiting the user's explicit go-ahead per the standing merge/push gate.
 - Roadmap: CREATE ✅ → IMPLEMENT ✅ → **EXECUTE (buildable pass ✅ · UI tail A2/A3 ✅ · B6 field-mapping panel ✅ · headline pending real data)** → **AI phase (AI-0 ✅ · AI-1 ✅ · AI-2 ✅ · AI-3 ✅ · AI-4 ✅ + real-data-gaps closed ✅ · AI-5 deferred)** → DEPLOY.
 
 ## Can you start now?
@@ -775,7 +848,7 @@ docker compose down
   - Seams: `apps/web/lib/{db,auth,session,rbac,authz,audit,data,appeals-data}.ts`, `lib/actions/*` (server actions), `components/{ui,shell,charts,money,modules}`, `i18n/*`, `messages/{en,ar}.json`.
 - `test/synthetic-fhir` — deterministic R4 bundle generator (9 scenarios).
 - CI: `.github/workflows/ci.yml` (lint + typecheck + unit + integration w/ Postgres service + **`e2e` job** — Playwright + a11y against a seeded Postgres, EXECUTE A1).
-- `apps/web` **EXECUTE additions:** marketing landing at `/[locale]` for logged-out visitors (`components/marketing/landing.tsx`, A4); `playwright.config.ts` + `tests/e2e/*` (smoke/a11y/money-arc, A1); `lib/data.ts` uses `projectClaimFacts` + `selectRulesForClaim`; `lib/actions/recovery.ts` uses `resolveRecovery`; `lib/utils.ts` `cn()` teaches tailwind-merge the custom fontSize scale (app-wide hero-size fix). **AI-1 additions:** `lib/actions/explain-flag.ts` (server action → `@taweed/ai` `explainFlag`, re-derives prompt from `SCRUBBER_RULES`, RBAC-gated, catches `AiDisabledError` → deterministic); `components/modules/flag-explainer.tsx` (additive bilingual popover); `lib/data.ts` `ScrubRow` carries `ruleVersions`; `@taweed/ai` added to deps + `transpilePackages`; EN/AR scrubber i18n keys. **AI-2/AI-3 additions:** `components/modules/appeals-composer.tsx` (AI-2 "Suggest" panel), `components/modules/rule-authoring.tsx` + the authored-rule library (AI-3 Draft/Gate/Approve flow), Settings "Author" tab. **AI-4 additions:** `lib/actions/{eob-extract,eob-review}.ts` (upload entrypoint + approve/reject, approve re-validates arithmetic on edited values), `lib/eob-review-data.ts` + `lib/eob-to-normalized.ts`, `components/modules/eob-review-queue.tsx` + `components/modules/eob-review/{confidence-badge,eob-extraction-form}.tsx`, a second "Review queue" tab on the Ingest page; `next.config.mjs` gained `serverExternalPackages` + explicit webpack `externals` for `pdf-parse`/`pdfjs-dist`/`@napi-rs/canvas`'s native binary. `lib/chart-colors.ts` (new, 2026-07-08 design-audit fix — shared SVG-safe hex for Pareto/TrendLine, was duplicated in two files). **EXECUTE UI tail (A2/A3) additions, 2026-07-10:** `app/[locale]/(onboarding)/{layout,onboarding/page}.tsx` (chromeless first-run corridor route), `components/modules/onboarding-corridor.tsx`, `lib/onboarding.ts` (`isOnboarded`), `lib/actions/onboarding.ts` (`completeOnboarding`); `app/[locale]/(app)/analytics/audit-report/page.tsx` + `app/[locale]/(app)/recovery/owner-report/page.tsx`, `components/modules/{report-shell,audit-report-document,owner-report-document}.tsx`, `lib/report-data.ts` (`recoverableSplit`/`projectedRecoveryRange`/`aggregateTopPayers`), `lib/data.ts` gained `getAuditReportData`/`getOwnerReportData` + a shared `appealPipelineRows` helper (extracted from `getRecovery`); `components/modules/ingest-panel.tsx` gained an additive optional `onIngestSuccess` prop; `app/[locale]/(app)/layout.tsx` gained `print:hidden`/`print:` wrappers for the two new report pages. **AI-4 real-data-gaps additions, 2026-07-10:** `eob-review.ts`'s `EditedLine`/`EditedClaim` gained `adjustmentSar`/`totalAdjustmentSar`; `eob-extraction-form.tsx` gained the matching 5th `MoneyField` per line/claim (sign-aware `halalasToSarDisplay`, see the money-path callout above); `eob-review-data.ts` gained `backfillLegacyAdjustmentFields` (pre-Gap-2 `eob_extractions` rows backfill to `adjustmentHalalas: 0` on read); `apps/web/lib/money.ts`'s `SAR_MONEY_REGEX` gained a 12-digit integer-part bound (money-path fix).
+- `apps/web` **EXECUTE additions:** marketing landing at `/[locale]` for logged-out visitors (`components/marketing/landing.tsx`, A4); `playwright.config.ts` + `tests/e2e/*` (smoke/a11y/money-arc, A1); `lib/data.ts` uses `projectClaimFacts` + `selectRulesForClaim`; `lib/actions/recovery.ts` uses `resolveRecovery`; `lib/utils.ts` `cn()` teaches tailwind-merge the custom fontSize scale (app-wide hero-size fix). **AI-1 additions:** `lib/actions/explain-flag.ts` (server action → `@taweed/ai` `explainFlag`, re-derives prompt from `SCRUBBER_RULES`, RBAC-gated, catches `AiDisabledError` → deterministic); `components/modules/flag-explainer.tsx` (additive bilingual popover); `lib/data.ts` `ScrubRow` carries `ruleVersions`; `@taweed/ai` added to deps + `transpilePackages`; EN/AR scrubber i18n keys. **AI-2/AI-3 additions:** `components/modules/appeals-composer.tsx` (AI-2 "Suggest" panel), `components/modules/rule-authoring.tsx` + the authored-rule library (AI-3 Draft/Gate/Approve flow), Settings "Author" tab. **AI-4 additions:** `lib/actions/{eob-extract,eob-review}.ts` (upload entrypoint + approve/reject, approve re-validates arithmetic on edited values), `lib/eob-review-data.ts` + `lib/eob-to-normalized.ts`, `components/modules/eob-review-queue.tsx` + `components/modules/eob-review/{confidence-badge,eob-extraction-form}.tsx`, a second "Review queue" tab on the Ingest page; `next.config.mjs` gained `serverExternalPackages` + explicit webpack `externals` for `pdf-parse`/`pdfjs-dist`/`@napi-rs/canvas`'s native binary. `lib/chart-colors.ts` (new, 2026-07-08 design-audit fix — shared SVG-safe hex for Pareto/TrendLine, was duplicated in two files). **EXECUTE UI tail (A2/A3) additions, 2026-07-10:** `app/[locale]/(onboarding)/{layout,onboarding/page}.tsx` (chromeless first-run corridor route), `components/modules/onboarding-corridor.tsx`, `lib/onboarding.ts` (`isOnboarded`), `lib/actions/onboarding.ts` (`completeOnboarding`); `app/[locale]/(app)/analytics/audit-report/page.tsx` + `app/[locale]/(app)/recovery/owner-report/page.tsx`, `components/modules/{report-shell,audit-report-document,owner-report-document}.tsx`, `lib/report-data.ts` (`recoverableSplit`/`projectedRecoveryRange`/`aggregateTopPayers`), `lib/data.ts` gained `getAuditReportData`/`getOwnerReportData` + a shared `appealPipelineRows` helper (extracted from `getRecovery`); `components/modules/ingest-panel.tsx` gained an additive optional `onIngestSuccess` prop; `app/[locale]/(app)/layout.tsx` gained `print:hidden`/`print:` wrappers for the two new report pages. **AI-4 real-data-gaps additions, 2026-07-10:** `eob-review.ts`'s `EditedLine`/`EditedClaim` gained `adjustmentSar`/`totalAdjustmentSar`; `eob-extraction-form.tsx` gained the matching 5th `MoneyField` per line/claim (sign-aware `halalasToSarDisplay`, see the money-path callout above); `eob-review-data.ts` gained `backfillLegacyAdjustmentFields` (pre-Gap-2 `eob_extractions` rows backfill to `adjustmentHalalas: 0` on read); `apps/web/lib/money.ts`'s `SAR_MONEY_REGEX` gained a 12-digit integer-part bound (money-path fix). **Branch-scoping additions, 2026-07-18 (design-brief §7, Appeals + Recovery):** `lib/appeals-data.ts`'s `getAppealables` and `lib/data.ts`'s `getRecovery`/`appealPipelineRows` all gained an optional `branchId` param (parameterized, RLS-safe, resolved via the existing `getBranches`+`resolveBranchId` pair); `app/[locale]/(app)/{appeals,recovery}/page.tsx` both resolve `?branch=` before passing it through. Only Ingest remains unfiltered (no `branch_id` column on `eob_extractions`, a schema decision, not a story).
 
 ## Must-read before building
 
