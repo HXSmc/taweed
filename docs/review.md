@@ -299,7 +299,7 @@ explanatory error — a real XLSX parser is a documented later swap, not built y
 Still on **Ingest**. Note the second tab at the top of the panel, next to the upload tab: **"Review queue"** (it shows a pending-count badge once something is waiting). This is AI-4 — the newest AI feature.
 
 - **What it does:** a clinic receives a scanned/PDF **EOB** (Explanation of Benefits — the insurer's remittance advice showing what it actually paid/denied per claim line) from a payer. Instead of someone re-typing every line by hand, a vision-capable model reads the PDF and extracts the structured data (claim refs, line items, paid/billed/patient-share amounts, denial codes). **A human always reviews and can correct it before anything is written to a real claim record** — nothing from this pipeline is auto-applied.
-- **To test it, you need a PDF file to upload — and two ready-made synthetic ones now ship with the repo.** `docs/test-fixtures/eob-1-clean.pdf` and `docs/test-fixtures/eob-2-full-denial.pdf` are real, valid remittance PDFs with their expected extractions saved alongside (`*.expected.json`) — drop either straight onto the dropzone (full walkthrough in §1.14, Fixtures 5–6). These were produced by the synthetic-EOB corpus's **HTML→PDF rasterizer** (`test/synthetic-eob/src/rasterize.ts`, headless Chromium `page.pdf()`), which was **built 2026-07-10** — the earlier "rendering that HTML to a PDF is a not-yet-built `TODO(ai-route)` step" note is obsolete. You can also bring your own PDF: any real or dummy PDF works for a plumbing test (the upload only checks for valid `%PDF-` magic bytes before proceeding), but for a *meaningful* extraction test use one of the fixture PDFs or another remittance-shaped document.
+- **To test it, you need a PDF file to upload — and four ready-made synthetic ones now ship with the repo.** `docs/test-fixtures/eob-1-clean.pdf`, `eob-2-full-denial.pdf`, and (added 2026-07-18 as a size-extremes stress pair) `eob-3-minimal-single-line.pdf` and `eob-4-dense-large-remittance.pdf` are real, valid remittance PDFs with their expected extractions saved alongside (`*.expected.json`) — drop any of them straight onto the dropzone (full walkthrough in §1.14, Fixtures 5–8). These were produced by the synthetic-EOB corpus's **HTML→PDF rasterizer** (`test/synthetic-eob/src/rasterize.ts`, headless Chromium `page.pdf()`), which was **built 2026-07-10** — the earlier "rendering that HTML to a PDF is a not-yet-built `TODO(ai-route)` step" note is obsolete. You can also bring your own PDF: any real or dummy PDF works for a plumbing test (the upload only checks for valid `%PDF-` magic bytes before proceeding), but for a *meaningful* extraction test use one of the fixture PDFs or another remittance-shaped document.
 - **Steps:**
   1. On the **upload** tab, drag a `.pdf` onto the dropzone (or use the file picker) instead of the JSON sample bundle.
   2. It's submitted to `extractEobPdfAction`; on success you'll see *"Submitted for review. Open the Review queue tab above to check and approve it."*
@@ -506,6 +506,29 @@ Expected: all integration tests green (baseline 37 passing, up from ~33 pre-AI-4
 
 **AI-4 eval harness — fully fixed and run for real, 2026-07-18. Sonnet meets both documented targets.** `packages/ai/evals/extractEob.eval.ts` is gated behind `AI_EVALS_LIVE=1` (never runs in CI, never runs in `pnpm test`) and scores real extraction accuracy against the synthetic corpus's ground truth (`EVAL_TARGET_THRESHOLDS`: amounts ≥98%, overall ≥95%). Getting a trustworthy number took three real fixes, all landed: (1) an env-shadowing bug (`env: {...}` fully replacing `process.env`, hiding a genuinely-configured `ANTHROPIC_API_KEY`) in both `extractEob.eval.ts` and `explainFlag.eval.ts`; (2) a too-short per-tier test timeout (`120_000`ms → `900_000`ms) for 40 sequential real API calls; (3) the real root cause — `test/synthetic-eob/src/generate.ts`'s `buildHtmlTemplate` (what's actually rasterized into the PDF the vision model sees) never rendered `patientRef`/`serviceDate`/`claimId`, so the model couldn't produce fields it never saw, cascading every nested score to ~0. Fixed by rendering those fields into the document and by having `scoring.ts` match claims on `nphiesClaimId` (falling back to `claimId`) — the same fallback pattern production code already uses. **Full 40-item × 2-tier live run against the real Anthropic API (`packages/ai/evals/.output/extractEob-*.json`, ~978s wall time): Sonnet 96.6% overall / 100% amounts, 0 hallucinated claims — meets and exceeds both documented targets (98% amounts, 95% overall). Opus 87.1% overall / 100% amounts — meets amounts only; codes underperform Sonnet's (183/375 vs 343/375), a genuine model-behavior difference worth a follow-up look, not a bug.** The harness's own `expect(...)` assertions still deliberately check only *plumbing* (one report row per tier, a score recorded per document), never the accuracy thresholds themselves — routine model drift shouldn't masquerade as a broken build — but the numbers above are now real, reviewed, scored results, not an artifact.
 
+> **UPDATE 2026-07-18, same day, size-diversity follow-up: the corpus grew from 40 to 44 items (9 to 11
+> scenarios) — and immediately found a real production bug, not just a scoring one.** Two new
+> scenarios (`minimalSingleLine`: 1 claim/1 line; `denseLargeRemittance`: 8 claims × 6 lines = 48
+> lines, a real 4-page PDF) were added to `test/synthetic-eob/src/scenarios.ts` to stress-test the
+> size extremes the original 1-3-claim/2-4-line corpus never exercised (`CORPUS_SIZE` bumped 40→44
+> to keep even per-scenario coverage). The large scenario immediately reproduced a genuine
+> extraction failure: `stop_reason: "max_tokens"` — Claude Sonnet 5 runs **adaptive thinking on by
+> default** (no `thinking` field needed to trigger it), and that thinking budget is drawn from the
+> *same* `max_tokens` ceiling as the actual response. On the 48-line document, 3148 of the 8192-token
+> budget went to thinking, leaving too little room for the JSON output, which got truncated
+> mid-string and threw a hard parse error — the extraction failed **outright**, not just scored low.
+> Confirmed via a live isolated repro against `docs/test-fixtures/eob-4-dense-large-remittance.pdf`;
+> re-run at `max_tokens: 32768` completed naturally (`stop_reason: "end_turn"`, ~11k tokens used, 3x
+> headroom). **Fixed in production code**, not just the eval: `packages/ai/src/features/extractEob.ts`'s
+> `maxTokens: 8192` → `32768` (`EXTRACT_EOB_MAX_TOKENS`). Full 44-item × 2-tier re-run post-fix (real
+> Anthropic API, both tests passed clean, ~1434s wall time): **Sonnet 98.1% overall / 100% amounts,
+> 0 hallucinated — exceeds both targets by a wider margin than the 40-item run.** **Opus 83.5%
+> overall / 99.9% amounts** — meets amounts, codes weaker at the larger scale (360/924 vs Sonnet's
+> 888/924). Two new manual walkthrough fixtures also ship in `docs/test-fixtures/` from this pass —
+> see §1.14 Fixtures 7-8.
+
+
+
 **Full build check** (the root `build` script is just the type check; to run the real Next.js production build):
 
 ```fish
@@ -545,10 +568,10 @@ Expected: all integration tests green (baseline 37 passing, up from ~33 pre-AI-4
 
 ## 1.14 Test fixtures — mock files with documented expected results
 
-`docs/test-fixtures/` has six ready-made files (two per scenario: two FHIR bundles, two CSVs, two
-EOB PDFs) you can drop straight onto the Ingest dropzone. Every result below was **verified against
-this running app**, not predicted from reading the code — upload the same file and you should see
-the exact same result every time (these are deterministic, not random).
+`docs/test-fixtures/` has ten ready-made files (two FHIR bundles, two CSVs, four EOB PDFs) you can
+drop straight onto the Ingest dropzone. Every result below was **verified against this running
+app**, not predicted from reading the code — upload the same file and you should see the exact same
+result every time (these are deterministic, not random).
 
 > **If you're on the Docker quick-start** (see the repo root `README.md`), do §1.5's seed step via
 > `docker compose exec app pnpm --filter @taweed/web seed` instead of the local `pnpm` command
@@ -663,6 +686,36 @@ covered by plan" and `TWD-D05` "Duplicate claim / service"), nothing paid.
   `denialCode` on every line, and `remittanceTotalPaidHalalas: 0` overall. This is the "extraction
   correctly reads a bad-news remittance" case — a model that hallucinates a partial payment here
   would be a real, visible bug.
+
+### Fixture 7 — EOB PDF, `eob-3-minimal-single-line.pdf` (+ `.expected.json`) — smallest-size stress test
+
+Same generator, scenario `"minimalSingleLine"`, seed 1009 (added 2026-07-18 to stress-test the
+smallest end of what the extraction schema allows) — a single 1-page PDF with exactly **one claim,
+one line**: `claim-minimalSingleLine-1009-0`, billed 21.00 SAR, paid 18.90 SAR, no denial.
+
+- **With AI-4 off (verified):** same clean failure message as Fixture 5.
+- **With AI-4 on:** upload it, open the Review queue, and compare against
+  `eob-3-minimal-single-line.expected.json` — expect exactly one claim, one line, and
+  `remittanceTotalPaidHalalas: 1890`. This checks the opposite failure mode from Fixture 8 below: a
+  claim/line loop that silently drops the only row, or renders an empty table, on a minimal
+  document.
+
+### Fixture 8 — EOB PDF, `eob-4-dense-large-remittance.pdf` (+ `.expected.json`) — largest-size stress test
+
+Same generator, scenario `"denseLargeRemittance"`, seed 1010 (added 2026-07-18) — a real **4-page**
+PDF (confirmed via `file docs/test-fixtures/eob-4-dense-large-remittance.pdf`), **8 claims x 6 lines
+= 48 lines**, well past every other fixture's size. Denials (`TWD-D02`, `TWD-D05`, `TWD-D06`,
+`TWD-D08`) and one contractual adjustment (200 halalas) are spread across claims 0, 2, 4, 5, and 7 —
+not just the first claim — so cross-page/cross-claim extraction is exercised, not just per-claim
+arithmetic on page 1. `remittanceTotalPaidHalalas: 114730`.
+
+- **With AI-4 off (verified):** same clean failure message as Fixture 5.
+- **With AI-4 on:** upload it, open the Review queue, and compare against
+  `eob-4-dense-large-remittance.expected.json` — expect all 8 claims present (not just the ones on
+  the PDF's first page), 48 total lines, the 4 denial codes above on their respective claims, and
+  the one adjustment on claim index 4's third line. A model or extraction pipeline that only reads
+  the first PDF page would silently truncate to 1-2 claims here — this fixture is what would catch
+  that class of bug in manual testing.
 
 ### After using any of these fixtures
 
@@ -840,7 +893,7 @@ Strong, and clearly a priority:
 
 - **Unit tests (Vitest, ≈ pytest/JUnit):** pure logic, utilities, the AI code via a **fixture provider** (record/replay, so CI never calls the real API or needs a key). Baseline **769 passing** (up from 708 pre-EXECUTE-UI-tail, 444 pre-AI-4).
 - **Integration tests:** run against a real Postgres, single-fork, **destructive**. They prove migrations, RLS enforcement, append-only privileges, and money reconciliation. Baseline **37 passing** (up from ~33 pre-AI-4).
-- **Live eval harness (AI-4 only, `packages/ai/evals/*.eval.ts`):** gated behind `AI_EVALS_LIVE=1`, never runs in CI or `pnpm test`. **UPDATE 2026-07-10 (AI-4 real-data-gaps unit):** the HTML→PDF rasterizer this section used to say was missing is now built and wired. **UPDATE 2026-07-18 — run for the first time, scoring bug found AND fixed, real numbers in hand.** Two blockers cleared before it could even execute: (1) `extractEob.eval.ts`'s own `env: {...}` literal fully shadowed `process.env`, hiding the configured `ANTHROPIC_API_KEY` — fixed (same bug in `explainFlag.eval.ts`, also fixed); (2) the file's hardcoded `120_000`ms per-tier timeout was too short for 40 real sequential API calls, bumped to `900_000`. The real root cause: the synthetic corpus's `buildHtmlTemplate` (`test/synthetic-eob/src/generate.ts`) never rendered `patientRef`/`serviceDate`/`claimId` into the actual PDF the vision model sees, so claim-matching (keyed on the invisible `claimId`) failed and cascaded every nested field to ~0. **Fixed at the source**: those fields are now rendered into the document, and `scoring.ts` now matches on `nphiesClaimId` (falling back to `claimId`) — production's own established fallback pattern. Full 40-item × 2-tier live run: **Sonnet 96.6% overall / 100% amounts, 0 hallucinated — meets both documented targets. Opus 87.1% overall / 100% amounts — meets amounts only, codes underperform Sonnet's** (a model-behavior difference, not a bug). AI-4 is confirmed working well; this was a broken measurement, never a broken feature.
+- **Live eval harness (AI-4 only, `packages/ai/evals/*.eval.ts`):** gated behind `AI_EVALS_LIVE=1`, never runs in CI or `pnpm test`. **UPDATE 2026-07-10 (AI-4 real-data-gaps unit):** the HTML→PDF rasterizer this section used to say was missing is now built and wired. **UPDATE 2026-07-18 — run for the first time, scoring bug found AND fixed, real numbers in hand.** Two blockers cleared before it could even execute: (1) `extractEob.eval.ts`'s own `env: {...}` literal fully shadowed `process.env`, hiding the configured `ANTHROPIC_API_KEY` — fixed (same bug in `explainFlag.eval.ts`, also fixed); (2) the file's hardcoded `120_000`ms per-tier timeout was too short for 40 real sequential API calls, bumped to `900_000`. The real root cause: the synthetic corpus's `buildHtmlTemplate` (`test/synthetic-eob/src/generate.ts`) never rendered `patientRef`/`serviceDate`/`claimId` into the actual PDF the vision model sees, so claim-matching (keyed on the invisible `claimId`) failed and cascaded every nested field to ~0. **Fixed at the source**: those fields are now rendered into the document, and `scoring.ts` now matches on `nphiesClaimId` (falling back to `claimId`) — production's own established fallback pattern. Full 40-item × 2-tier live run: **Sonnet 96.6% overall / 100% amounts, 0 hallucinated — meets both documented targets. Opus 87.1% overall / 100% amounts — meets amounts only, codes underperform Sonnet's** (a model-behavior difference, not a bug). AI-4 is confirmed working well; this was a broken measurement, never a broken feature. **UPDATE 2026-07-18, same day: corpus grew to 44 items/11 scenarios (added a smallest- and largest-size stress pair) and immediately caught a real production bug** — Sonnet 5's default adaptive-thinking budget was drawn from the same `max_tokens: 8192` ceiling as the response, so the 48-line `denseLargeRemittance` scenario truncated mid-JSON and threw a hard parse error (`stop_reason: "max_tokens"`), not just a low score. Fixed in production code (`extractEob.ts`'s `maxTokens` → `32768`), confirmed via live repro, then a clean 44-item re-run: **Sonnet 98.1% overall / 100% amounts, 0 hallucinated. Opus 83.5% overall / 99.9% amounts**, codes weaker at scale (360/924).
 - **E2E + accessibility (Playwright):** run in CI against a seeded DB. First green CI in the project's history was achieved during the harden loop. (Can't run locally here — Node 20.2.0 — see §1.11.)
 - **Coverage target 80%**; the `@taweed/ai` package is ~92%, with 100% on the pure PHI-handling helpers (`pseudonymize`, `postprocess-ar`, `sha256`).
 
@@ -875,7 +928,7 @@ From the deploy-readiness ledger (`docs/ai-deploy-readiness.md`) and handoff not
 - **drizzle-kit journal stale:** the migration tool's journal isn't snapshotted for `0001`–`0007`, so `pnpm db:generate` can emit duplicate DDL. Dev-tooling annoyance only; the custom migrator applies all `.sql` files in order correctly.
 - **Local runtime smoke (chrome-devtools):** couldn't run locally (Node 20.2.0 blocks local Playwright/devtools driving); covered instead by CI E2E + a11y. If you get a newer Node in a separate environment, a manual devtools pass across config states × EN/AR × light/dark would close this.
 - **Rate limiting is per-instance/in-memory** for the AI explain action — fine for one server, needs a shared store (e.g., Redis) at horizontal scale. Documented as a known residual.
-- **AI-4 eval harness scored a real, trustworthy model pass (2026-07-18).** See §2.9's 2026-07-18 update: the corpus's rendering bug and the matching-key bug are both fixed; Sonnet scores 96.6% overall / 100% amounts against the 98%/95% thresholds in `packages/ai/evals/scoring.ts` — meets and exceeds both. Opus scores 87.1% overall / 100% amounts (codes underperform Sonnet's, flagged as a minor follow-up, not blocking).
+- **AI-4 eval harness scored a real, trustworthy model pass, then caught a real production bug via size-diversity fixtures (both 2026-07-18).** See §2.9's 2026-07-18 updates: the corpus's rendering bug and the matching-key bug are both fixed; a same-day follow-up grew the corpus to 44 items/11 scenarios (smallest- and largest-size stress pair), which reproduced a genuine `extractEob.ts` extraction failure on large documents (Sonnet 5's default adaptive thinking exhausting the 8192-token `max_tokens` ceiling before the JSON output finished) — fixed by raising `maxTokens` to `32768`. Final numbers against the 98%/95% thresholds in `packages/ai/evals/scoring.ts`: **Sonnet 98.1% overall / 100% amounts** — meets and exceeds both. **Opus 83.5% overall / 99.9% amounts** (codes underperform Sonnet's at scale, flagged as a minor follow-up, not blocking).
 - ~~**AI-4's arithmetic validator has no adjustment/withholding bucket.**~~ **RESOLVED 2026-07-10.** A 5th `adjustmentHalalas`/`totalAdjustmentHalalas` bucket now exists end to end: `packages/ai/src/schemas/eobExtraction.ts` (schema), `packages/ai/src/eob-validators.ts` (cross-total + a generalized non-negativity guard covering all five buckets, added after an adversarial money-path pass found the first-draft guard only covered `adjustmentHalalas` itself and a sign-cancelling `paid > billed` bypass was still open through the other four), `apps/web/lib/actions/eob-review.ts` + `eob-extraction-form.tsx` (reviewer edit/display), `packages/ai/evals/scoring.ts` (eval scoring), and a new `contractualAdjustment` synthetic scenario so the (now-live) eval harness actually exercises it. A real remittance with a contractual write-off is no longer permanently stuck at "reject only." Deliberately NOT persisted into `ClaimRow`/`ClaimResponseRow`/`DenialRow` (`apps/web/lib/eob-to-normalized.ts`) — no DB column exists for it and stuffing it into `denials` would wrongly mark a non-appealable write-off as appealable; a documented `TODO(ai-route)` + two pinning tests track that as a separate, deliberate follow-up (schema migration + analytics decision), not a silent gap. See `docs/handoff.md`'s AI-4 real-data-gaps entry for the full build + the dedicated money-path adversarial-scrutiny findings.
 - **AI-4's PHI/cross-border pre-enable checklist lives in `docs/blocker.md` (BLK-AI-1), not here** — e.g., confirming error-path logging doesn't capture field-level extraction values, and confirming what a `TAWEED_AI_EXTRACT_EOB_ENABLED` flag-flip means for the `inference_geo` setting (cross-border data transfer) before any real document is ever processed. Read that blocker before touching the production route decision.
 - **Deliberately-parked optimizations live in `docs/deferred.md` (`DEF-*`), not here** — work we've *chosen not to build yet* (as opposed to issues in code that exists). The current entry is **DEF-1: text-layer-first extraction routing for born-digital EOB PDFs** — a cost/latency tuning of AI-4 that the 2026-07-16 calculation parked (negligible savings at pre-pilot volume; no compliance benefit as designed; not the highest-value next step). Each entry carries the rationale and the concrete trigger that would flip it to worth-doing.

@@ -1,0 +1,34 @@
+{
+  "payerName": "Placeholder Insurer",
+  "payerNphiesId": "payer-nphies-0",
+  "remittanceDate": "2026-01-15",
+  "remittanceTotalPaidHalalas": 1890,
+  "claims": [
+    {
+      "claimId": "claim-minimalSingleLine-1009-0",
+      "nphiesClaimId": "NPHIES-CLM-minimalSingleLine-1009-0",
+      "patientRef": "Patient/patient-minimalSingleLine-0",
+      "serviceDate": "2026-01-05",
+      "lines": [
+        {
+          "claimLineRef": "line-0-0",
+          "sbsCode": "SBS-8446",
+          "icd10amCode": "ICD10AM-214",
+          "billedHalalas": 2100,
+          "paidHalalas": 1890,
+          "patientShareHalalas": 210,
+          "rejectedHalalas": 0,
+          "adjustmentHalalas": 0,
+          "denialCode": null,
+          "confidence": 0.87
+        }
+      ],
+      "totalBilledHalalas": 2100,
+      "totalPaidHalalas": 1890,
+      "totalRejectedHalalas": 0,
+      "totalAdjustmentHalalas": 0,
+      "confidence": 0.86
+    }
+  ],
+  "overallConfidence": 0.93
+}

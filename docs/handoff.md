@@ -102,6 +102,19 @@
 > confirmed non-compliant gap; new items queued in `docs/HUMAN_CONFIRMATION_NEEDED.md` §G. Full
 > breakdown in "Where the project stands" below; branch-scoping is the next buildable item per
 > `docs/NEXT_STEP_PROMPT.md`.
+> **2026-07-18, same day, size-diversity follow-up: grew the corpus 40→44 items (9→11 scenarios),
+> caught and fixed a REAL production bug.** Two new scenarios stress-test the size extremes
+> (`minimalSingleLine`: 1 claim/1 line; `denseLargeRemittance`: 8 claims × 6 lines, a real 4-page
+> PDF). The large one immediately reproduced a genuine `extractEob.ts` failure: Claude Sonnet 5 runs
+> adaptive thinking on by default, drawing from the same `max_tokens: 8192` ceiling as the response
+> — on this document, thinking left too little room and the JSON output truncated mid-string
+> (`stop_reason: "max_tokens"`), a hard parse failure, not a scoring artifact. Confirmed via a live
+> isolated repro; fixed in production code (`maxTokens` → `32768`). Re-ran the full 44-item × 2-tier
+> corpus clean: **Sonnet 98.1% overall / 100% amounts** (exceeds both targets by a wider margin than
+> the 40-item run), **Opus 83.5% overall / 99.9% amounts** (codes weaker at scale). Two new manual
+> walkthrough fixtures (`eob-3-minimal-single-line`, `eob-4-dense-large-remittance`) added to
+> `docs/test-fixtures/` per this repo's fixture-location convention. Full breakdown in "Where the
+> project stands" below.
 
 ## Where the project stands
 
@@ -644,6 +657,40 @@
   as a minor follow-up in `docs/NEXT_STEP_PROMPT.md`, not blocking). **AI-4 is confirmed working
   well — this was a broken measurement the whole time, never a broken feature.** All unit tests
   green (`eval-scoring.test.ts` 11/11, `test/synthetic-eob` 20/20), typecheck clean.
+- **2026-07-18, same day, size-diversity follow-up: two new fixtures caught a REAL production bug
+  in `extractEob.ts`, not just an eval artifact.** User asked for fixtures "of different sizes so
+  tests are made thoroughly and nothing breaks" — added `minimalSingleLine` (1 claim/1 line) and
+  `denseLargeRemittance` (8 claims × 6 lines = 48 lines, confirmed a genuine 4-page PDF via
+  `file`) to `test/synthetic-eob/src/scenarios.ts`; `CORPUS_SIZE` bumped 40→44 (11 scenarios × 4
+  reps) to keep even coverage. First live re-run hit a real failure on the large scenario:
+  `Error: Failed to parse structured output ... Unterminated string in JSON`. **Root-caused via an
+  isolated repro** (`anthropic.messages.create` directly against
+  `docs/test-fixtures/eob-4-dense-large-remittance.pdf`, bypassing the audit/pool machinery):
+  `stop_reason: "max_tokens"`, with `output_tokens_details.thinking_tokens: 3148` of the
+  `max_tokens: 8192` ceiling — **Claude Sonnet 5 runs adaptive thinking ON BY DEFAULT** (confirmed
+  via `platform.claude.com` docs: "Requests without a thinking field run with adaptive thinking,"
+  and the thinking budget draws from the *same* `max_tokens` pool as the response, a behavior
+  change from the prior Sonnet 4.6 generation). Only ~5044 tokens were left for a JSON payload that
+  needed over 10x that, so the response was truncated mid-string — a hard extraction failure, not
+  a low score; a real design-partner remittance bundling many claims would hit the identical wall.
+  **Fixed in production code**: `packages/ai/src/features/extractEob.ts`'s `maxTokens: 8192` →
+  `EXTRACT_EOB_MAX_TOKENS = 32_768` (verified via the same repro: `stop_reason: "end_turn"`, ~11k
+  tokens used, 3x headroom; 128k is Sonnet 5's actual max output ceiling per the platform docs, so
+  32,768 leaves large additional margin for an even bigger real document). Full 44-item × 2-tier
+  live re-run, both tests passing clean (~1434s wall time): **Sonnet 98.1% overall / 100% amounts,
+  0 hallucinated — exceeds both documented targets by a wider margin than the 40-item run.** **Opus
+  83.5% overall / 99.9% amounts** — codes weaker at the larger scale (360/924 vs Sonnet's 888/924),
+  consistent with the earlier 40-item finding, not a new issue. Two background `vitest` runs were
+  unexpectedly killed mid-corpus before this one (no code-related cause found — DB/disk/memory all
+  healthy, orphaned `Eval Tenant` rows + 45 stray `llm_calls` audit rows from the real, if wasted,
+  API spend were cleaned up before the successful retry); tracked with both a background-task
+  completion signal and an independent `Monitor` log-tail as a second channel, which is what caught
+  the final clean run's real numbers. Per the user's explicit instruction, two new EOB PDF fixtures
+  (`eob-3-minimal-single-line`, `eob-4-dense-large-remittance`, generated via
+  `test/synthetic-eob`'s own generator + rasterizer, same convention as the existing eob-1/eob-2
+  pair) now live in `docs/test-fixtures/` as Fixtures 7-8, documented in `docs/review.md` §1.14.
+  Unit suite grew to 22/22 in `test/synthetic-eob` (2 new scenario tests), 1033/1033 overall;
+  typecheck/lint clean on every touched file.
 - **2026-07-18, same day: KSA regulatory compliance audit — 6 parallel Opus agents (agy +
   WebSearch, primary-source-verified), zero GLM.** Covers SFDA medical-device classification,
   business/vendor registration, SAMA payment-services licensing, SDAIA AI-specific law, NPHIES

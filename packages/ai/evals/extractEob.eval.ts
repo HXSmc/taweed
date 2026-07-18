@@ -53,7 +53,10 @@ const LIVE = process.env.AI_EVALS_LIVE === "1";
 const adminUrl = process.env.DATABASE_URL ?? "";
 const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
-const CORPUS_SIZE = 40;
+// 44 = 11 scenarios (EOB_SCENARIOS, incl. the 2026-07-18 minimalSingleLine /
+// denseLargeRemittance size-extremes pair) x 4 reps each, keeping even
+// per-scenario coverage as the corpus grows.
+const CORPUS_SIZE = 44;
 const MODEL_TIERS: readonly EvalModelTier[] = ["sonnet", "opus"];
 const REPORT_DIR = new URL("./.output/", import.meta.url);
 

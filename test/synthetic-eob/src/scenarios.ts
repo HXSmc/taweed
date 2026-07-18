@@ -10,6 +10,8 @@ export const EOB_SCENARIOS = [
   "arabicHeavy",
   "bundledLines",
   "contractualAdjustment",
+  "minimalSingleLine",
+  "denseLargeRemittance",
 ] as const;
 
 export type EobScenarioName = (typeof EOB_SCENARIOS)[number];
@@ -141,6 +143,44 @@ export const EOB_SCENARIO_SPECS: Record<EobScenarioName, EobScenarioSpec> = {
     linesPerClaim: 3,
     denials: { 0: { 2: "TWD-D01" } },
     adjustments: { 0: { 0: 150 } },
+    language: "en",
+    digitSet: "western",
+    lowQualityScan: false,
+    payer: PAYER_DEFAULT,
+  },
+  // Document-size stress test, smallest end: exactly one claim, one line —
+  // the minimum shape the extraction schema allows. Exercises the
+  // rasterizer/extraction/scoring path at the opposite extreme from
+  // denseLargeRemittance below, where a near-empty claims table or an
+  // off-by-one in claim/line iteration would otherwise go unnoticed.
+  minimalSingleLine: {
+    claimCount: 1,
+    linesPerClaim: 1,
+    denials: {},
+    adjustments: {},
+    language: "en",
+    digitSet: "western",
+    lowQualityScan: false,
+    payer: PAYER_DEFAULT,
+  },
+  // Document-size stress test, largest end: 8 claims x 6 lines = 48 rows,
+  // well past every other scenario's max (3 claims x 4 lines) and large
+  // enough that Chromium's page.pdf({format: "A4"}) (rasterize.ts) must
+  // paginate across multiple real pages rather than fitting on one — the
+  // live vision eval needs to prove multi-page documents extract and score
+  // correctly, not just single-page ones. Denials/an adjustment are spread
+  // across several claims (not just claim 0) so cross-claim matching is
+  // exercised at scale too, not just per-claim arithmetic.
+  denseLargeRemittance: {
+    claimCount: 8,
+    linesPerClaim: 6,
+    denials: {
+      0: { 0: "TWD-D02" },
+      2: { 3: "TWD-D05" },
+      5: { 1: "TWD-D06" },
+      7: { 5: "TWD-D08" },
+    },
+    adjustments: { 4: { 2: 200 } },
     language: "en",
     digitSet: "western",
     lowQualityScan: false,

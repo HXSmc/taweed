@@ -213,6 +213,52 @@ describe("generateEobGroundTruth — per-scenario semantics", () => {
     const { htmlTemplate } = generateEobGroundTruth("arabicHeavy", SEED);
     expect(/[٠-٩]/.test(htmlTemplate)).toBe(true);
   });
+
+  // Document-size stress pair (2026-07-18): the smallest and largest shapes
+  // the corpus produces, so the rasterizer/extraction/scoring pipeline is
+  // exercised at both size extremes, not just the 1-3 claim / 2-4 line
+  // middle ground every other scenario sits in.
+  it("minimalSingleLine has exactly one claim with exactly one line", () => {
+    const { extraction, htmlTemplate } = generateEobGroundTruth("minimalSingleLine", SEED);
+    expect(extraction.claims).toHaveLength(1);
+    expect(extraction.claims[0]!.lines).toHaveLength(1);
+    // Exactly one data row in the rendered <tbody>, not zero (an off-by-one
+    // in the claim/line loop could silently render an empty table for
+    // count=1) — <thead> also carries one <tr> of its own, so this counts
+    // only within <tbody>, not the raw document-wide <tr> count.
+    const tbody = htmlTemplate.match(/<tbody>([\s\S]*)<\/tbody>/)![1]!;
+    expect(tbody.match(/<tr>/g)).toHaveLength(1);
+  });
+
+  it("denseLargeRemittance bundles 8 claims x 6 lines and every claim/line surfaces in the rendered document", () => {
+    const { extraction, htmlTemplate } = generateEobGroundTruth("denseLargeRemittance", SEED);
+    expect(extraction.claims).toHaveLength(8);
+    for (const claim of extraction.claims) {
+      expect(claim.lines).toHaveLength(6);
+    }
+    const totalLines = extraction.claims.reduce((sum, c) => sum + c.lines.length, 0);
+    expect(totalLines).toBe(48);
+    // Every claim's identity block (Claim/Patient/Service Date) and every
+    // line's table row actually reached the rendered HTML — this is exactly
+    // the class of bug the 2026-07-18 AI-4 eval investigation found (fields
+    // computed in `extraction` but never rendered into `htmlTemplate`), so a
+    // large scenario is the place most likely to expose a partial render
+    // (e.g. only the first page's claims making it into the table).
+    for (const claim of extraction.claims) {
+      expect(htmlTemplate).toContain(claim.nphiesClaimId);
+      expect(htmlTemplate).toContain(claim.patientRef);
+    }
+    const tbody = htmlTemplate.match(/<tbody>([\s\S]*)<\/tbody>/)![1]!;
+    expect(tbody.match(/<tr>/g)).toHaveLength(48);
+    // Cross-claim denials/adjustment (spread across claims 0, 2, 4, 5, 7 —
+    // not just claim 0) all made it through.
+    expect(htmlTemplate).toContain("TWD-D02");
+    expect(htmlTemplate).toContain("TWD-D05");
+    expect(htmlTemplate).toContain("TWD-D06");
+    expect(htmlTemplate).toContain("TWD-D08");
+    const adjustedClaim = extraction.claims[4]!;
+    expect(adjustedClaim.lines[2]!.adjustmentHalalas).toBeGreaterThan(0);
+  });
 });
 
 describe("generateAllEob", () => {

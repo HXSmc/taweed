@@ -42,10 +42,26 @@ import {
 // pass "opus" to retry a low-confidence extraction with the stronger model.
 //
 // anthropic-1p.ts's client-level default timeout (30s) is sized for the
-// explainer's tiny payload — a PDF attachment (up to 15 MiB) plus an 8192
+// explainer's tiny payload — a PDF attachment (up to 15 MiB) plus a large
 // max_tokens response is a materially heavier vision workload, so this call
 // overrides the timeout per-request rather than sharing that default.
 const EXTRACT_EOB_TIMEOUT_MS = 90_000;
+
+// maxTokens headroom (bumped 8192 -> 32768, 2026-07-18): Claude Sonnet 5 runs
+// ADAPTIVE THINKING ON BY DEFAULT (no `thinking` field needed to trigger it,
+// unlike the prior Sonnet 4.6 generation) and that thinking budget is drawn
+// from the SAME max_tokens ceiling as the actual response — confirmed via a
+// live repro against the docs/test-fixtures/eob-4-dense-large-remittance.pdf
+// fixture (8 claims x 6 lines = 48 lines): a real call hit
+// `stop_reason: "max_tokens"` after only 3148 of the 8192-token budget went
+// to thinking, truncating the structured-output JSON mid-string and throwing
+// a hard parse error — extraction failed OUTRIGHT on a document only
+// moderately larger than every other scenario in the corpus, not just scored
+// lower. Re-run at 32768 completed naturally (`stop_reason: "end_turn"`,
+// 11022 total tokens used, ~3x headroom) with a byte-valid extraction. This
+// is a real production robustness gap, not an eval-only concern: a genuine
+// design-partner remittance bundling many claims would hit the same wall.
+const EXTRACT_EOB_MAX_TOKENS = 32_768;
 
 export interface ExtractEobInput {
   /** the remittance PDF, base64-encoded — no `data:` URI prefix, no embedded newlines (claude-api skill's documented PDF content-block shape). */
@@ -191,7 +207,7 @@ export async function extractEob(
       documents: [{ base64: opts.input.pdfBase64 }],
       schema: EobExtractionSchema,
       schemaName: "EobExtraction",
-      maxTokens: 8192,
+      maxTokens: EXTRACT_EOB_MAX_TOKENS,
       cacheSystem: true,
       timeoutMs: EXTRACT_EOB_TIMEOUT_MS,
     },
