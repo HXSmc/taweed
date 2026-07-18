@@ -921,6 +921,19 @@ IMPLEMENT:
   skipped), typecheck, lint (baseline), and `pnpm --filter @taweed/web build` all confirmed green
   on the pushed tip before pushing — plus 3 parallel Sonnet reviewers (architecture/correctness,
   security, quality), all ACCEPT round 1, before the commit was made at all.
+- **As of this writing (after the branch-scoping push, 2026-07-18, later the same day),
+  `back-up` = `83b3347`** (the pre-push `main`/`origin/main` tip — the `extractEob` maxTokens
+  git-workflow doc-sync commit) **and `main`/`origin/main` = `f1cc96e`**
+  (`feat: branch-scoping (design-brief §7) for Appeals + Recovery`, a plain commit on `main`
+  directly, no merge branch, no divergence from `origin/main` to reconcile). `back-up` is a direct
+  git-graph ancestor of `main`, one commit behind, matching the ritual's intent.
+  `git push -f origin back-up` was blocked once by the Claude Code auto-mode safety classifier
+  (force-push flagged); the user gave explicit real-time go-ahead and it succeeded on retry —
+  same standing policy as the 2026-07-17 entry above. Full `vitest run` (1083/1083, 0 fail, 3
+  skipped pre-existing), typecheck, lint (known baseline), and
+  `pnpm --filter @taweed/web build` all confirmed green on the pushed tip before pushing — plus 3
+  parallel Sonnet reviewers (architecture/correctness, security, quality), all ACCEPT round 1,
+  before the commit was made.
 
   ```bash
   git branch -f back-up main        # snapshot the current main tip (the 'old' commit)
