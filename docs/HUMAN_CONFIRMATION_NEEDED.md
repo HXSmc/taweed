@@ -678,12 +678,3 @@ Happy to jump on a short call if easier.
 **Confirmed CR-blocked (not worth re-attempting until CR exists):** NPHIES Academy enrollment, B1/B2 PKI+conformance submission, G5 real-PHI ingestion, G8/G9 signing any vendor agreement, G12-G14 filing (SDAIA registration, DPO, DPA/SCC).
 
 > **Send order:** 1b (Academy, self-serve, today) → Emails 1 + 2 same day (gov replies are slow; start the clock) → Email 3 (Waseel) → Email 4 (Oracle) → Email 7 via referral/WhatsApp as soon as one warm intro exists → Email 5 anytime before Phase-2 build → Email 6 after a counsel referral.
-
----
-
-## J. Dependabot PR audit findings *(2026-07-19 — 17 open PRs triaged, merged/closed)*
-
-> Triggered by 2 dependabot notification emails. Full audit-workflow pass over all 17 open PRs: 8 merged (safe patch/minor + dev-tooling bumps, verified green on rebased/current main), 9 closed (genuine breaking majors needing real migration work, or duplicate/broken PRs — see close-comments on each PR for per-PR reasoning). Two things surfaced that need your decision, not just a report:
-
-1. **`gh` CLI's OAuth token is missing the `workflow` scope**, which blocks direct API merges of any PR that touches `.github/workflows/*.yml` (hit this on PRs #2-#5). Workaround used this session: `gh pr merge --auto` (queues GitHub's own backend to perform the merge, sidesteps the scope check) — worked, but was flaky, needing several retries per PR. **Fix:** run `gh auth refresh -h github.com -s workflow` (interactive — needs your browser to confirm the added scope) so future workflow-file PRs merge cleanly on the first try.
-2. **`.github/dependabot.yml` was misconfigured for this repo's structure — FIXED.** It globbed `directories: ["/", "/apps/*", "/packages/*", ...]` for what is actually a **single shared pnpm lockfile** — produced duplicate PRs for the same dependency (root-scoped + apps/web-scoped), and the apps/web-scoped copies were actually broken (lockfile/manifest version mismatch, confirmed on the 3 closed duplicates #16/#17/#18). Narrowed the `npm` ecosystem entry to a single `directory: "/"` (commit follows this doc update).
