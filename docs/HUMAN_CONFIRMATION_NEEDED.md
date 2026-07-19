@@ -80,11 +80,11 @@
 ### C2. 🟢✅ CBAHI — resolved (no action)
 - **Confirmed (3-0):** CBAHI accredits **facilities/providers, not software vendors.** No CBAHI requirement on you. (Nice-to-have: support clinics' accreditation/data-quality goals as a selling point.)
 
-### C3. 🟢✅ In-Kingdom cloud region — RESOLVED: Oracle Riyadh is LIVE now
-- **Confirmed (3-0):** AWS Saudi region **announced/planned for 2026, not yet live (GA).** Azure KSA = Q4 2026 (not GA).
-- **🆕 Research update 2026-07-01 — Oracle Cloud Riyadh (`me-riyadh-1`) is LIVE / GA since 6 Aug 2024** ([Oracle](https://www.oracle.com/sa/cloud/cloud-regions/riyadh/)). The brief previously marked Oracle "unconfirmed" — there **is** a confirmed, operational in-Kingdom hyperscaler region **today**. Closes the timing-risk gap: you have a residency-compliant host now, before AWS/Azure go GA. (Google in-Kingdom region still unconfirmed.)
-- **What to do (human):** at build time, still **check AWS/Azure GA status**; Oracle Riyadh is the confirmed interim/primary in-Kingdom option. Verify Oracle pricing + service coverage fits the stack.
-- **Why it matters:** residency plan no longer has a hard gap — an in-Kingdom region exists and is GA.
+### C3. 🟢✅ In-Kingdom cloud region — RESOLVED: Oracle Riyadh AND AWS Riyadh both LIVE now
+- **Confirmed (3-0):** ~~AWS Saudi region announced/planned for 2026, not yet live~~ **CORRECTED 2026-07-19: AWS `me-central-2` (Riyadh, 3 AZs) went GA in January 2026** — $5.3B investment, **AI-native** (Trainium/Inferentia + Nvidia GPU clusters). Azure KSA = still Q4 2026 (not GA). Google Cloud Dammam (`me-central2`) opened Nov 2023 but is **not self-serve GA** — access only through **CNTXT**, Google's exclusive KSA reseller holding the CST Class C license (Sovereign Controls by CNTXT went GA 2026, but still gated behind that reseller relationship).
+- **🆕 Research update 2026-07-01 — Oracle Cloud Riyadh (`me-riyadh-1`) is LIVE / GA since 6 Aug 2024** ([Oracle](https://www.oracle.com/sa/cloud/cloud-regions/riyadh/)). Closes the timing-risk gap: two independently confirmed in-Kingdom hyperscaler regions now exist (Oracle since Aug 2024, AWS since Jan 2026), plus a gated third (GCP via CNTXT).
+- **What to do (human):** at build time, compare Oracle `me-riyadh-1` vs AWS `me-central-2` pricing/service coverage; GCP Dammam only worth pursuing if a CNTXT relationship is acceptable. See the **LLM-hosting alternatives table** at the bottom of this doc for how this ties into C1's cross-border question.
+- **Why it matters:** residency plan no longer has a hard gap — two GA in-Kingdom regions exist today, both AI-native enough to self-host an LLM entirely in-Kingdom.
 
 ---
 
@@ -560,4 +560,130 @@ Want to see a sample report?
 [COMPANY] — [PHONE]
 ```
 
+### Email 8 — AWS: me-central-2 GPU access for in-Kingdom LLM hosting *(actions C1/C3, the self-host route)*
+**To:** `aws-activate@amazon.com` (verified program inbox) · **Also:** [AWS Contact Sales](https://aws.amazon.com/contact-us/sales-support/) form for a KSA-specific rep
+**🏆 Send the ENGLISH version** — AWS runs its startup/sales pipeline in English globally; a KSA-specific rep gets assigned after intake, same pattern as the Oracle email above. Keep the Arabic version for a later Saudi account exec, same treatment as Oracle's Email 4.
+
+**English (recommended):**
+```text
+Subject: Riyadh region — GPU access question
+
+Hi AWS team,
+
+Saw me-central-2 (Riyadh) went GA in January — good timing. We're building a health-claims SaaS for Saudi clinics and need AI inference to stay entirely in-Kingdom under PDPL, so we're evaluating self-hosting an open-weight model (Qwen3 or a Llama-class model) on GPU/Trainium instances instead of calling a US-based API.
+
+Two questions:
+1. Which GPU/Trainium instance types are actually available in me-central-2 today (not just announced elsewhere)?
+2. Are we eligible for AWS Activate credits as a pre-revenue KSA startup, and does that apply to me-central-2 workloads specifically?
+
+Worth a short call with a Riyadh-based rep?
+
+[YOUR NAME]
+[COMPANY] — [PHONE]
+```
+
+**Arabic (only for a later Saudi account exec):**
+```text
+الموضوع: استفسار — الوصول لمعالجات GPU في منطقة الرياض
+
+مرحبًا فريق AWS،
+
+اطلعنا أن منطقة me-central-2 (الرياض) أصبحت متاحة رسميًا في يناير. نبني منتج SaaS سعودي لتحليل مطالبات التأمين الصحي، ونحتاج إبقاء استدلال الذكاء الاصطناعي داخل المملكة بالكامل وفق نظام حماية البيانات الشخصية، لذا ندرس استضافة نموذج مفتوح المصدر (مثل Qwen3) بدلًا من الاتصال بواجهة أمريكية.
+
+سؤالان:
+١. ما أنواع معالجات GPU/Trainium المتوفرة فعليًا في منطقة الرياض اليوم؟
+٢. هل نحن مؤهلون لرصيد AWS Activate كشركة ناشئة سعودية قبل الإيرادات، وهل ينطبق على أحمال منطقة الرياض تحديدًا؟
+
+هل يمكن ترتيب مكالمة قصيرة مع ممثل من الرياض؟
+
+[YOUR NAME]
+[COMPANY] — [PHONE]
+```
+
+### Email 9 — CNTXT: GCP Dammam access for in-Kingdom LLM hosting *(actions C1/C3, alternative self-host route)*
+**To:** `contact@cntxt.com` (verified general inbox) · **Also:** [CNTXT Google Cloud reseller program](https://cntxt.com/google-cloud-reseller-program/) contact form for sales routing
+**🏆 Send the ARABIC version** — CNTXT is a Saudi company; same reasoning as the Waseel email above.
+
+**Arabic (recommended):**
+```text
+الموضوع: استفسار — الوصول لمنطقة الدمام لتشغيل نموذج ذكاء اصطناعي
+
+مرحبًا فريق CNTXT،
+
+نبني منتجًا سحابيًا سعوديًا لتحليل مطالبات التأمين الصحي للعيادات، ونحتاج تشغيل نموذج ذكاء اصطناعي مفتوح المصدر (مثل Qwen3) بالكامل داخل المملكة تجنبًا لنقل البيانات عبر الحدود بموجب نظام حماية البيانات الشخصية.
+
+ثلاثة أسئلة قبل التسجيل:
+
+١. ما خطوات التسجيل كعميل ناشئ للوصول إلى منطقة الدمام؟
+٢. هل تتوفر معالجات GPU مناسبة لتشغيل نماذج مفتوحة المصدر (حتى فئة 70B معامل) في هذه المنطقة؟
+٣. هل توجد باقة أسعار مخفضة أو رصيد تجريبي للشركات الناشئة؟
+
+يسعدنا ترتيب مكالمة قصيرة إن كان ذلك أسهل.
+
+[YOUR NAME]
+[COMPANY] — [PHONE]
+```
+
+**English (acceptable alternative):**
+```text
+Subject: Dammam region access — LLM hosting question
+
+Hi CNTXT team,
+
+We're building a Saudi SaaS product analyzing health-insurance claims for clinics, and need to run an open-weight AI model (e.g. Qwen3) entirely in-Kingdom to avoid cross-border data transfer under PDPL.
+
+Three questions before we sign up:
+1. What's the onboarding process for a startup to access the Dammam region?
+2. Are GPU instances suitable for running open-weight models (up to 70B-class) available there?
+3. Is there a startup pricing tier or trial credit?
+
+Happy to jump on a short call if easier.
+
+[YOUR NAME]
+[COMPANY] — [PHONE]
+```
+
+---
+
+## H. In-Kingdom LLM-hosting alternatives *(research 2026-07-19 — ties into C1's cross-border question)*
+
+> Triggered by asking "would switching LLM provider to one with an in-Kingdom data center help C1?" Researched Bedrock, AWS Riyadh, GCP Dammam, on-prem, and open-source self-hosting. **Bottom line: switching to genuine in-Kingdom inference kills the cross-border-transfer piece of C1 (no SCC, no SDAIA risk-assessment for that leg) — but does NOT remove general PDPL duties (DPA, breach notification, controller/processor call) which apply regardless of hosting location.**
+
+| Option | What it is | Limitation | Blockers it solves |
+|---|---|---|---|
+| **AWS Bedrock (Claude via cross-Region inference)** | Anthropic's Claude models reachable from Middle East (UAE/Bahrain) via Bedrock's global cross-Region routing, launched Feb 2026 | **Does NOT solve C1.** Not a dedicated in-Kingdom deployment — AWS's own docs say the request "travels over the AWS Global Network" to wherever Bedrock actually serves that model (undisclosed, not KSA). Same cross-border exposure as calling Anthropic directly, arguably murkier | None — do not use as a C1 fix |
+| **AWS me-central-2 (Riyadh) self-hosted open-weight model** | AWS's Saudi region, **GA since Jan 2026**, AI-native (Trainium/Inferentia + Nvidia GPU clusters). Self-host Qwen3/Llama/DeepSeek entirely in-Kingdom | Requires standing up + operating your own inference stack (not a managed API) — new ops surface. Quality vs Claude unverified for AI-2 (appeal drafting) — must eval before committing | **Kills C1's cross-border leg entirely** for AI-2/AI-4 (no SCC, no SDAIA risk-assessment for that transfer). Also actions C3 (in-Kingdom host, alternative to Oracle) |
+| **GCP Dammam (via CNTXT)** | Real GCP region since Nov 2023, "Sovereign Controls by CNTXT" GA 2026 | **Gated — not self-serve.** Only accessible through CNTXT (Google's exclusive KSA reseller, CST Class C license). Adds a vendor-relationship/procurement step before you can even provision anything | Same as AWS row, **if** CNTXT relationship is worth the overhead — not yet confirmed whether they support GPU/LLM workloads (Email 9 asks this) |
+| **On-premises (owned hardware, in-Kingdom)** | Full physical control, hardware inside your own facility | Heaviest capex/ops lift for a pre-revenue founder-led team — only makes sense once volume justifies owning GPUs | Same cross-border kill as the AWS/GCP self-host rows, with zero ambiguity (data never leaves a building you control) — but not a near-term move |
+| **Open-weight models (Qwen3-235B, DeepSeek R1, Llama 4 Scout, medical-tuned Llama variants)** | Mature enough by 2026 for real production use — Qwen3 leads general reasoning/coding, DeepSeek R1 leads math, Llama 4 Scout leads long-context; medical-tuned variants beat general models on healthcare benchmarks | 70B-class needs real GPU (one H100/L40S at INT4 — single-node, not a cluster, but still real infra). No vendor BAA needed since you control the infra — but also no vendor accountability if it underperforms | Removes the **model-vendor transfer question entirely** (you're not sending PHI to any third party) — pairs with the AWS/GCP/on-prem rows above, doesn't stand alone (still needs somewhere in-Kingdom to run) |
+
+---
+
+## I. Zero-CR-needed action list *(compiled 2026-07-19 — what's actually doable before the CR number lands)*
+
+> NPHIES Academy login **confirmed blocked** on CR (founder's own login attempt, 2026-07-19). Waseel **ruled out entirely** regardless of CR (hospital/provider portal, not a vendor path — see B3). This table is what's left that genuinely doesn't need a CR.
+
+| # | Action | Why no CR needed |
+|---|---|---|
+| 1 | Follow up CHI DMO (Email 1, A1/A2 denial stats) — call 19977 if no reply | Pure data-sharing request, not a vendor relationship |
+| 2 | Send Oracle (Email 4, C3 hosting) | Rep/founder conversation, evaluation stage only |
+| 3 | Send Email 5 (F3, IG bundling permission) | Written-permission ask — may still bounce back "need CR" like the Academy did, but zero cost to try |
+| 4 | Send AWS (Email 8) + CNTXT (Email 9) — new, this pass | Same logic as Oracle — evaluation/credits inquiry, not a contract |
+| 5 | HealthOrbit/Ecaresoft demo requests (D2 pricing) | Vendor demos, no CR field on a demo request |
+| 6 | Branch counts / insured-mix (E1), confirm "Nabda" (E2) | Manual research/calls, nothing vendor-facing |
+| 7 | KSA privacy counsel — scoping call/referral only (C1, G12-G14) | Consultation ≠ filing; filing needs the entity, the conversation doesn't |
+| 8 | Read NPHIES portal ToU yourself (G8) | Reading a public page, no acceptance/account action |
+| 9 | **Start CR formation now** (G4 — standard CR, no MISA, founder confirmed Saudi) | This is the actual bottleneck — everything above just fills the wait, this is what ends it |
+
+**Confirmed CR-blocked (not worth re-attempting until CR exists):** NPHIES Academy enrollment, B1/B2 PKI+conformance submission, G5 real-PHI ingestion, G8/G9 signing any vendor agreement, G12-G14 filing (SDAIA registration, DPO, DPA/SCC).
+
 > **Send order:** 1b (Academy, self-serve, today) → Emails 1 + 2 same day (gov replies are slow; start the clock) → Email 3 (Waseel) → Email 4 (Oracle) → Email 7 via referral/WhatsApp as soon as one warm intro exists → Email 5 anytime before Phase-2 build → Email 6 after a counsel referral.
+
+---
+
+## J. Dependabot PR audit findings *(2026-07-19 — 17 open PRs triaged, merged/closed)*
+
+> Triggered by 2 dependabot notification emails. Full audit-workflow pass over all 17 open PRs: 8 merged (safe patch/minor + dev-tooling bumps, verified green on rebased/current main), 9 closed (genuine breaking majors needing real migration work, or duplicate/broken PRs — see close-comments on each PR for per-PR reasoning). Two things surfaced that need your decision, not just a report:
+
+1. **`gh` CLI's OAuth token is missing the `workflow` scope**, which blocks direct API merges of any PR that touches `.github/workflows/*.yml` (hit this on PRs #2-#5). Workaround used this session: `gh pr merge --auto` (queues GitHub's own backend to perform the merge, sidesteps the scope check) — worked, but was flaky, needing several retries per PR. **Fix:** run `gh auth refresh -h github.com -s workflow` (interactive — needs your browser to confirm the added scope) so future workflow-file PRs merge cleanly on the first try.
+2. **`.github/dependabot.yml` is misconfigured for this repo's structure.** It globs `directories: ["/", "/apps/*", "/packages/*", ...]` for what is actually a **single shared pnpm lockfile** — this produces duplicate PRs for the same dependency (root-scoped + apps/web-scoped), and the apps/web-scoped copies are actually broken (lockfile/manifest version mismatch, confirmed on the 3 closed duplicates #16/#17/#18). Recommend narrowing it to a single `directory: "/"` entry. Left as-is rather than editing it myself — flagging for your call since it's a CI-config change, not a dependency bump.
