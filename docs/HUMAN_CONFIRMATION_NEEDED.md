@@ -104,13 +104,19 @@
 
 ## E. Target account list (verify before CRM load / outreach)
 
-### E1. 🟡⚠️ Branch counts + insured-mix for rows tagged (M)/(L)
-- **What's unconfirmed:** exact branch counts and how insured-heavy vs. cash-pay several clinic groups are (File 1 §6). KSA clinics often list branches on Instagram/Snapchat/Google Maps, not their site.
-- **What to do:** before loading into CRM, confirm each (M)/(L) row's **branch count** (Google Maps / their "Branches" page) and **insured mix** (a quick call or their booking flow). Prioritize **fit-5 + insured-heavy**; deprioritize cash-pay cosmetic.
+### E1. 🟢✅ Branch counts + insured-mix for rows tagged (M)/(L) — RESEARCHED 2026-07-19
+- **What's confirmed:** ran a full verification pass (WebSearch/WebFetch, cross-checked against clinic sites, Vezeeta/Tebcan/Fresha listings, and insurer provider-network directories) over all 16 previously-unconfirmed rows. Full row-by-row results are now in the target list itself (`docs/01_market_and_gtm.md` §6, rows marked ✅) rather than duplicated here. Headline findings:
+  - **Rows 5 and 20 are the same entity** (Quality Dental & Dermal / Aljawdah Clinics — matching phone number across both directory listings) — drop #5, keep #20 (10 branches, 5 cities: Mecca/Jeddah/Madinah/Tabuk/Taif).
+  - **Roaya Eye Center (#6)** downgraded — official site shows only 1 branch (Riyadh), not the multi-city claim previously listed; insurance separately confirmed strong (40+ named insurers).
+  - **Loran Dental (#21)** confirmed **cash-pay only** — fails the insured-mix ICP criterion outright, consider dropping.
+  - **Al Subhi Medical Center (#18)** has the single strongest insurance confirmation in the list (3 independent insurer provider-network listings), despite a smaller branch count than assumed.
+  - **Novello Clinics KSA (#24)**: the "10 branches" figure floating around belongs to an unrelated Egyptian entity of the same name — the actual KSA chain only has 1 clearly confirmed branch.
+  - A handful of rows remain genuinely unconfirmed after this pass (insured-mix for #4, #15, #16, #25, #29, #31; exact count for #30) — the data simply isn't published; these need a direct call, not more search.
+- **What to do:** before loading into CRM, drop row #5 (duplicate), reconsider row #21 (Loran — cash-only), and call the still-unconfirmed rows above directly. Everything else is now load-ready.
 
-### E2. 🟡❌ "Nabda" seed — brand not cleanly resolved
-- **What's unconfirmed:** which "Nabda/نبضة" you meant. Research found only a single-site IVF unit + unrelated entities.
-- **What to do:** confirm the **intended brand/spelling** (give the website or city) so it can be verified or dropped.
+### E2. 🟢✅ "Nabda" seed — RESOLVED, no better candidate exists
+- **What's confirmed:** a fresh 2026-07-19 search across Google, Instagram, Google Maps, and Saudi business directories for "Nabda"/"نبضة" (and spelling variants) found no multi-branch clinic group beyond the single-site IVF unit already in the list (row 36, "The Clinics" — Dr. Hisham Ayoub, Al Olaya Riyadh; a mirror domain `nabdasa.com` describes the same unit). The only other near-matches are "Nabd"/نبض (different word — clinic-management *software* vendors, not patient-facing clinics) — not the intended brand.
+- **What to do:** none — this closes cleanly. Row 36 stays as-is (single-site, already scored low/2 in the fit column, which was already correct).
 
 ---
 
@@ -212,7 +218,7 @@
 | 4 | Review data-flow, write DPA, confirm no PHI leaves Kingdom → **Email 6** (⚠️ referral/meeting beats cold email here) | **KSA privacy counsel** | C1 |
 | 5 | **Oracle Riyadh LIVE** — evaluate as in-Kingdom host; recheck AWS/Azure GA at build time → **Email 4** | **Oracle — `contact@oracle.com`** + [sales form](https://www.oracle.com/sa/corporate/contact/) | C3 ✅ |
 | 6 | Run free denial audits on real clinic data → **Email 7** | **Design-partner clinics** | A1, A2 (your best path) |
-| 7 | Verify branch counts/insured-mix; confirm "Nabda" | **Manual / each clinic** | E1, E2 |
+| 7 | ~~Verify branch counts/insured-mix; confirm "Nabda"~~ **DONE 2026-07-19 — see E1/E2**; remaining: drop duplicate row #5, call the handful of still-unconfirmed rows | **Manual / each clinic** (a few calls left) | E1 ✅, E2 ✅ |
 | 8 | 🆕 Get written OK to bundle NPHIES IG artifacts into product/CI → **Email 5** | **`onboarding@chi.gov.sa` / `support@nphies.sa`** (HL7 Saudi Arabia has no public email — still "in establishment") | F3 |
 | 9 | ~~State your own nationality~~ **DONE — Saudi confirmed, standard CR path, no MISA** | **You (self-disclosure)** | G3 ✅, G4 ✅ |
 | 10 | 🆕 Ask vendor liability/insurance, separate CHI/NPHIES vendor agreement, post-cert compliance regime (Q6-8, now folded into Email 2) | **`onboarding@chi.gov.sa`** (same as #2) | G9 |
@@ -731,7 +737,7 @@ Happy to jump on a call if that's faster than email.
 | 3 | Send Email 5 (F3, IG bundling permission) | Written-permission ask — may still bounce back "need CR" like the Academy did, but zero cost to try |
 | 4 | Send AWS (Email 8) + CNTXT (Email 9) — new, this pass | Same logic as Oracle — evaluation/credits inquiry, not a contract |
 | 5 | ~~HealthOrbit/Ecaresoft demo requests~~ **DONE — neither publishes pricing, no self-serve path exists; drafted Email 10/Email 11 instead** (D2 pricing) | Vendor demos, no CR field on a demo request |
-| 6 | Branch counts / insured-mix (E1), confirm "Nabda" (E2) — **research in progress 2026-07-19, see E1/E2 for latest** | Manual research/calls, nothing vendor-facing |
+| 6 | ~~Branch counts / insured-mix (E1), confirm "Nabda" (E2)~~ **DONE 2026-07-19 — see E1/E2**; only a handful of calls remain for the still-unconfirmed rows | Manual research/calls, nothing vendor-facing |
 | 7 | KSA privacy counsel — scoping call/referral only (C1, G12-G14) | Consultation ≠ filing; filing needs the entity, the conversation doesn't |
 | 8 | ~~Read NPHIES portal ToU yourself~~ **DONE 2026-07-19 — full text pulled directly from the live page, see G8** (G8) | Reading a public page, no acceptance/account action |
 | 9 | **Start CR formation now** (G4 — standard CR, no MISA, founder confirmed Saudi) | This is the actual bottleneck — everything above just fills the wait, this is what ends it |
