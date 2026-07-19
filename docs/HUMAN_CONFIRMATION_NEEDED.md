@@ -97,7 +97,8 @@
 - **✅ Research update 2026-07-01 — integration depth confirmed, pricing genuinely not public:**
   - **HealthOrbit:** publishes **no rates** (pricing-page link only). NPHIES depth = an **NPHIES payload "validation" tool + native schema mapping** — but **no documented live claims submission, eligibility, PKI, or clearinghouse connectivity.** Compliance certs (HIPAA/GDPR/ISO27001/SOC2) are generic, **none NPHIES-specific.** → validation-tier, not deep live NPHIES.
   - **Ecaresoft (Cirrus/Nimbo HIS):** **no pricing disclosed.** NPHIES: **Eligibility + Pre-Auth LIVE on production; full Claims + Payment reconciliation "in progress"** (2021 doc), via internal code-mapping to NPHIES/CCHI-BS/SFDA. → partial live NPHIES.
-- **What to do (remaining):** book demos / request quotes for **actual pricing** (not published anywhere); re-confirm Ecaresoft's Claims module is now fully live (2021 doc may be stale).
+- **✅ Site check 2026-07-19 — confirmed neither publishes pricing anywhere on their live sites** (checked HealthOrbit's pricing URL directly — 404; checked Ecaresoft's nav/footer — no pricing link on either the parent site or Cirrus/Nimbo). HealthOrbit has a self-serve demo-booking form but it doesn't collect or reveal pricing, and their listed offices are UK/India/US only, no Saudi/GCC presence found. → **no self-serve path exists for either; email is the only way in** → **Email 10** (HealthOrbit) and **Email 11** (Ecaresoft) drafted above, asking pricing + current NPHIES depth in one message.
+- **What to do (remaining):** send Email 10/11; re-confirm Ecaresoft's Claims module is now fully live (2021 doc may be stale) — folded into Email 11's question 1.
 
 ---
 
@@ -124,6 +125,7 @@
 
 ### F3. 🟡🔒 NPHIES IG package — RESOLVED (restricted, as feared)
 - **Confirmed:** IG is copyright *"IG © 2024+ HL7 Saudi Arabia"*, StructureDefinition pages state *"Used by permission of HL7 International, all rights reserved"* + a Creative Commons ref + the FHIR License — **no unrestricted open-source grant; each terminology artifact carries its own terms.**
+- **🆕 Independently reinforced by G8 (2026-07-19):** the NPHIES portal's own Terms & Conditions carry a separate, general IP clause covering *all* portal content — no sale/license/rent/modification/copy/reproduction/redistribution/derivative-works for public or commercial purposes without prior written NPHIES approval. Two independent sources now say the same thing.
 - **What to do:** **do NOT assume you can bundle/redistribute the IG** into your product/CI. Get written confirmation from **NPHIES/HL7 Saudi Arabia** before bundling.
 
 ---
@@ -161,8 +163,17 @@
 - **What to do:** nothing required. **To keep this status:** never provide payment links/gateway APIs that capture insurer↔clinic funds, never hold funds in an escrow/pass-through account even briefly, and always bill the clinic as a separate, standard B2B invoice — never blend the fee into the payment flow itself. A one-line perimeter confirmation from KSA financial-services counsel before GA is cheap insurance (folded into Email 6's engagement, not a separate ask) but the finding stands regardless.
 
 ### G8. 🔴✅→🔒 NPHIES portal Terms & Conditions — CONFIRMED binding agreement with real business-risk terms
-- **What's confirmed (genuinely new, verified by direct fetch of the live page):** `nphies.sa/terms-and-conditions` is a real, binding legal document, not boilerplate — *"every user of the portal is subject to these terms of use"* and *"your access... constitutes unconditional acceptance."* It includes: a liability-limitation clause (portal *"is not responsible in any way for any loss or damage"*, services *"as is"*), an **indemnity clause running in NPHIES's favor** (users agree *"not to take action against NPHIES or demand compensation... for liability"*), and a **unilateral suspend/terminate-without-notice** right for any reason.
-- **What to do:** get this in front of counsel as part of Email 6's scope (item 5) before connecting — it's a real business-risk document worth a lawyer's read, not a code fix. Also treat the suspend-without-notice right as a live operational dependency once connected (§G9's Q8 asks NPHIES directly whether there's a published basis for suspension).
+- **What's confirmed (verified by directly loading and expanding every accordion section of the live Arabic page on 2026-07-19 — full text pulled, not a summarized fetch):** `nphies.sa/terms-and-conditions` is a real, binding legal document, not boilerplate — *"every user of the portal is subject to these terms of use, and to the regulations of the Kingdom of Saudi Arabia"* and *"your access to and entry into the portal constitutes unconditional acceptance"* of them, effective from first use. Terms can change anytime at NPHIES's sole discretion with **no obligation to announce updates** — continued use after a silent change means acceptance. No last-updated date shown; footer copyright reads 2026. The document has 10 sections, all confirmed:
+  - **Usage restrictions:** no uploading unlicensed software/data, no spam/unsolicited commercial email, no malware/corrupted files, no defamatory/obscene/illegal content, no unlawful activity via the portal, no advertising that would put NPHIES in breach of any law, no tools to intercept normal portal operation, no imposing heavy load on portal infrastructure or affecting data integrity/reliability/availability, and general compliance with KSA's anti-cybercrime law.
+  - **Links to/from NPHIES:** copying/reproducing portal content or framing it elsewhere is prohibited without complying with these terms; NPHIES disclaims any association with sites that link to it and reserves the right to disable unauthorized links; outbound links are convenience-only with **no responsibility for linked-site content**, used at the visitor's own risk.
+  - **🆕 IP rights clause (new finding, relevant to F3 below):** *all* portal content — software and information — is protected under Saudi copyright/trademark/IP law and owned by NPHIES; you may **not sell, license, rent, modify, copy, reproduce, reprint, download, advertise, transmit, distribute, publicly display, edit, or create derivative works** from any portal material for public or commercial purposes **without prior written approval from NPHIES platform management.** Any modification of portal content is expressly forbidden. Graphics/images are separately copyright-protected.
+  - **Jurisdiction:** exclusive submission to Saudi Arabian courts for all claims/disputes arising from portal use.
+  - **Liability limitation:** electronic services are explicitly framed as only *"facilitating manual procedures"* — not a replacement for the official channels; the portal disclaims responsibility for internet interception, connection/equipment/software failures, or reliance on any statement/opinion/ad on the portal; use is entirely at the user's own risk.
+  - **Termination:** NPHIES may terminate, restrict, or suspend portal access **at its sole discretion, without notice, for any reason**, including a ToU violation or any conduct it unilaterally deems unlawful or harmful to others.
+  - **Virus protection:** NPHIES tests content but is not liable for any data/device loss/damage during connection or from downloaded material; advises running antivirus.
+  - **🆕 Disclaimer of warranties (new finding):** the portal and its services/info/functions are provided **"as is"/"as available"** with no representations or warranties, no guarantee against interruptions/errors, and — notably — **user communications sent through the portal carry no ownership right or confidentiality guarantee** on NPHIES's part. Worth flagging to counsel specifically: this appears to be a generic disclaimer about portal-support-channel communications (contact forms, chat), not the FHIR claims-transaction data itself (which would be governed by separate technical/security specs, not this ToU page) — but the wording is broad enough that counsel should confirm the scope, not assume it.
+  - **Indemnity:** users agree **not to take action against NPHIES, its administrators, or any staff/agents** managing/maintaining the portal, and waive any compensation claim, for anything arising from the user's own breach of these terms or applicable KSA regulations.
+- **What to do:** get this in front of counsel as part of Email 6's scope (item 5) before connecting — it's a real business-risk document worth a lawyer's read, not a code fix. Specifically flag for counsel: (1) the confidentiality-disclaimer wording above — confirm it doesn't extend to actual FHIR claims data; (2) the IP clause's bearing on F3 (IG bundling) — it independently confirms no redistribution/derivative-works right exists without written NPHIES approval, on top of F3's own finding. Also treat the suspend-without-notice right as a live operational dependency once connected (§G9's Q8 asks NPHIES directly whether there's a published basis for suspension).
 
 ### G9. 🟡🔒 NPHIES vendor liability/insurance, separate vendor agreements, post-cert compliance regime — unconfirmed, routed to Email 2
 - **What's confirmed:** no PUBLIC primary source (CHI, Saudi Insurance Authority, NPHIES IG) requires a vendor to carry professional-indemnity insurance, post a bond, sign a separate indemnity undertaking, or sign a distinct vendor DPA/NDA/code-of-conduct with CHI/NPHIES beyond the portal ToU (§G8) — but the actual System Vendor Certification pack is Academy-login-gated, so absence-in-public-sources is evidence of gating, not evidence the requirement doesn't exist. Same for any post-certification ongoing compliance/re-certification/de-listing regime — nothing public, but the real material is gated. (One correction: an earlier research pass's claim that `provider-contract-suspended` is a vendor de-listing mechanism is wrong — it's a `siteEligibility` CodeSystem value describing a provider↔payer contract status, unrelated to vendor compliance.)
@@ -206,6 +217,7 @@
 | 9 | ~~State your own nationality~~ **DONE — Saudi confirmed, standard CR path, no MISA** | **You (self-disclosure)** | G3 ✅, G4 ✅ |
 | 10 | 🆕 Ask vendor liability/insurance, separate CHI/NPHIES vendor agreement, post-cert compliance regime (Q6-8, now folded into Email 2) | **`onboarding@chi.gov.sa`** (same as #2) | G9 |
 | 11 | 🆕 SCC + risk-assessment for the Anthropic transfer, NPHIES ToU business-risk review, 72h breach-notification runbook, controller/processor + DPO call (items 4-7, now folded into Email 6) | **KSA privacy counsel** (same as #4) | G8, G12, G13, G14 |
+| 12 | 🆕 Ask HealthOrbit/Ecaresoft actual pricing + current NPHIES depth → **Email 10 / Email 11** | **`sales@healthorbit.ai`** · **`sales@ecaresoft.com`** | D2 |
 
 ### 🧍 Better done IN PERSON / by phone than by email *(added 2026-07-02)*
 - **#6 design partners** — KSA physician-owners close on **warm referral + WhatsApp + a visit**, not cold email. Use Email 7 only as the door-opener or follow-up after a call; a 15-min in-clinic demo of the free audit beats any sequence.
@@ -645,6 +657,55 @@ Happy to jump on a short call if easier.
 
 ---
 
+### Email 10 — HealthOrbit: NPHIES-specific pricing *(actions D2 — pricing genuinely not public)*
+**To:** `info@healthorbit.ai` (mailto target behind their "sales@healthorbit.ai" link — verified 2026-07-19 via their live site footer; use `sales@healthorbit.ai` in the To: line as displayed, it routes to the same inbox) · **Also:** their self-serve demo form at [healthorbit.ai/schedule-a-demo](https://healthorbit.ai/schedule-a-demo/) — no email needed, but it only books a 30-min product walkthrough (Ambient AI Scribe / ORA reception / Medical Coding Engine / Claim Scrubber) and does not surface pricing or ask what you actually need pricing for; use the email below to get pricing before or instead of booking.
+**Note (2026-07-19 site check):** HealthOrbit's listed offices are UK/India/US only (Manchester, Mohali, Austin) — no Saudi/GCC office found on the site. Confirm during the exchange whether they have real NPHIES-market presence or are pitching a generic international claim-scrubber into KSA.
+
+**English:**
+```text
+Subject: NPHIES-market pricing — Claim Scrubber / Medical Coding Engine
+
+Hi HealthOrbit team,
+
+We're building a Saudi denial-management SaaS for mid-market clinic groups (NPHIES claims). Your Claim Scrubber and Medical Coding Engine look adjacent to what we do, and your pricing isn't published anywhere we could find.
+
+Three questions before we book a demo:
+1. Do you have live NPHIES connectivity today (eligibility, pre-auth, claims submission), or is validation/scrubbing the current depth?
+2. What does pricing look like for a mid-market KSA clinic group (roughly 5-10 branches)?
+3. Any existing Saudi clients or in-Kingdom hosting/data-residency setup, given PDPL?
+
+Happy to jump on a call if that's faster than email.
+
+[YOUR NAME]
+[COMPANY] — [PHONE]
+```
+
+---
+
+### Email 11 — Ecaresoft: NPHIES-specific pricing + Claims-module status *(actions D2 — pricing genuinely not public, and 2021 doc calling Claims module "in progress" may be stale)*
+**To:** `sales@ecaresoft.com` (verified 2026-07-19, live site footer)
+**Note:** Ecaresoft's healthcare products are separate branded sites — Cirrus (hospitals, [getcirrus.com](https://www.getcirrus.com/en)) and Nimbo (small/ambulatory clinics, [nimbo-x.com](https://www.nimbo-x.com/)). The clinic-group ICP is closer to Nimbo; mention both so sales routes you correctly.
+
+**English:**
+```text
+Subject: NPHIES pricing + Claims module status (Cirrus/Nimbo)
+
+Hi Ecaresoft team,
+
+We're building a Saudi denial-management SaaS for mid-market private clinic groups on NPHIES. We've seen documentation that Eligibility + Pre-Auth are live on production for you, with full Claims + Payment reconciliation "in progress" — that reference is from 2021, so:
+
+1. Is the Claims + Payment reconciliation module now fully live on NPHIES production?
+2. What does pricing look like for a mid-market KSA clinic group (roughly 5-10 branches) — Nimbo or Cirrus, whichever fits?
+3. Any KSA-specific compliance notes (PDPL data residency, SFDA) worth knowing before we compare notes?
+
+Happy to jump on a call if that's faster than email.
+
+[YOUR NAME]
+[COMPANY] — [PHONE]
+```
+
+---
+
 ## H. In-Kingdom LLM-hosting alternatives *(research 2026-07-19 — ties into C1's cross-border question)*
 
 > Triggered by asking "would switching LLM provider to one with an in-Kingdom data center help C1?" Researched Bedrock, AWS Riyadh, GCP Dammam, on-prem, and open-source self-hosting. **Bottom line: switching to genuine in-Kingdom inference kills the cross-border-transfer piece of C1 (no SCC, no SDAIA risk-assessment for that leg) — but does NOT remove general PDPL duties (DPA, breach notification, controller/processor call) which apply regardless of hosting location.**
@@ -669,10 +730,10 @@ Happy to jump on a short call if easier.
 | 2 | Send Oracle (Email 4, C3 hosting) | Rep/founder conversation, evaluation stage only |
 | 3 | Send Email 5 (F3, IG bundling permission) | Written-permission ask — may still bounce back "need CR" like the Academy did, but zero cost to try |
 | 4 | Send AWS (Email 8) + CNTXT (Email 9) — new, this pass | Same logic as Oracle — evaluation/credits inquiry, not a contract |
-| 5 | HealthOrbit/Ecaresoft demo requests (D2 pricing) | Vendor demos, no CR field on a demo request |
-| 6 | Branch counts / insured-mix (E1), confirm "Nabda" (E2) | Manual research/calls, nothing vendor-facing |
+| 5 | ~~HealthOrbit/Ecaresoft demo requests~~ **DONE — neither publishes pricing, no self-serve path exists; drafted Email 10/Email 11 instead** (D2 pricing) | Vendor demos, no CR field on a demo request |
+| 6 | Branch counts / insured-mix (E1), confirm "Nabda" (E2) — **research in progress 2026-07-19, see E1/E2 for latest** | Manual research/calls, nothing vendor-facing |
 | 7 | KSA privacy counsel — scoping call/referral only (C1, G12-G14) | Consultation ≠ filing; filing needs the entity, the conversation doesn't |
-| 8 | Read NPHIES portal ToU yourself (G8) | Reading a public page, no acceptance/account action |
+| 8 | ~~Read NPHIES portal ToU yourself~~ **DONE 2026-07-19 — full text pulled directly from the live page, see G8** (G8) | Reading a public page, no acceptance/account action |
 | 9 | **Start CR formation now** (G4 — standard CR, no MISA, founder confirmed Saudi) | This is the actual bottleneck — everything above just fills the wait, this is what ends it |
 
 **Confirmed CR-blocked (not worth re-attempting until CR exists):** NPHIES Academy enrollment, B1/B2 PKI+conformance submission, G5 real-PHI ingestion, G8/G9 signing any vendor agreement, G12-G14 filing (SDAIA registration, DPO, DPA/SCC).
