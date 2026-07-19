@@ -664,6 +664,7 @@ Happy to jump on a short call if easier.
 ---
 
 ### Email 10 — HealthOrbit: NPHIES-specific pricing *(actions D2 — pricing genuinely not public)*
+**✅ Draft created in Gmail 2026-07-19** — ready to review and send, no copy-paste needed.
 **To:** `info@healthorbit.ai` (mailto target behind their "sales@healthorbit.ai" link — verified 2026-07-19 via their live site footer; use `sales@healthorbit.ai` in the To: line as displayed, it routes to the same inbox) · **Also:** their self-serve demo form at [healthorbit.ai/schedule-a-demo](https://healthorbit.ai/schedule-a-demo/) — no email needed, but it only books a 30-min product walkthrough (Ambient AI Scribe / ORA reception / Medical Coding Engine / Claim Scrubber) and does not surface pricing or ask what you actually need pricing for; use the email below to get pricing before or instead of booking.
 **Note (2026-07-19 site check):** HealthOrbit's listed offices are UK/India/US only (Manchester, Mohali, Austin) — no Saudi/GCC office found on the site. Confirm during the exchange whether they have real NPHIES-market presence or are pitching a generic international claim-scrubber into KSA.
 
@@ -689,6 +690,7 @@ Happy to jump on a call if that's faster than email.
 ---
 
 ### Email 11 — Ecaresoft: NPHIES-specific pricing + Claims-module status *(actions D2 — pricing genuinely not public, and 2021 doc calling Claims module "in progress" may be stale)*
+**✅ Draft created in Gmail 2026-07-19** — ready to review and send, no copy-paste needed.
 **To:** `sales@ecaresoft.com` (verified 2026-07-19, live site footer)
 **Note:** Ecaresoft's healthcare products are separate branded sites — Cirrus (hospitals, [getcirrus.com](https://www.getcirrus.com/en)) and Nimbo (small/ambulatory clinics, [nimbo-x.com](https://www.nimbo-x.com/)). The clinic-group ICP is closer to Nimbo; mention both so sales routes you correctly.
 
@@ -778,3 +780,49 @@ Happy to jump on a call if that's faster than email.
 - [ ] Business-registration path (G3/G4): confirm standard KSA Commercial Registration is sufficient with no MISA license needed, given the founder is a Saudi national — we believe this is already resolved, just want a lawyer's one-line agreement on record.
 
 ---
+
+## K. If they call back — talking points for Email 4 (Oracle) and Email 8 (AWS) *(compiled 2026-07-19)*
+
+> **Language call:** both emails were sent in English on purpose — Oracle KSA sales and AWS's startup/sales pipeline both run global intake in English, with a Saudi-based rep only assigned after that first triage (per the "🏆 Send the ENGLISH version" notes on both emails). **Match whatever language the caller opens in.** A first-triage call is likely English; if you get bumped to a Saudi account exec, they may switch to Arabic — read the room, don't force either. Both scripts below are written in full so you're not translating on the fly either way.
+
+### Email 4 callback — Oracle (`me-riyadh-1` hosting)
+
+**English:**
+- **Who we are:** Saudi healthtech startup, claims-analytics/denial-management software for clinic groups. PHI workload — has to stay in-Kingdom under PDPL, that's the whole reason we're calling Oracle specifically.
+- **Stage, say it straight:** pre-revenue, Commercial Registration in progress (standard CR, founder is Saudi, no MISA needed) — evaluating infrastructure now so we're ready to deploy the moment the entity + first design-partner clinic are in place.
+- **What we need on `me-riyadh-1`:** managed PostgreSQL, Kubernetes (OKE), object storage — nothing exotic, standard SaaS backend.
+- **What we're asking Oracle for:** (1) confirm those three services are actually available in `me-riyadh-1` today, not just "planned"; (2) Oracle for Startups credit eligibility — we're pre-revenue and credits materially affect which cloud we pick; (3) any existing healthcare/PDPL reference architecture other KSA customers have used, so we're not reinventing a compliant setup from scratch.
+- **If they ask about scale/timeline:** early stage — first design-partner clinic running a free denial audit now, first paying clients expected in the next few months once CR + first NPHIES connections land. Infra spend today would be small (single small Postgres instance + object storage), growing with client count.
+- **If they ask about data volume/sensitivity:** health-insurance claims data (NPHIES `ClaimResponse`/remittance exports) — sensitive under PDPL, hence the in-Kingdom requirement; not clinical/diagnostic data, it's billing/reimbursement data.
+- **If they push for a decision now:** happy to keep evaluating in parallel with Oracle's Riyadh region (also live) — no exclusivity commitment yet, we're comparing service coverage and credits before committing.
+- **Close:** ask for next step — technical deep-dive with a solutions architect, or a written credits/pricing estimate to compare against Oracle.
+
+**Arabic (if the call shifts to a Saudi account exec):**
+- **من نحن:** شركة تقنية صحية سعودية ناشئة، نطور برنامج تحليلات مطالبات وإدارة رفض المطالبات لمجموعات العيادات. بيانات المطالبات حساسة ويجب أن تبقى داخل المملكة بموجب نظام حماية البيانات الشخصية — ولهذا نتواصل مع Oracle تحديدًا.
+- **المرحلة الحالية، بصراحة:** ما زلنا قبل مرحلة الإيرادات، والسجل التجاري قيد التأسيس (سجل تجاري عادي، المؤسس سعودي، لا حاجة لترخيص مسيا) — نقيّم البنية التحتية الآن لنكون جاهزين للإطلاق فور اكتمال تأسيس الشركة وربط أول عيادة شريكة.
+- **ما نحتاجه على منطقة الرياض (me-riyadh-1):** قاعدة بيانات PostgreSQL مُدارة، وKubernetes (OKE)، وتخزين كائنات — بنية تحتية اعتيادية لمنتج SaaS.
+- **ما نطلبه من Oracle:** (١) تأكيد توفر هذه الخدمات الثلاث فعليًا في منطقة الرياض اليوم، وليس "مخطط لها"؛ (٢) أهلية برنامج Oracle for Startups للحصول على أرصدة — نحن قبل مرحلة الإيرادات وهذا يؤثر مباشرة على اختيارنا؛ (٣) أي بنية مرجعية صحية متوافقة مع نظام حماية البيانات استخدمها عملاء سعوديون آخرون.
+- **إن سألوا عن الحجم/الجدول الزمني:** مرحلة مبكرة — أول عيادة شريكة تجري حاليًا تدقيقًا مجانيًا للمطالبات المرفوضة، ونتوقع أول عملاء مدفوعين خلال الأشهر القادمة بعد اكتمال السجل التجاري وأول ربط مع نفيس. الإنفاق على البنية التحتية حاليًا سيكون بسيطًا وينمو مع عدد العملاء.
+- **إن سألوا عن حساسية البيانات:** بيانات مطالبات تأمينية صحية (ملفات ClaimResponse من نفيس) — حساسة بموجب نظام حماية البيانات، وليست بيانات تشخيصية سريرية، بل بيانات فوترة وتحصيل.
+- **الختام:** اطلب الخطوة التالية — لقاء تقني مع مهندس حلول، أو تقدير مكتوب للأرصدة/التسعير للمقارنة.
+
+### Email 8 callback — AWS (`me-central-2` GPU access)
+
+**English:**
+- **Who we are:** same as above — Saudi healthtech startup, claims-analytics SaaS, PHI must stay in-Kingdom under PDPL.
+- **Why we're calling AWS specifically:** evaluating self-hosting an open-weight AI model (Qwen3 or a Llama-class model) on `me-central-2` GPU/Trainium instances, instead of calling a US-based LLM API — that's what keeps AI inference entirely in-Kingdom.
+- **Stage, say it straight:** pre-revenue, CR in progress — this is an infrastructure evaluation call, not a signed deal yet.
+- **What we're asking AWS for:** (1) which GPU/Trainium instance types are actually available in `me-riyadh-1`... correction, `me-central-2` (Riyadh) *today* — not just announced for other regions; (2) AWS Activate credit eligibility as a pre-revenue KSA startup, and whether that applies to `me-central-2` workloads specifically (some credit programs exclude newer/specialized regions — ask directly); (3) rough cost expectations for running a 70B-class model at low/moderate query volume, so we can compare against a managed-API approach.
+- **If they ask about model/workload specifics:** self-hosting because a managed LLM API (even one with Middle-East routing, like Bedrock's cross-Region inference) doesn't guarantee the request itself stays in-Kingdom — we need a dedicated in-region deployment for PDPL compliance on sensitive health data, not just a "reachable from the Middle East" endpoint.
+- **If they ask about scale:** early — likely a single-node GPU deployment (e.g. one H100/L40S-class instance running the model at INT4) to start, not a cluster; will scale with client volume.
+- **If they push for a decision now:** also evaluating Oracle Riyadh and self-host on-prem as fallback options; no exclusivity commitment yet.
+- **Close:** ask for a solutions-architect follow-up specifically on GPU/Trainium availability in `me-central-2`, and a written credits estimate.
+
+**Arabic (if the call shifts to a Saudi rep):**
+- **من نحن:** كما سبق — شركة تقنية صحية سعودية ناشئة، برنامج تحليلات مطالبات، يجب أن تبقى البيانات الصحية داخل المملكة بموجب نظام حماية البيانات الشخصية.
+- **لماذا نتواصل مع AWS تحديدًا:** نقيّم استضافة نموذج ذكاء اصطناعي مفتوح المصدر (مثل Qwen3 أو نموذج من فئة Llama) بأنفسنا على معالجات GPU/Trainium في منطقة الرياض (me-central-2)، بدلاً من استخدام واجهة برمجية أمريكية — هذا ما يبقي استدلال الذكاء الاصطناعي بالكامل داخل المملكة.
+- **المرحلة الحالية، بصراحة:** قبل مرحلة الإيرادات، السجل التجاري قيد التأسيس — هذه مكالمة تقييم بنية تحتية، وليست صفقة موقعة بعد.
+- **ما نطلبه من AWS:** (١) ما أنواع معالجات GPU/Trainium المتوفرة فعليًا في منطقة me-central-2 اليوم؛ (٢) أهلية رصيد AWS Activate كشركة ناشئة سعودية قبل الإيرادات، وهل ينطبق على أحمال منطقة الرياض تحديدًا؛ (٣) تقدير تقريبي لتكلفة تشغيل نموذج من فئة 70B معامل بحجم استعلامات منخفض إلى متوسط.
+- **إن سألوا عن تفاصيل النموذج/الحمل:** نستضيف النموذج بأنفسنا لأن واجهة LLM المُدارة (حتى مع توجيه لمنطقة الشرق الأوسط) لا تضمن بقاء الطلب نفسه داخل المملكة — نحتاج نشرًا مخصصًا داخل المنطقة للامتثال لنظام حماية البيانات على بيانات صحية حساسة.
+- **إن سألوا عن الحجم:** مرحلة مبكرة — على الأرجح معالج واحد من فئة H100/L40S في البداية، وليس مجموعة معالجات، مع النمو حسب عدد العملاء.
+- **الختام:** اطلب متابعة مع مهندس حلول تحديدًا حول توفر GPU/Trainium في منطقة me-central-2، وتقديرًا مكتوبًا للأرصدة.
