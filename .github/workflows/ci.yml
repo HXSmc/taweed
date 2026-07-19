@@ -13,7 +13,7 @@ jobs:
     name: Lint, typecheck, unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
@@ -46,7 +46,7 @@ jobs:
     env:
       DATABASE_URL: postgres://taweed:taweed@localhost:5432/taweed
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
@@ -82,7 +82,7 @@ jobs:
       # app" step below), not just in playwright.config.ts's webServer.env.
       TAWEED_HTTP_ONLY_E2E: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
