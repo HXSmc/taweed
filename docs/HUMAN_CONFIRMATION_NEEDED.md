@@ -238,7 +238,7 @@
 
 ## ✉️ Emails to send (copy-paste ready) — *added 2026-07-02*
 
-> Every address below was pulled from a **primary source** this pass (contact pages, official PDFs, Academy FAQ). Replace `[YOUR NAME]` / `[PHONE]` / `[COMPANY]` before sending. Each email has an **English and Arabic version + a recommendation on which to send** for that specific recipient. General rule found: **Saudi government bodies (CHI/NPHIES) → Arabic gets routed faster and taken more seriously; multinationals (Oracle) → English; Saudi B2B vendors (Waseel) → Arabic for rapport, English acceptable; clinics → Arabic (physician-owners).** Send email first (paper trail), then call the listed number referencing it.
+> Every address below was pulled from a **primary source** this pass (contact pages, official PDFs, Academy FAQ). **Name + phone are filled in below (Ali Almuhaysh / +966566201233); no company name yet, so sign-offs read name + phone only** — add a company line once one exists. Each email has an **English and Arabic version + a recommendation on which to send** for that specific recipient. General rule found: **Saudi government bodies (CHI/NPHIES) → Arabic gets routed faster and taken more seriously; multinationals (Oracle) → English; Saudi B2B vendors (Waseel) → Arabic for rapport, English acceptable; clinics → Arabic (physician-owners).** Send email first (paper trail), then call the listed number referencing it.
 
 ### Email 1 — CHI: formal data request for denial statistics *(unblocks A1 + A2)*
 **To:** `DMO@chi.gov.sa` · **CC:** `info@chi.gov.sa` · **Follow-up ☎:** 19977
@@ -252,7 +252,7 @@
 
 تحية طيبة، فريق مكتب إدارة البيانات في مجلس الضمان الصحي،
 
-أنا [YOUR NAME]، مؤسس شركة تقنية صحية سعودية ناشئة تعمل على تطوير حلول لتحسين جودة المطالبات التأمينية لمقدمي الرعاية الصحية عبر منصة نفيس.
+أنا علي المحيش، مؤسس شركة تقنية صحية سعودية ناشئة تعمل على تطوير حلول لتحسين جودة المطالبات التأمينية لمقدمي الرعاية الصحية عبر منصة نفيس.
 
 بناءً على خدمة "طلب مشاركة البيانات" المتاحة عبر موقع المجلس، أتقدم بطلب الحصول على البيانات الإحصائية المجمّعة التالية (دون أي بيانات تعريفية):
 
@@ -265,8 +265,8 @@
 وإن كان هناك نموذج رسمي أو إجراء محدد لتقديم الطلب، فأرجو تزويدي به وسأستكمله فورًا.
 
 شاكرًا لكم تعاونكم،
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **English (fallback):**
@@ -275,7 +275,7 @@ Subject: Data sharing request — private health insurance claim rejection stati
 
 Dear Data Management Office team,
 
-I'm [YOUR NAME], founder of a Saudi healthtech startup building software that helps healthcare providers improve claims quality on the NPHIES platform.
+I'm Ali Almuhaysh, founder of a Saudi healthtech startup building software that helps healthcare providers improve claims quality on the NPHIES platform.
 
 Under the Council's Data Sharing Request service, I would like to request the following aggregated, non-identifiable statistics:
 
@@ -288,8 +288,8 @@ Purpose: market research for a Saudi-built product that helps providers reduce r
 If there is a formal request form or procedure, please point me to it and I'll complete it immediately.
 
 Thank you,
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 2 — NPHIES onboarding: vendor certification, PKI, sandbox *(unblocks B1 + B2 + G9)*
@@ -305,7 +305,7 @@ Thank you,
 
 فريق تهيئة منصة نفيس المحترم،
 
-أنا [YOUR NAME]، مؤسس شركة برمجيات سعودية نعمل على تطوير نظام لإدارة المطالبات المرفوضة لمقدمي الرعاية الصحية، ونستعد للانضمام لبرنامج اعتماد موردي الأنظمة. سجّلنا في دورات أكاديمية نفيس ذات العلاقة، ولدينا خمسة استفسارات لاستكمال خطتنا:
+أنا علي المحيش، مؤسس شركة برمجيات سعودية نعمل على تطوير نظام لإدارة المطالبات المرفوضة لمقدمي الرعاية الصحية، ونستعد للانضمام لبرنامج اعتماد موردي الأنظمة. سجّلنا في دورات أكاديمية نفيس ذات العلاقة، ولدينا خمسة استفسارات لاستكمال خطتنا:
 
 ١. شهادة PKI: ما الجهة المُصدرة؟ وما المستندات والمتطلبات المسبقة؟ وما المدة المتوقعة والتكلفة (إن وجدت) وآلية التجديد؟
 ٢. بيئة الاختبار (Sandbox): ما خطوات الحصول على بيانات الدخول للبيئة التجريبية؟
@@ -319,8 +319,8 @@ Thank you,
 نقدّر توجيهنا لأي دليل رسمي يغطي هذه النقاط.
 
 مع خالص الشكر والتقدير،
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **English (fallback):**
@@ -329,7 +329,7 @@ Subject: System vendor certification — PKI and sandbox questions
 
 Dear NPHIES onboarding team,
 
-I'm [YOUR NAME], founder of a Saudi software company building a denial-management system for healthcare providers. We're preparing to enter the System Vendor Certification Program and have enrolled in the relevant NPHIES Academy courses. Five questions to complete our plan:
+I'm Ali Almuhaysh, founder of a Saudi software company building a denial-management system for healthcare providers. We're preparing to enter the System Vendor Certification Program and have enrolled in the relevant NPHIES Academy courses. Five questions to complete our plan:
 
 1. PKI certificate: who issues it, what documents/prerequisites are required, expected timeline, cost (if any), and renewal process?
 2. Sandbox: what are the steps to obtain test-environment credentials?
@@ -343,8 +343,8 @@ I'm [YOUR NAME], founder of a Saudi software company building a denial-managemen
 We'd appreciate a pointer to any official guide covering these points.
 
 Best regards,
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 3 — Waseel: Connect quote + exact scope *(closes B3 nuance + D1)*
@@ -357,7 +357,7 @@ Best regards,
 
 مرحبًا فريق واصل،
 
-أنا [YOUR NAME]، مؤسس شركة برمجيات سعودية نطور نظامًا لإدارة المطالبات المرفوضة لمجموعات العيادات متعددة الفروع، وندرس اعتماد Waseel Connect لربط عملائنا بمنصة نفيس في المرحلة الثانية من منتجنا.
+أنا علي المحيش، مؤسس شركة برمجيات سعودية نطور نظامًا لإدارة المطالبات المرفوضة لمجموعات العيادات متعددة الفروع، وندرس اعتماد Waseel Connect لربط عملائنا بمنصة نفيس في المرحلة الثانية من منتجنا.
 
 اطلعنا على الباقات المعلنة (Basic بـ1,499 ريال وPremium بـ1,999 ريال شهريًا). ثلاثة أسئلة قبل طلب عرض السعر:
 
@@ -368,8 +368,8 @@ Best regards,
 يسعدنا ترتيب مكالمة قصيرة إن كان ذلك أسهل.
 
 شكرًا جزيلًا،
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **English (acceptable alternative):**
@@ -378,7 +378,7 @@ Subject: Connect scope question + quote for a software vendor
 
 Hi Waseel team,
 
-I'm [YOUR NAME], founder of a Saudi software company building a denial-management system for multi-branch clinic groups. We're evaluating Waseel Connect to link our clients to NPHIES in Phase 2 of our product.
+I'm Ali Almuhaysh, founder of a Saudi software company building a denial-management system for multi-branch clinic groups. We're evaluating Waseel Connect to link our clients to NPHIES in Phase 2 of our product.
 
 We've seen the published tiers (Basic SAR 1,499 / Premium SAR 1,999 per month). Three questions before requesting a quote:
 
@@ -389,8 +389,8 @@ We've seen the published tiers (Basic SAR 1,499 / Premium SAR 1,999 per month). 
 Happy to jump on a short call if easier.
 
 Thanks,
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 4 — Oracle: in-Kingdom hosting for PHI *(actions C3)*
@@ -403,7 +403,7 @@ Subject: KSA healthcare startup — me-riyadh-1 workload
 
 Hi Oracle Cloud team,
 
-I'm [YOUR NAME], founder of a Saudi healthtech startup building claims-analytics software for healthcare providers (PHI workload — must stay in-Kingdom under PDPL).
+I'm Ali Almuhaysh, founder of a Saudi healthtech startup building claims-analytics software for healthcare providers (PHI workload — must stay in-Kingdom under PDPL).
 
 We're planning our production deployment on the Riyadh region (me-riyadh-1) and I'd like to speak with a KSA-based rep about:
 
@@ -413,8 +413,8 @@ We're planning our production deployment on the Riyadh region (me-riyadh-1) and 
 
 Worth a short call this week or next?
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **Arabic (only for a later Saudi account exec):**
@@ -423,7 +423,7 @@ Worth a short call this week or next?
 
 مرحبًا فريق Oracle Cloud،
 
-أنا [YOUR NAME]، مؤسس شركة تقنية صحية سعودية ناشئة نطور نظام تحليلات للمطالبات التأمينية لمقدمي الرعاية (بيانات صحية يجب بقاؤها داخل المملكة وفق نظام حماية البيانات الشخصية).
+أنا علي المحيش، مؤسس شركة تقنية صحية سعودية ناشئة نطور نظام تحليلات للمطالبات التأمينية لمقدمي الرعاية (بيانات صحية يجب بقاؤها داخل المملكة وفق نظام حماية البيانات الشخصية).
 
 نخطط لإطلاق بيئة الإنتاج على منطقة الرياض (me-riyadh-1) ونود التحدث مع ممثل داخل المملكة حول:
 
@@ -433,8 +433,8 @@ Worth a short call this week or next?
 
 هل يمكن ترتيب مكالمة قصيرة هذا الأسبوع أو القادم؟
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 5 — NPHIES/HL7 Saudi: written OK to bundle the IG *(closes F3)*
@@ -459,8 +459,8 @@ Worth a short call this week or next?
 نلتزم بأي شروط ترخيص تحددونها، ونقدّر تزويدنا بالرد كتابيًا لاعتماده في ملفات الامتثال لدينا.
 
 مع خالص الشكر،
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **English (fallback):**
@@ -479,8 +479,8 @@ We note the IG is copyright HL7 Saudi Arabia under the HL7/FHIR license, with no
 We'll comply with any license terms you specify, and would appreciate the answer in writing for our compliance records.
 
 Many thanks,
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 6 — KSA privacy counsel: PDPL review + DPA *(actions C1 + G8 + G12 + G13 + G14)*
@@ -494,7 +494,7 @@ Subject: PDPL scoping — health-data SaaS, DPA drafting
 
 Dear [NAME],
 
-I'm [YOUR NAME], founder of [COMPANY], a Saudi SaaS product that analyzes health-insurance claims data (PHI) for clinics, hosted in-Kingdom on Oracle Cloud Riyadh.
+I'm Ali Almuhaysh, an independent founder building a Saudi SaaS product that analyzes health-insurance claims data (PHI) for clinics, hosted in-Kingdom on Oracle Cloud Riyadh.
 
 We're looking to engage counsel for a fixed-scope review before GA:
 
@@ -509,8 +509,8 @@ We're looking to engage counsel for a fixed-scope review before GA:
 Could you share your availability for a 30-minute scoping call and an estimate for the above?
 
 Best regards,
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **Arabic (alternative):**
@@ -519,7 +519,7 @@ Best regards,
 
 الأستاذ/ة [NAME] المحترم/ة،
 
-أنا [YOUR NAME]، مؤسس [COMPANY]، منتج سحابي سعودي يحلل بيانات المطالبات التأمينية الصحية للعيادات، ومستضاف داخل المملكة على Oracle Cloud الرياض.
+أنا علي المحيش، مؤسس مستقل لمنتج سحابي سعودي يحلل بيانات المطالبات التأمينية الصحية للعيادات، ومستضاف داخل المملكة على Oracle Cloud الرياض.
 
 نرغب بتكليف مستشار قانوني بنطاق محدد قبل الإطلاق العام:
 
@@ -534,8 +534,8 @@ Best regards,
 هل يمكن ترتيب مكالمة تعريفية لمدة ٣٠ دقيقة مع تقدير مبدئي للتكلفة؟
 
 مع خالص التقدير،
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 7 — Design-partner clinic: free denial audit *(unblocks A1/A2 the reliable way)*
@@ -556,8 +556,8 @@ Best regards,
 
 هل يهمك الاطلاع على عينة تقرير؟
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **English (fallback for English-preferring management):**
@@ -574,8 +574,8 @@ The report is yours either way — whether we work together afterwards or not.
 
 Want to see a sample report?
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 8 — AWS: me-central-2 GPU access for in-Kingdom LLM hosting *(actions C1/C3, the self-host route)*
@@ -596,8 +596,8 @@ Two questions:
 
 Worth a short call with a Riyadh-based rep?
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **Arabic (only for a later Saudi account exec):**
@@ -614,8 +614,8 @@ Worth a short call with a Riyadh-based rep?
 
 هل يمكن ترتيب مكالمة قصيرة مع ممثل من الرياض؟
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ### Email 9 — CNTXT: GCP Dammam access for in-Kingdom LLM hosting *(actions C1/C3, alternative self-host route)*
@@ -638,8 +638,8 @@ Worth a short call with a Riyadh-based rep?
 
 يسعدنا ترتيب مكالمة قصيرة إن كان ذلك أسهل.
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 **English (acceptable alternative):**
@@ -657,14 +657,14 @@ Three questions before we sign up:
 
 Happy to jump on a short call if easier.
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ---
 
 ### Email 10 — HealthOrbit: NPHIES-specific pricing *(actions D2 — pricing genuinely not public)*
-**✅ Draft created in Gmail 2026-07-19** — ready to review and send, no copy-paste needed.
+**✅ Draft created in Gmail 2026-07-19, updated with name/phone** — ready to review and send, no copy-paste needed. *(An earlier placeholder-only draft to the same address also exists from the same day — safe to delete, this one replaces it.)*
 **To:** `info@healthorbit.ai` (mailto target behind their "sales@healthorbit.ai" link — verified 2026-07-19 via their live site footer; use `sales@healthorbit.ai` in the To: line as displayed, it routes to the same inbox) · **Also:** their self-serve demo form at [healthorbit.ai/schedule-a-demo](https://healthorbit.ai/schedule-a-demo/) — no email needed, but it only books a 30-min product walkthrough (Ambient AI Scribe / ORA reception / Medical Coding Engine / Claim Scrubber) and does not surface pricing or ask what you actually need pricing for; use the email below to get pricing before or instead of booking.
 **Note (2026-07-19 site check):** HealthOrbit's listed offices are UK/India/US only (Manchester, Mohali, Austin) — no Saudi/GCC office found on the site. Confirm during the exchange whether they have real NPHIES-market presence or are pitching a generic international claim-scrubber into KSA.
 
@@ -683,14 +683,14 @@ Three questions before we book a demo:
 
 Happy to jump on a call if that's faster than email.
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ---
 
 ### Email 11 — Ecaresoft: NPHIES-specific pricing + Claims-module status *(actions D2 — pricing genuinely not public, and 2021 doc calling Claims module "in progress" may be stale)*
-**✅ Draft created in Gmail 2026-07-19** — ready to review and send, no copy-paste needed.
+**✅ Draft created in Gmail 2026-07-19, updated with name/phone** — ready to review and send, no copy-paste needed. *(An earlier placeholder-only draft to the same address also exists from the same day — safe to delete, this one replaces it.)*
 **To:** `sales@ecaresoft.com` (verified 2026-07-19, live site footer)
 **Note:** Ecaresoft's healthcare products are separate branded sites — Cirrus (hospitals, [getcirrus.com](https://www.getcirrus.com/en)) and Nimbo (small/ambulatory clinics, [nimbo-x.com](https://www.nimbo-x.com/)). The clinic-group ICP is closer to Nimbo; mention both so sales routes you correctly.
 
@@ -708,8 +708,8 @@ We're building a Saudi denial-management SaaS for mid-market private clinic grou
 
 Happy to jump on a call if that's faster than email.
 
-[YOUR NAME]
-[COMPANY] — [PHONE]
+Ali Almuhaysh
++966566201233
 ```
 
 ---
