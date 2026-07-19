@@ -8,7 +8,7 @@
   },
   "types": "./src/index.ts",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
+    "@anthropic-ai/sdk": "^0.112.3",
     "@taweed/analytics": "workspace:*",
     "@taweed/db": "workspace:*",
     "@taweed/ingest": "workspace:*",
