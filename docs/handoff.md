@@ -1091,3 +1091,44 @@ IMPLEMENT:
   per the standing gate, item 10 this summary) — genuinely done, CI-verified, nothing pending.
 
 - **Isolated feature work** (e.g. EXECUTE): create a fresh worktree + branch (`superpowers:using-git-worktrees`), build, merge to `main`, then delete the worktree + branch. NOTE: gitignored local docs (`docs/NEXT_STEP_PROMPT.md`, `docs/blocker.md`, `design/`, …) do **not** sync between a worktree and `main` — edit them directly in whichever dir you read from.
+
+- **As of this writing (user-reported production bug fix, 2026-07-19), `main`/`origin/main` =
+  `c554e1c`** (`fix: Recovery/EOB/rule-authoring/branch-switcher stale UI after client action`).
+  The user tested a real Docker production build on a separate Windows machine and reported 3
+  symptoms (Recovery totals not auto-refreshing after mark-won, laggy/unreliable branch switching,
+  an appeal draft not appearing without touching a filter first) — see `docs/audit docs/bugs.md`
+  passes #22-23 for the full investigation trail. Two real, distinct bugs were found and fixed this
+  session:
+  - **The real root cause of the "no auto-refresh" family (bugs.md finding #24):** not
+    Server-Actions-specific, not Docker-specific, not the `revalidatePath` target — a client-side
+    RSC re-render gap in this exact Next 15.5.20/React 18.3.1 production build. The mutation +
+    `revalidatePath` are 100% correct server-side (confirmed via `curl` immediately after a
+    mark-won showing the fresh total every time, and via Link-based navigation always showing
+    fresh data) — but `router.refresh()` (Recovery, EOB review queue, rule authoring) and
+    `router.push()` for a same-route query-param change (the branch switcher) all issue a genuine
+    200/no-cache RSC fetch that React silently never applies to the DOM. No console error, no
+    rejected promise. Fixed pragmatically at all 4 call sites by forcing a **hard navigation**
+    (`window.location.reload()`/`.href`) instead of relying on the broken soft-update path — this
+    is blunter than the ideal seamless update but is what's actually proven reliable, every time,
+    against a rebuilt production server (local and Docker) via chrome-devtools MCP, across EN/AR
+    and light/dark. The real fix is the deferred React 19 upgrade (`deps.md` already flags this);
+    revisit these 4 sites once that lands.
+  - **A compounding, separate React 18 bug:** `useTransition`'s `startTransition(async () => {...})`
+    pattern is off-label on React 18 (async transition callbacks are a React 19 feature) — it left
+    the Recovery mark-won/lost buttons stuck permanently disabled/pending, independent of the
+    RSC-apply gap above. Fixed by dropping `useTransition` for plain local `useState` pending flags.
+  - **Bug 3 (appeal draft not appearing) — confirmed resolved, not a separate bug:** re-tested
+    directly (first-click load, rapid row-switching) and it never reproduced against the current
+    build, which already has the earlier concurrent-queries-on-shared-client fix
+    (`data.ts`, bugs.md finding #22) applied. No code change needed for this one.
+  Gates confirmed green on `c554e1c` before pushing: typecheck (root) clean; `pnpm lint` clean (the
+  only 2 warnings + 1 error are in untracked `.claude/**` harness scripts, same known-noise pattern
+  as prior passes — zero issues in `apps/web`/`packages/*`); full unit suite **1049/1049** (158
+  files); integration suite **43/43** against a real re-seeded Postgres (destructive — DB was
+  re-seeded after, per §1.5/§1.11 of `docs/review.md`); `apps/web` production build green (local
+  and a full `docker compose build --no-cache` + `up -d --force-recreate`, verified live via
+  chrome-devtools MCP against both). Also ran the full `docs/review.md` Part 1 walkthrough:
+  login/logout + role picker, all 7 modules (Overview, Analytics + branch filter, Ingest + Review
+  queue, Scrubber + detail panel, Appeals + draft load/switch, Recovery + outcomes, Settings +
+  Author tab), EN/AR, light/dark, and tenant isolation (Al Salama Dental Group vs. Noor Polyclinic
+  — confirmed fully separate data) — all clean.
