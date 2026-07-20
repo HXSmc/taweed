@@ -736,10 +736,10 @@ Ali Almuhaysh
 
 | # | Action | Why no CR needed |
 |---|---|---|
-| 1 | Follow up CHI DMO (Email 1, A1/A2 denial stats) — call 19977 if no reply | Pure data-sharing request, not a vendor relationship |
-| 2 | Send Oracle (Email 4, C3 hosting) | Rep/founder conversation, evaluation stage only |
-| 3 | Send Email 5 (F3, IG bundling permission) | Written-permission ask — may still bounce back "need CR" like the Academy did, but zero cost to try |
-| 4 | Send AWS (Email 8) + CNTXT (Email 9) — new, this pass | Same logic as Oracle — evaluation/credits inquiry, not a contract |
+| 1 | ~~Follow up CHI DMO~~ **SENT 2026-07-04, no reply yet** (Email 1, A1/A2 denial stats) — call 19977 if it stays quiet | Pure data-sharing request, not a vendor relationship |
+| 2 | ~~Send Oracle~~ **SENT 2026-07-19, no reply yet** (Email 4, C3 hosting) | Rep/founder conversation, evaluation stage only |
+| 3 | ~~Send Email 5~~ **SENT 2026-07-19, no reply yet** (F3, IG bundling permission) — may still bounce back "need CR" like the Academy did | Written-permission ask, zero cost to try |
+| 4 | ~~Send AWS (Email 8) + CNTXT (Email 9)~~ **BOTH SENT 2026-07-19, no reply yet** | Same logic as Oracle — evaluation/credits inquiry, not a contract |
 | 5 | ~~HealthOrbit/Ecaresoft demo requests~~ **DONE — neither publishes pricing, no self-serve path exists; drafted Email 10/Email 11 instead** (D2 pricing) | Vendor demos, no CR field on a demo request |
 | 6 | ~~Branch counts / insured-mix (E1), confirm "Nabda" (E2)~~ **DONE 2026-07-19 — see E1/E2**; only a handful of calls remain for the still-unconfirmed rows | Manual research/calls, nothing vendor-facing |
 | 7 | KSA privacy counsel — scoping call/referral only (C1, G12-G14) | Consultation ≠ filing; filing needs the entity, the conversation doesn't |
@@ -747,6 +747,8 @@ Ali Almuhaysh
 | 9 | **Start CR formation now** (G4 — standard CR, no MISA, founder confirmed Saudi) | This is the actual bottleneck — everything above just fills the wait, this is what ends it |
 
 **Confirmed CR-blocked (not worth re-attempting until CR exists):** NPHIES Academy enrollment, B1/B2 PKI+conformance submission, G5 real-PHI ingestion, G8/G9 signing any vendor agreement, G12-G14 filing (SDAIA registration, DPO, DPA/SCC).
+
+**✅ Status check 2026-07-20 (verified against actual Gmail sent folder):** every row above is sent/done except **#7 (counsel meeting — not yet scheduled)** and **#9 (CR formation — not yet started)** — both are real-world actions only you can take, nothing left for email/research to unblock either one.
 
 > **Send order:** 1b (Academy, self-serve, today) → Emails 1 + 2 same day (gov replies are slow; start the clock) → Email 3 (Waseel) → Email 4 (Oracle) → Email 7 via referral/WhatsApp as soon as one warm intro exists → Email 5 anytime before Phase-2 build → Email 6 after a counsel referral.
 
