@@ -27,3 +27,6 @@ overrides:
   vitest>vite: "^6.4.3"
   vite-node>vite: "^6.4.3"
   "@vitest/mocker>vite": "^6.4.3"
+  # GHSA-3jxr-9vmj-r5cp (brace-expansion DoS), 2026-07-20 audit failure —
+  # dev-only via eslint + @vitest/coverage-v8's minimatch chains.
+  brace-expansion: "^2.1.2"
