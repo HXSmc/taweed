@@ -585,6 +585,7 @@ Ali Almuhaysh
 ```
 
 ### Email 8 — AWS: me-central-2 GPU access for in-Kingdom LLM hosting *(actions C1/C3, the self-host route)*
+**✅ SENT 2026-07-19, REPLIED 2026-07-20 — boilerplate auto-reply, no real answer yet.** AWS Activate opened case `01232166` but the reply doesn't touch either question (no GPU/Trainium instance info, no credit-eligibility answer) — it just redirects to two forms: the [Sales Support form](https://aws.amazon.com/contact-us/sales-support/) (to reach an account manager — mention case `01232166`) and the [AWS Startups](http://aws.amazon.com/startups) signup (for Activate credit eligibility). **Next action: submit both forms** — that's what actually gets a human/real answer, not another email to `aws-activate@`.
 **To:** `aws-activate@amazon.com` (verified program inbox) · **Also:** [AWS Contact Sales](https://aws.amazon.com/contact-us/sales-support/) form for a KSA-specific rep
 **🏆 Send the ENGLISH version** — AWS runs its startup/sales pipeline in English globally; a KSA-specific rep gets assigned after intake, same pattern as the Oracle email above. Keep the Arabic version for a later Saudi account exec, same treatment as Oracle's Email 4.
 
@@ -745,7 +746,7 @@ Ali Almuhaysh
 | 1 | ~~Follow up CHI DMO~~ **SENT 2026-07-04, no reply yet** (Email 1, A1/A2 denial stats) — call 19977 if it stays quiet | Pure data-sharing request, not a vendor relationship |
 | 2 | ~~Send Oracle~~ **SENT 2026-07-19, no reply yet** (Email 4, C3 hosting) | Rep/founder conversation, evaluation stage only |
 | 3 | ~~Send Email 5~~ **SENT 2026-07-19, no reply yet** (F3, IG bundling permission) — may still bounce back "need CR" like the Academy did | Written-permission ask, zero cost to try |
-| 4 | ~~Send AWS (Email 8) + CNTXT (Email 9)~~ **BOTH SENT 2026-07-19, no reply yet** | Same logic as Oracle — evaluation/credits inquiry, not a contract |
+| 4 | ~~Send AWS (Email 8) + CNTXT (Email 9)~~ **BOTH SENT 2026-07-19. AWS replied 2026-07-20 (boilerplate, no real answer — see Email 8); next action is submitting AWS's Sales Support + Startups signup forms, not another email. CNTXT: no reply yet.** | Same logic as Oracle — evaluation/credits inquiry, not a contract |
 | 5 | ~~HealthOrbit/Ecaresoft demo requests~~ **DONE — neither publishes pricing, no self-serve path exists; drafted Email 10/Email 11 instead** (D2 pricing) | Vendor demos, no CR field on a demo request |
 | 6 | ~~Branch counts / insured-mix (E1), confirm "Nabda" (E2)~~ **DONE 2026-07-19 — see E1/E2**; only a handful of calls remain for the still-unconfirmed rows | Manual research/calls, nothing vendor-facing |
 | 7 | KSA privacy counsel — scoping call/referral only (C1, G12-G14) | Consultation ≠ filing; filing needs the entity, the conversation doesn't |

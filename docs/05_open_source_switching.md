@@ -48,10 +48,15 @@ file, do this FIRST, before touching any code:**
    assumption — PROMPT 0 exists specifically to make this check part of the build itself, not
    just a note someone might forget to reread.
 
-**Current status as of 2026-07-20: (A) STILL WAITING.** Emails 4 and 8 were both sent
-2026-07-19; no reply from either as of this writing. CST question is logged in Section J,
+**Current status as of 2026-07-20: (A) STILL WAITING.** Emails 4 (Oracle) and 8 (AWS) were
+both sent 2026-07-19. **AWS replied 2026-07-20 but it's a boilerplate auto-reply with zero
+substance** (no GPU/Trainium instance info, no credit-eligibility answer) — it redirects to
+AWS's Sales Support form and Startups signup, neither of which has been submitted yet. That
+follow-up is now the actual next action on the AWS side (see `HUMAN_CONFIRMATION_NEEDED.md`
+Email 8 for the form links). Oracle: no reply yet. CST question is logged in Section J,
 unanswered (no counsel engagement scheduled yet — also blocked on the counsel-meeting blocker
-in the confirmation doc). **Do not proceed past PROMPT 0 until this line is updated.**
+in the confirmation doc). **Do not proceed past PROMPT 0 until this line shows a SUBSTANTIVE
+reply, not just an auto-acknowledgment.**
 
 ---
 

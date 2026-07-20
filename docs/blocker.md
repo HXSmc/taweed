@@ -81,10 +81,12 @@ Relevant **if** the self-hosted route is chosen — either just for AI-4's VLM e
 the full provider switch off Anthropic covered in `docs/05_open_source_switching.md`. Not on
 the critical path if the cloud (Claude) route is chosen instead — that path proceeds
 independently on `BLK-AI-1`/`BLK-AI-2`. **Status:** Email 4 (Oracle contact@oracle.com) and
-Email 8 (AWS aws-activate@amazon.com) both sent 2026-07-19 asking GPU service coverage +
-startup pricing/credits in `me-riyadh-1` / `me-central-2`; no reply from either as of
-2026-07-20. `docs/05_open_source_switching.md` §0 gates ANY build on this doc on a reply
-landing first — check that file for current status before assuming this is cleared.
+Email 8 (AWS aws-activate@amazon.com) both sent 2026-07-19. **AWS replied 2026-07-20 —
+boilerplate auto-reply only** (case `01232166`, no GPU/pricing info, redirects to AWS's Sales
+Support form + Startups signup — those still need to be submitted before a real answer
+exists). Oracle: no reply yet. `docs/05_open_source_switching.md` §0 gates ANY build on this
+doc on a SUBSTANTIVE reply landing first — check that file for current status before assuming
+this is cleared.
 
 ### BLK-AI-4 — Claude in-region on Bedrock `me-central-2` 🟢 watch-only
 A standing quarterly check of the Bedrock region table; gates only the eventual in-region
