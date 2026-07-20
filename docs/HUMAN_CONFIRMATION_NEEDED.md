@@ -349,6 +349,7 @@ Ali Almuhaysh
 ```
 
 ### Email 3 — Waseel: Connect quote + exact scope *(closes B3 nuance + D1)*
+**✅ SENT, replied via callback 2026-07-19 — see B3 above.** Waseel is a hospital/provider portal, not a software-vendor onboarding path — not applicable to Taweed. Dropped, no follow-up needed.
 **To:** `bdr@waseel.com` · **CC (optional, Riyadh sales):** `motabberib@waseel.com` · **Follow-up ☎:** 9200 120 99
 **🏆 Send the ARABIC version** — Waseel is a Saudi company and its sales team works in Arabic; rapport matters because you may become both customer *and* quasi-competitor. English is acceptable if you prefer precision — their team is bilingual. Keep the key scope question blunt in either language.
 
