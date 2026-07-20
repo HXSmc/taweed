@@ -32,7 +32,7 @@
 |---|---|---|---|
 | **BLK-AI-1** | KSA privacy counsel sign-off: pseudonymization posture (AI-2) + PDF route (AI-4) + SCC fallback | **real-PHI** LLM calls (not synthetic builds) | 🔴 open |
 | **BLK-AI-2** | Anthropic org: commercial API from KSA + **ZDR** arrangement + **DPA** | any live LLM call | 🟡 partial — technical API key **added**; ZDR + DPA still open |
-| **BLK-AI-3** | OCI Riyadh GPU quota + pricing (only if the self-host VLM route is chosen for AI-4) | AI-4 self-host route | 🔴 open (conditional) |
+| **BLK-AI-3** | Oracle Riyadh (`me-riyadh-1`) **and/or** AWS Riyadh (`me-central-2`) real GPU quota + pricing — broadened 2026-07-20 from OCI-only, now gates the full self-hosted-LLM contingency plan (`docs/05_open_source_switching.md`), not just AI-4's VLM route | AI-4 self-host route; full self-hosted-LLM switch (`05`) | 🔴 open (conditional) — Emails 4 (Oracle)/8 (AWS) sent 2026-07-19, no reply yet |
 | **BLK-AI-4** | Watch: Claude in-region on Bedrock `me-central-2` (quarterly region-table check) | end-state in-region migration | 🟢 watch-only |
 | **BLK-1** | A real design-partner clinic's data | the real recovered-SAR headline; normalizer missing-amount decision; real per-tenant dimensions; recovery baseline; `claimToFactsReal` dispatch | 🔴 open |
 | **BLK-2** | Real NPHIES denial-reason codes + SBS/ICD-10-AM coding regime + per-payer deadline matrix | real denial codes, scrubber thresholds, appeal-deadline countdown | 🔴 open |
@@ -75,11 +75,16 @@ arrangement, (c) a **Data Processing Agreement**.
   Any call that could carry **real PHI** remains blocked by the ZDR + DPA parts of this blocker
   (and by BLK-AI-1). Do not read "key added" as "real documents are now allowed."
 
-### BLK-AI-3 — OCI Riyadh GPU quota + pricing 🔴 open (conditional)
-Only relevant **if** the self-hosted VLM route is chosen for AI-4 (zero-cross-border extraction,
-no data leaving KSA). Gates `SelfHostedVlmAdapter`
-(`packages/ai/src/adapters/selfhosted-vlm-adapter.ts`). Not on the critical path if the cloud
-(Claude vision) route is chosen instead.
+### BLK-AI-3 — Oracle/AWS Riyadh GPU quota + pricing 🔴 open (conditional) — broadened 2026-07-20
+Relevant **if** the self-hosted route is chosen — either just for AI-4's VLM extraction
+(gates `SelfHostedVlmAdapter`, `packages/ai/src/adapters/selfhosted-vlm-adapter.ts`), or for
+the full provider switch off Anthropic covered in `docs/05_open_source_switching.md`. Not on
+the critical path if the cloud (Claude) route is chosen instead — that path proceeds
+independently on `BLK-AI-1`/`BLK-AI-2`. **Status:** Email 4 (Oracle contact@oracle.com) and
+Email 8 (AWS aws-activate@amazon.com) both sent 2026-07-19 asking GPU service coverage +
+startup pricing/credits in `me-riyadh-1` / `me-central-2`; no reply from either as of
+2026-07-20. `docs/05_open_source_switching.md` §0 gates ANY build on this doc on a reply
+landing first — check that file for current status before assuming this is cleared.
 
 ### BLK-AI-4 — Claude in-region on Bedrock `me-central-2` 🟢 watch-only
 A standing quarterly check of the Bedrock region table; gates only the eventual in-region

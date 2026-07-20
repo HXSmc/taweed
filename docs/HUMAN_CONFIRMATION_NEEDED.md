@@ -723,6 +723,8 @@ Ali Almuhaysh
 ## H. In-Kingdom LLM-hosting alternatives *(research 2026-07-19 — ties into C1's cross-border question)*
 
 > Triggered by asking "would switching LLM provider to one with an in-Kingdom data center help C1?" Researched Bedrock, AWS Riyadh, GCP Dammam, on-prem, and open-source self-hosting. **Bottom line: switching to genuine in-Kingdom inference kills the cross-border-transfer piece of C1 (no SCC, no SDAIA risk-assessment for that leg) — but does NOT remove general PDPL duties (DPA, breach notification, controller/processor call) which apply regardless of hosting location.**
+>
+> **🆕 Full implementation plan now exists: `docs/05_open_source_switching.md`** (2026-07-20) — code-level swap difficulty, blockers, phased build plan, model recommendation (Qwen 72B family + Qwen2.5-VL for vision), and paste-ready prompts, gated on Email 4/8 replies (`BLK-AI-3`) + the CST question (§J item 6). That file re-checks THIS doc's blocker status before any execution — keep this doc's Email 4/8/CST status current, since that plan depends on it staying accurate.
 
 | Option | What it is | Limitation | Blockers it solves |
 |---|---|---|---|
