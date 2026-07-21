@@ -34,16 +34,16 @@ last blocker on its own.
 
 ## A. 🔴 Do this now — the CR was the only thing stopping it
 
-### A1. Reply to NPHIES onboarding with the CR number
+### A1. ~~Reply to NPHIES onboarding with the CR number~~ ✅ DONE — sent 2026-07-21
 **Unlocks:** `B1` (PKI issuance), `B2` (sandbox/conformance), `G9` (vendor liability/agreements)
-- NPHIES onboarding (`onboarding@chi.gov.sa`) already replied to Email 2 asking for **the CR
-  number, confirmation of a KSA headquarters, and FHIR awareness** — see
-  `HUMAN_CONFIRMATION_NEEDED.md` Quick Action Plan row 2. That reply has been sitting
-  unanswerable until now. Answer it today — this is the highest-leverage single action on
-  this whole list, since it's the actual gate on live NPHIES integration (Phase 2).
-- Answer straightforwardly: CR number, confirm KSA HQ (true, since the founder is Saudi and CR
-  is being formed in-Kingdom), confirm FHIR awareness (true — the product already builds
-  against the NPHIES IG per `02_product_build_plan.md`).
+- Replied in-thread to `onboarding@chi.gov.sa` (CC `support@nphies.sa`) with: CR/National
+  Number `7054836007` (**Taweed Establishment**, released 21/07/2026, Active), confirmation
+  that the company is Saudi-based with all founders Saudi nationals but **no physical office
+  yet** (asked NPHIES directly whether one is required for certification — still open), and
+  confirmed FHIR/NPHIES-IG awareness. Re-asked the original PKI/sandbox/conformance questions
+  that never got answered. **Waiting on their reply now** — no response yet as of this writing.
+- If no reply in ~1-2 weeks, follow up by phone (920033808 / call center 920004299) per the
+  same pattern as Email 1.
 
 ### A2. Self-enroll in NPHIES Academy (finally unblocked)
 **Unlocks:** the self-serve half of `B1`/`B2`
