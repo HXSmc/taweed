@@ -30,3 +30,6 @@ overrides:
   # GHSA-3jxr-9vmj-r5cp (brace-expansion DoS), 2026-07-20 audit failure —
   # dev-only via eslint + @vitest/coverage-v8's minimatch chains.
   brace-expansion: "^2.1.2"
+  # GHSA-f88m-g3jw-g9cj (sharp libvips CVE-2026-33327/33328/35590/35591),
+  # 2026-07-21 audit failure — transitive via next/next-auth/geist>sharp.
+  sharp: "^0.35.3"
