@@ -840,3 +840,48 @@ Ali Almuhaysh
 - **إن سألوا عن تفاصيل النموذج/الحمل:** نستضيف النموذج بأنفسنا لأن واجهة LLM المُدارة (حتى مع توجيه لمنطقة الشرق الأوسط) لا تضمن بقاء الطلب نفسه داخل المملكة — نحتاج نشرًا مخصصًا داخل المنطقة للامتثال لنظام حماية البيانات على بيانات صحية حساسة.
 - **إن سألوا عن الحجم:** مرحلة مبكرة — على الأرجح معالج واحد من فئة H100/L40S في البداية، وليس مجموعة معالجات، مع النمو حسب عدد العملاء.
 - **الختام:** اطلب متابعة مع مهندس حلول تحديدًا حول توفر GPU/Trainium في منطقة me-central-2، وتقديرًا مكتوبًا للأرصدة.
+
+---
+
+## L. Client on-premises hosting — what to ask, if this path is ever pursued *(compiled 2026-07-21)*
+
+> **Not currently planned.** `05_open_source_switching.md` only covers self-hosting the AI-inference layer on **rented** in-Kingdom cloud GPU (Oracle `me-riyadh-1` / AWS `me-central-2`) — genuinely different from a client hosting hardware in their own facility (see §H's own on-prem row: "not a near-term move"). This section exists purely as a **standing reference** so that if a client (or Taweed itself) ever raises real client-premises hosting — as an *additional*, interchangeable option alongside the in-Kingdom cloud path, not a replacement for it — the questions to ask and the framing to use are ready, not reinvented mid-conversation. No architecture decision has been made here; this is a checklist, not a plan.
+
+### What to ask the client
+
+**1. Hardware & GPU capability**
+- [ ] Do they already own server-grade GPU hardware, or would this be new procurement? Per `05` §4, the reference target is a single **H100 (80GB)** for a 72B-class model at 4-bit — confirm what they actually have/can get access to (an existing gaming/workstation GPU, e.g. RTX 4090, is not sufficient at this model size).
+- [ ] If procuring new: is this capex the client absorbs, or does Taweed supply/lease the box and place it on their premises? Different liability and maintenance model each way — needs a clear answer before quoting anything.
+- [ ] Redundancy: single GPU node, or do they want/need a hot spare for uptime?
+
+**2. Network path**
+- [ ] How does the on-prem node reach the rest of Taweed's stack? Options to put in front of them: (a) site-to-site VPN back to wherever the app/DB lives (cloud or otherwise), (b) the entire app deployed on their premises too (much bigger scope — see §H's whole-stack caveat), (c) a fully air-gapped/offline node if that's actually their compliance goal (no external calls at all — changes the interchangeability design, since a hot-swap between providers requires *some* reachable control plane).
+- [ ] Bandwidth and latency needs: EOB/vision payloads (rasterized PDF pages) and 32K+ token contexts are not tiny — ask about their actual uplink, not just "do you have internet."
+- [ ] Do they have a static/reachable address or would Taweed need to initiate the connection (reverse tunnel)? Affects firewall rules on both sides.
+- [ ] Remote access for Taweed to manage/patch the box — SSH/VPN access model, and who holds the keys. This is itself worth a separate counsel flag (see below).
+
+**3. Facility & ops readiness**
+- [ ] Physical environment: proper server room (access control, fire suppression) vs. a repurposed closet? Matters for uptime and for how defensible "genuinely secured on-prem PHI hosting" is if ever challenged.
+- [ ] Power: dedicated circuit, UPS, generator backup? A GPU server pulling 700W+ continuously is not a normal-outlet load.
+- [ ] Cooling: GPU servers need real airflow/AC — most clinic back-offices aren't provisioned for it.
+- [ ] In-house IT staff who can keep drivers/CUDA/OS patched and physically respond if the box hangs or a fan dies — or is Taweed expected to remote-manage it entirely?
+
+**4. Maintenance, support & cost model**
+- [ ] Who's on-call if the node goes down outside business hours — does Taweed's support commitment extend to hardware the client owns and physically controls?
+- [ ] Hardware refresh cycle and who pays for it (GPUs age out of usefulness in a few years).
+- [ ] SLA expectations the client actually wants, versus what a single non-redundant on-prem box can realistically deliver (be honest that this is lower-availability than a cloud region by default, unless they pay for redundancy).
+
+**5. Fallback / interchangeability**
+- [ ] If the on-prem node is unreachable or down, is falling back to the in-Kingdom rented-cloud path (Oracle/AWS, per `05`) acceptable to them, or does their compliance posture require the on-prem path exclusively with no cloud fallback ever? This directly shapes whether `TAWEED_AI_PROVIDER` needs a genuine multi-target config (on-prem endpoint + rented-cloud endpoint, selectable/failover) or a hard client-specific pin.
+
+**6. Why on-prem at all — get this answered before scoping anything**
+- [ ] What specifically is driving the ask — a stated internal IT/security policy, a specific regulatory reading they've gotten from their own counsel, or just a general preference? The answer changes whether Oracle/AWS in-Kingdom cloud (already PDPL-sufficient per §H) actually satisfies them, or whether they have a harder requirement that only physical on-prem meets. Don't build for an assumption — ask directly.
+
+### What to say to the client
+
+- **Lead with the honest tradeoff, don't oversell on-prem:** "We can run the AI model on Oracle or AWS's Saudi data centers, which keeps everything inside the Kingdom under PDPL without you needing to own or maintain any hardware. If your policy specifically requires the hardware to sit inside your own building, we can also support that — but it means you (or we, on your premises) own the GPU server, its upkeep, and its uptime, which is real ongoing cost and responsibility most clinics don't need to take on." Let them self-select into on-prem rather than positioning it as the default or the "more secure" option by default — in-Kingdom rented cloud already satisfies the PDPL residency requirement (§H).
+- **If they push for on-prem specifically:** ask for their own IT/security team's exact requirement in writing (helps counsel later — see below) before quoting hardware or timeline, since the scope (single model-inference box vs. whole-app on-prem) changes the entire estimate.
+- **Never commit to a timeline or price on-prem hosting in a first conversation** — it depends on hardware procurement lead time (GPUs can be back-ordered), their facility readiness, and network design, none of which is known upfront.
+
+### Counsel flag (add to §J's meeting agenda if this path is ever activated)
+- [ ] Does a client hosting the inference hardware themselves shift the controller/processor determination (G14) for that specific data flow — i.e. does the client become clearly the controller for on-prem-processed data in a way that differs from the cloud-hosted clinic-SaaS model already being reviewed? Ask counsel to treat this as a variant of G14, not a brand-new question, when/if it comes up.
