@@ -61,8 +61,14 @@ last blocker on its own.
   Network inspection shows the POST field is literally named `mediator_code`, not `cr_number` —
   may expect a different code than the plain MoC CR number, or the registry hasn't propagated
   yet (CR was issued the day before). Emailed `support@nphies.sa` (cc `onboarding@chi.gov.sa`)
-  same day describing the exact error, CR number, name, phone — waiting on reply. **Do not
-  retry blindly; wait for their answer or ~1 week before re-attempting.**
+  same day describing the exact error, CR number, name, phone.
+- **2026-07-21, later:** `support@nphies.sa` replied with a boilerplate ticket-close (no actual
+  fix/explanation) — replied in-thread pushing back, asking them not to close before answering.
+  Then got a **phone callback**: ticket was looped to `onboarding@chi.gov.sa` since they own the
+  Academy site — real answer expected tomorrow (2026-07-22).
+- An automated retry (chrome-devtools MCP re-submit + Gmail MCP OTP fetch) is still scheduled
+  for 2026-07-22 ~12:00 Riyadh regardless, to test the registry-propagation-lag theory
+  independently of their reply. **Do not hand-retry before then or before their reply lands.**
 
 ### A3. Register as a taxpayer (ZATCA) — time-bound, not optional
 **Unlocks:** nothing blocked on it, but it's a real clock now running
