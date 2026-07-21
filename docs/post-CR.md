@@ -70,14 +70,13 @@ last blocker on its own.
   for 2026-07-22 ~12:00 Riyadh regardless, to test the registry-propagation-lag theory
   independently of their reply. **Do not hand-retry before then or before their reply lands.**
 
-### A3. Register as a taxpayer (ZATCA) — time-bound, not optional
+### A3. ~~Register as a taxpayer (ZATCA)~~ ✅ DONE — 2026-07-22
 **Unlocks:** nothing blocked on it, but it's a real clock now running
 - `G6`: general taxpayer registration (Zakat, since Saudi-owned) is required **at CR issuance,
-  regardless of revenue, within ~60 days.** This isn't a "someday" item — the clock started
-  the day the CR landed. Do this now so it doesn't get lost among the higher-drama items below.
+  regardless of revenue, within ~60 days.** Done, clock satisfied.
 - VAT/e-invoicing registration isn't due yet (only kicks in above SAR 375,000 annual taxable
-  supplies, roughly the 3rd-5th paying client per `G6`'s modeling) — just register as a
-  taxpayer now, put VAT on the radar for later.
+  supplies, roughly the 3rd-5th paying client per `G6`'s modeling) — taxpayer registration is
+  separate from VAT; put VAT on the radar for later, no action needed now.
 
 ### A4. Open a business bank account
 **Unlocks:** invoicing, any future vendor contract requiring a company bank account (Oracle/AWS
