@@ -9,7 +9,34 @@ when a watch-item resolves (upstream releases, migration lands, etc.).
 > `bugs.md`/`secure.md` — see `audit.md`'s own location note. Force-added (`git add -f`) to stay
 > tracked despite the directory being gitignored, same pattern.
 
-Last audit: 2026-07-18 (item 4 of the `/audit-workflow` queue — see Pass #17 below).
+Last audit: 2026-07-21 (item 4 of the `/audit-workflow` queue — see Pass #18 below).
+
+## Pass #18 — 2026-07-21 (incremental, agy research + hub independent NVD/GHSA verification)
+
+**Result: clean, 1 agy fabrication caught and refuted.** `pnpm audit --json`: 0 vulnerabilities
+(info/low/moderate/high/critical all 0). The `brace-expansion` override (`pnpm-workspace.yaml`,
+pinned `^2.1.2`, targeting GHSA-3jxr-9vmj-r5cp) confirmed actually resolved — `pnpm why
+brace-expansion` shows every nested copy across minimatch 3.x/9.x/10.x pinned to 2.1.2, no 1.x
+copy anywhere in the tree.
+
+**Real advisories checked against the exact installed version, not just "does a CVE exist
+somewhere":** the 8 real May-2026 `vercel/next.js` security advisories (pulled live via `gh api
+repos/vercel/next.js/security-advisories`) all patch below Next 15.5.15-15.5.18 — this repo is
+pinned to **15.5.20**, above every patched ceiling, unaffected. Routine Dependabot CI bumps
+(actions/checkout, setup-node, upload-artifact, pnpm/action-setup, @types/node, jsdom 25→29)
+clean per agy, no advisories found.
+
+**Caught: agy claimed a "NEW DISCLOSURE (2026-07-21)" — a Next.js 15.5.x security release with 9
+vulnerabilities (4 High, 5 Medium) — cited only to a vague `nextjs.org/blog` URL, no specific
+advisory ID.** Independently checked the real GitHub security-advisories API for `vercel/next.js`
+directly: the newest entry is **2026-05-07**, nothing from 2026-07-21 exists. **Refuted as
+fabricated** — same failure pattern pass #17 already caught once (agy citing a real-sounding but
+non-existent/misapplied source). Reinforces this file's own standing rule: always independently
+verify agy's cited source directly before writing anything into this doc as confirmed, for both
+agreed and "new" claims, not just disputed ones.
+
+**No new landmine/watch-item changes** — the two already-tracked deferred majors (vitest→v4 needs
+≥4.1.6, react→v19 needs ≥19.2.1 per CVE-2025-55182) are unchanged and still not taken.
 
 ## Pass #17 — 2026-07-18 (item 4, agy 3-agent research + hub independent verification)
 

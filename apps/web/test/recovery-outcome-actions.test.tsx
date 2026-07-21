@@ -71,6 +71,25 @@ describe("RecoveryOutcomeActions", () => {
     expect(mockedReload).not.toHaveBeenCalled();
   });
 
+  it("shows an inline error and clears isPending when markAppealOutcome rejects (RPC-level failure)", async () => {
+    // bugs.md pass #24 finding #25: an RPC-level rejection (network drop,
+    // serialization failure, thrown error) must surface the same inline
+    // failure region as the handled {ok:false} path, never an unhandled
+    // rejection. Sibling pattern: eob-review-queue.tsx try/catch.
+    mockedMarkAppealOutcome.mockRejectedValueOnce(new Error("network drop"));
+    const user = userEvent.setup();
+    renderActions();
+
+    const button = screen.getByRole("button", { name: "Mark won, Bupa, SAR 987" });
+    await user.click(button);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("That action did not complete. Refresh and try again.");
+    expect(mockedReload).not.toHaveBeenCalled();
+    // isPending cleared → button re-enabled.
+    await waitFor(() => expect(button).not.toBeDisabled());
+  });
+
   it("does not show the error message before any click", () => {
     renderActions();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

@@ -44,6 +44,8 @@
 | 21 | **Same queue, item 8 (UI anti-slop)** — 1 GLM finder + hub independent grep spot-check | 2026-07-18 | `ui-slop.md` (new, gitignored) | **0 confirmed findings out of 8 AI-SaaS-template tells**, checked against the marketing landing page, login page, and 3 spot-checked dashboard pages — genuinely clean, design already actively follows the repo's own `design-quality.md` rules | read-only, no fix phase needed |
 | 22 | User-reported live production Docker repro (3 symptoms: Recovery no-auto-refresh, laggy branch switch, appeal draft not appearing) | 2026-07-19 | `bugs.md` | 1 confirmed+fixed (concurrent-queries-on-shared-client race, finding #22); finding #23's fix did not hold — see pass #23 | unit 1049/1049 (mid-pass), typecheck green — finding #23 superseded before final verification completed |
 | 23 | Continued investigation — corrects pass #22 finding #23 (client-side RSC-apply gap, real root cause) | 2026-07-19 | `bugs.md` | 1 confirmed+fixed across 4 call sites (finding #24: Recovery, branch switcher, EOB review, rule authoring all forced to hard navigation); bug (3) confirmed resolved by pass #22's fix, no separate bug | unit 1049/1049, typecheck green, verified live via chrome-devtools against rebuilt local production server |
+| 24 | **Item 0 (NEW), idea pressure-test** — hub-run, Paul Graham YC-evaluator frame, per explicit user request | 2026-07-21 | `idea-pressure-test.md` (new, gitignored) | **Verdict: WEAK, not pivot-required** — core value prop (do clinics actually feel/pay for this) still empirically unproven (`HUMAN_CONFIRMATION_NEEDED.md` A1/A2), and the fastest path to proving it (a real free-audit design partner) is itself blocked on CR formation, not yet started. Investment order inverted (built before validated), not a bad idea. Mitigation is a business action already identified in the docs (land CR + first design partner), not a code fix — loop paused pending either landing. | n/a — judgment task, no code gate |
+| 25 | **Full `/audit-workflow` re-run, items 1-8, incremental/diff-scoped since a796b65** — 4 parallel GLM find-only spokes (bugs+security+auth+deps combined, WCAG, minimap+UI-slop, ponytail — ponytail routed to GLM this run per explicit user correction, no longer hub-run) + 1 GLM fix spoke + hub-run agy dependency research | 2026-07-21 | `bugs.md`, `secure.md`, `a11y.md`, `deps.md`, `minimap.md`, `ponytail-debt.md`, `ui-slop.md` | **1 confirmed+fixed** (finding #25: missing `catch` in new `recovery-outcome-actions.tsx`, RPC-rejection surfaced no operator error — parity fix matching sibling components). Items 2/3/6/7/8 came back 0 new findings (clean, diff-scoped). Item 4: `pnpm audit` clean, brace-expansion CVE confirmed resolved, real May-2026 Next.js advisories confirmed inapplicable (installed 15.5.20 above every patched ceiling) — **1 agy fabrication caught and refuted** (a claimed "new 2026-07-21 disclosure" that doesn't exist in the real GitHub advisories API, same failure pattern as pass #17). Item 9 (production readiness): still gated, `BLK-7`/`BLK-8` both open, re-confirmed not public-facing. | tsc clean, unit **1050/1050**, lint matches known `.claude/**` baseline exactly (0 tracked files confirmed), build green (all locale routes prerendered); int suite not re-run (UI-only fix, same proportionality call as pass #18) |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -114,6 +116,53 @@ today), pre-revenue/founder-led per `docs/handoff.md`. **Action required: run it
 is actually deployed** (real domain/hosting live, real auth provider swapped in) — don't skip it
 again once that's true, and don't assume this note is stale without re-checking deployment status
 first.
+
+**Re-confirmed 2026-07-21 (item 25 below): still NOT public-facing.** `docs/blocker.md` checked
+fresh — `BLK-7` (KSA-resident OIDC) and `BLK-8` (Oracle Riyadh creds) both still 🔴 open, no
+deployment landed. Gate decision unchanged; item 9 stays skipped.
+
+## Queue completion summary — 2026-07-21 incremental `/audit-workflow` run (item 25, item 10 equiv.)
+
+Triggered by explicit user request: add an item-0 idea pressure-test (new), loop-until-clean on
+every item, ponytail routed to GLM instead of hub-run (mid-run correction). Ran fully incremental/
+diff-scoped since the 2026-07-18 close-out (`a796b65`) — the real diff was small (recovery/
+branch-switcher bug fix already self-documented in `bugs.md` #22-24, plus a dependency pin and
+routine CI bumps), matching the "next full re-run" note above.
+
+| Item | Outcome | Findings | Fixed | Gates |
+|---|---|---|---|---|
+| 0. Idea pressure-test (NEW) | ✅ done | Verdict: WEAK (not pivot) — see `idea-pressure-test.md` | n/a — business action, not code | n/a |
+| 1. Bugs | ✅ done | 1 confirmed new (finding #25) | 1/1 | — |
+| 2. Security | ✅ done, clean | 0 new | n/a | read-only |
+| 3. API auth | ✅ done, clean | 0 new | n/a | read-only |
+| 4. Dependency CVEs | ✅ done, clean | 0 confirmed new / 1 agy fabrication caught+refuted | n/a | read-only |
+| 5. WCAG AA | ✅ done, clean | 0 new | n/a | read-only |
+| 6. Minimap | ✅ done | 1 new backlog item (W-6, hard-nav tradeoff) | n/a (tracking only) | — |
+| 7. Ponytail | ✅ done, clean (routed to GLM this run) | 0 new | n/a | read-only |
+| 8. UI anti-slop | ✅ done, clean | 0 new | n/a | read-only |
+| 9. Production readiness | ⏭️ SKIPPED (re-confirmed) | not public-facing yet | — | — |
+
+**Final gates (hub-run, fresh, everything together):** `pnpm tsc -p tsconfig.json --noEmit` clean;
+`pnpm vitest run --project unit` — **1050/1050, 0 fail** (under `nvm use 22` — this hub's default
+node v20.2.0 cannot collect jsdom@29-based tests at all, `ERR_REQUIRE_ESM`; installing/switching to
+node 22 was required to actually run gates rather than trust the spoke's report — see Learnings);
+`pnpm lint` — matches the known `.claude/**` baseline exactly (`git ls-files .claude` = 0,
+confirmed fresh); `pnpm --filter @taweed/web build` — succeeds, all locale routes prerendered.
+Integration suite not re-run (finding #25's fix is UI-only, same proportionality call pass #18
+established).
+
+**Corrections made mid-run:** (1) ponytail was originally launched via an Explore subagent per the
+skill's then-current wording; the user corrected this live ("ponytail scan should be using GLM
+spoke") — the running Explore agent was stopped (`TaskStop`) before it produced a result, the
+skill file (`~/.claude/commands/audit-workflow.md` item 7) was edited to remove the
+"not spoke-delegated" carve-out, and the scan was re-run as a GLM spoke instead, same run. (2) the
+skill's item 0 (idea pressure-test) and the global loop-until-clean rule were both new additions
+this run, added per explicit user request before the queue started.
+
+**GLM spend:** all volume routed to GLM per the skill's standing rule (bugs/security/auth/deps
+combined spoke, WCAG spoke, minimap+UI-slop spoke, ponytail spoke, one fix spoke) — hub did only
+planning, spec-writing, the item-0 judgment task, independent dependency-advisory fact-checking
+(item 4, including catching agy's fabrication), and gate-running/review.
 
 ## Repo shape (so a finder agent doesn't have to rediscover it)
 

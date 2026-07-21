@@ -45,6 +45,12 @@ export function RecoveryOutcomeActions({
         return;
       }
       window.location.reload();
+    } catch {
+      // The server-action RPC layer itself rejected (network drop,
+      // serialization failure) rather than resolving with {ok:false} — same
+      // user-facing degrade as any other failure, never an unhandled
+      // rejection. Matches the sibling pattern in eob-review-queue.tsx.
+      setFailed(true);
     } finally {
       setIsPending(false);
     }

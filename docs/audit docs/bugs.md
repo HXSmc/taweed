@@ -3,6 +3,37 @@
 > Living findings ledger. See `audit.md` (same directory) for the full pass history/index and
 > conventions. Newest pass first.
 
+## Pass #24 — 2026-07-21 (incremental re-run via `/audit-workflow`, item 1, diff-scoped since a796b65)
+
+GLM find-only spoke, scoped to the diff since the last full audit-workflow close-out. Confirmed
+findings #22-24 (pass #22/#23) all still present and correct in the current tree — not re-flagged.
+1 new finding.
+
+### 25. [LOW, robustness/UX] `recovery-outcome-actions.tsx::markOutcome` has no `catch` — an RPC-level rejection surfaces no error to the operator, inconsistent with its own siblings in the same diff
+
+**File:** `apps/web/components/modules/recovery-outcome-actions.tsx:38-51`
+
+The new component (extracted from `recovery/page.tsx` as part of pass #22/#23's hard-navigation
+fix) handles `markAppealOutcome`'s `{ok:false}` return path but has no `catch` around the `await` —
+an RPC-level rejection (network drop, serialization failure, action-RPC guard) throws rather than
+resolving, and that path is unhandled. Its two siblings in this exact diff explicitly guard against
+this: `eob-review-queue.tsx:48-92` wraps the call in `try/catch` specifically so "the server-action
+RPC layer itself rejected … never an unhandled rejection" (its own comment); `rule-authoring.tsx`
+routes through `resolveDecideOutcome` for the identical reason. This file omits that parity.
+
+Concrete failing input: network drop between click and response, or a server-side throw. Observed:
+`finally` still re-enables the button (`isPending=false`), but `failed` stays `false` — no inline
+error renders, and the un-awaited `onClick` promise becomes an unhandled rejection. User clicks,
+nothing visibly happens, no feedback. No data corruption, no stuck UI, no security impact — purely
+a missing-feedback gap on an already-low-likelihood path.
+
+**Status:** ✅ fixed. Added a `catch { setFailed(true); }` matching the sibling pattern exactly —
+an RPC-level rejection now renders the same inline `role="alert"` failure region the handled-`{ok:false}`
+path already does.
+
+**Test:** extended `apps/web/test/recovery-outcome-actions.test.tsx` with a case that rejects
+`markAppealOutcome` and asserts the alert renders + `isPending` clears.
+
 ## Pass #23 — 2026-07-19 (continued investigation — corrects pass #22 finding #23)
 
 Pass #22 finding #23's fix (`redirect()` on the mutation's success path) did **not** hold up: a

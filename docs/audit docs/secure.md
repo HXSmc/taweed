@@ -3,6 +3,27 @@
 > Living findings ledger. See `audit.md` (same directory) for the full pass history/index and
 > conventions. Newest pass first.
 
+## Pass #16 — 2026-07-21 (incremental, diff-scoped since a796b65)
+
+**Result: 0 new findings.** GLM find-only spoke, scoped to the diff since the last full pass
+(recovery/branch-switcher bug fix, new `recovery-outcome-actions.tsx`, a `brace-expansion`
+dependency pin, CI/dependabot workflow bumps). Injection: `recovery.ts`'s `FOR UPDATE OF d` lock
++ sibling-sum query re-verified parameterized and still serializes correctly under the newer
+query shape (pass #1/#14's TOCTOU fix holds). Authn/secrets: unchanged surface, no new
+credential/secret exposure. Access control: new `recovery-outcome-actions.tsx` is presentational
+only — receives an already-RLS-scoped `appealId` prop, gates via the server action
+(`authorizeAction`, re-verified as the first awaited statement in `markAppealOutcome`, see
+`bugs.md` pass #24 / API-auth re-check below), introduces no new client-side data exposure. CI
+workflow changes are first-party GitHub Action version bumps only (checkout/setup-node/
+upload-artifact/pnpm-action-setup) — no new `permissions:` grant, no new `secrets.` reference, no
+`pull_request_target` trigger introduced. Dependency CVE side (brace-expansion, Next.js 15.5.x
+advisory range) tracked in `deps.md`, not duplicated here.
+
+### API auth re-check (same pass, folded in per usual convention — no dedicated file)
+`apps/web/lib/actions/recovery.ts`'s `authorizeAction("recovery", ["full"])` confirmed as the
+first awaited statement in `markAppealOutcome`, before input parsing, throttle, or any DB side
+effect — same ordering the 2026-07-18 API-auth-specific re-audit verified pre-change. Holds.
+
 ## Pass #15 — 2026-07-18 (item 2 of the full `/audit-workflow` GLM hub-spoke run)
 
 Ran as 4 parallel GLM find-only spokes by area (injection / authn-session / secrets /
