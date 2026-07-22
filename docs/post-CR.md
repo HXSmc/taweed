@@ -89,7 +89,7 @@ credit disbursement, clinic invoicing once revenue starts)
 
 ## B. 🟡 Now possible, but sequence matters
 
-### B1. Schedule the counsel meeting (finally worth booking)
+### B1. ~~Schedule the counsel meeting~~ 🟡 IN PROGRESS — contacting via WhatsApp, 2026-07-22
 **Actions:** `C1`, `G8`, `G12`, `G13`, `G14`, the CST question in `G4`
 - The counsel engagement (`Email 6` / Section `J`'s meeting checklist) was always "referral or
   scoping meeting beats cold email" — see `HUMAN_CONFIRMATION_NEEDED.md`'s in-person notes. A
@@ -97,8 +97,12 @@ credit disbursement, clinic invoicing once revenue starts)
   now actually draft a DPA *for* something, not in the abstract). **This is the single highest-
   leverage next step after A1/A2** — everything in section C below stays blocked until this
   happens.
-- Bring `docs/counsel-scoping-checklist.pdf` (or the Arabic version) — already built, self-
-  contained, ready to hand over. Don't reconstruct it from Section J by hand.
+- **Status:** first contact underway over WhatsApp (not email this time) — no MCP connector for
+  WhatsApp is set up in this environment, so that thread is being run manually, not tracked here
+  in real time. Update this section once a meeting is actually booked.
+- Bring `docs/counsel-docs/` (the full pack — DPA/SCC/risk-assessment/breach-runbook drafts +
+  `official-sources/`) **and** `docs/counsel-scoping-checklist.pdf` (or the Arabic version) —
+  both already built, self-contained, ready to hand over. Don't reconstruct either by hand.
 - **Do not wait for a referral to materialize before doing A1-A4** — those don't need counsel,
   this does. Run them in parallel.
 
