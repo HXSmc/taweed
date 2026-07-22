@@ -97,9 +97,30 @@ credit disbursement, clinic invoicing once revenue starts)
   now actually draft a DPA *for* something, not in the abstract). **This is the single highest-
   leverage next step after A1/A2** — everything in section C below stays blocked until this
   happens.
-- **Status:** first contact underway over WhatsApp (not email this time) — no MCP connector for
-  WhatsApp is set up in this environment, so that thread is being run manually, not tracked here
-  in real time. Update this section once a meeting is actually booked.
+- **Status: actively engaged, not yet a scheduled meeting.** Real KSA privacy counsel contact
+  confirmed over WhatsApp (a WhatsApp MCP connector is now set up in this environment, added
+  2026-07-22 — this thread is now checked hourly, see the loop note below). Full history so far
+  (chat started 2026-07-21 17:19):
+  - Counsel asked which parts of the project are on track vs. need adjusting, and specifically
+    flagged **part #2 — the difficulty of getting approval for using US-hosted AI** — as the hard
+    one.
+  - After the CR landed, counsel asked for a voice-note walkthrough of the project (something in
+    a sent file wasn't clear). Founder sent 4 voice notes explaining it.
+  - **One was transcribed** (Whisper, run locally — the WhatsApp MCP's `download_media` tool has
+    a caching bug that returned byte-identical audio for all 4 distinct message IDs, so only one
+    of the 4 notes' actual content was recoverable, not all four). It covers: (1) the need for a
+    data-processing agreement over the data flow feeding the product, and (2) the exact same open
+    question already tracked as `C1`/`BLK-AI-1` here — using Anthropic (US-hosted) and whether
+    that's hard to clear, versus the in-Kingdom self-hosted fallback in
+    `docs/05_open_source_switching.md`.
+  - Founder has since sent counsel the SDAIA-guideline-type document and the NPHIES ToU PDF (both
+    sourced from `docs/counsel-docs/official-sources/`).
+  - Update this section again once an actual meeting gets booked — being responsive over chat
+    isn't the same as having a scoping call scheduled.
+- **Autonomous hourly loop (started 2026-07-22):** Gmail and this WhatsApp thread are checked
+  every hour; on a genuinely new counsel message, a next-step (requested document, or an
+  Arabic-drafted reply) is prepared and logged in `docs/counsel-whatsapp-log.md` for review —
+  nothing is sent to counsel autonomously, founder has final say on every reply.
 - Bring `docs/counsel-docs/` (the full pack — DPA/SCC/risk-assessment/breach-runbook drafts +
   `official-sources/`) **and** `docs/counsel-scoping-checklist.pdf` (or the Arabic version) —
   both already built, self-contained, ready to hand over. Don't reconstruct either by hand.
