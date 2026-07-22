@@ -128,13 +128,13 @@ review; see that folder's README for what's still marked `[COUNSEL TO CONFIRM]` 
 
 | Item | What's needed | Source | Draft |
 |---|---|---|---|
-| Real-PHI ingestion (the free-audit GTM's actual first move) | Counsel sign-off on data-flow + DPA, on top of the entity now existing | `G5`, `C1` | `counsel-docs/05-dpa-template.md` |
-| SCC + SDAIA risk assessment for the Anthropic transfer | Counsel drafts the SCC form + runs the `dgp.sdaia.gov.sa` risk-assessment tool | `G12` | `counsel-docs/01-scc-controller-to-processor.md`, `02-sdaia-risk-assessment.md` |
-| Breach-notification runbook (72h SDAIA requirement) | Counsel helps draft it — no runbook exists yet | `G13` | `counsel-docs/03-breach-notification-runbook.md` |
-| Controller-vs-processor determination | Counsel's actual determination, not our assumption | `G14` | `counsel-docs/04-controller-processor-determination.md` — **resolve this one first**, the others depend on it |
-| NPHIES ToU business-risk read (indemnity, suspend-without-notice, confidentiality-disclaimer scope) | Counsel's read, specifically the two flagged sub-questions in `G8` | `G8` | `counsel-docs/06-nphies-tou-business-risk.md` |
-| CST Cloud Computing Regulatory Framework applicability | Counsel's answer — genuinely ambiguous from CST's own public pages | `G4`, `Section J` item 6 | `counsel-docs/07-cst-cloud-computing-applicability.md` |
-| Signing any NPHIES vendor agreement (if one exists beyond the portal ToU) | Real content is Academy-gated; `G9`'s questions are folded into `Email 2` (see A1) — but actually *signing* anything still wants a counsel read first | `G9` | `counsel-docs/08-nphies-vendor-agreement.md` |
+| Real-PHI ingestion (the free-audit GTM's actual first move) | Counsel sign-off on data-flow + DPA, on top of the entity now existing | `G5`, `C1` | `counsel-docs/05-dpa-template.pdf` |
+| SCC + SDAIA risk assessment for the Anthropic transfer | Counsel drafts the SCC form + runs the `dgp.sdaia.gov.sa` risk-assessment tool | `G12` | `counsel-docs/01-scc-controller-to-processor.pdf`, `02-sdaia-risk-assessment.pdf` |
+| Breach-notification runbook (72h SDAIA requirement) | Counsel helps draft it — no runbook exists yet | `G13` | `counsel-docs/03-breach-notification-runbook.pdf` |
+| Controller-vs-processor determination | Counsel's actual determination, not our assumption | `G14` | `counsel-docs/04-controller-processor-determination.pdf` — **resolve this one first**, the others depend on it |
+| NPHIES ToU business-risk read (indemnity, suspend-without-notice, confidentiality-disclaimer scope) | Counsel's read, specifically the two flagged sub-questions in `G8` | `G8` | `counsel-docs/06-nphies-tou-business-risk.pdf` |
+| CST Cloud Computing Regulatory Framework applicability | Counsel's answer — genuinely ambiguous from CST's own public pages | `G4`, `Section J` item 6 | `counsel-docs/07-cst-cloud-computing-applicability.pdf` |
+| Signing any NPHIES vendor agreement (if one exists beyond the portal ToU) | Real content is Academy-gated; `G9`'s questions are folded into `Email 2` (see A1) — but actually *signing* anything still wants a counsel read first | `G9` | `counsel-docs/08-nphies-vendor-agreement.pdf` |
 
 ---
 
