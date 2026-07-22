@@ -114,7 +114,22 @@ founder approval before sending, not v1:
 bridge's designated outbound-attachment folder) — ready to attach whenever the founder sends the
 reply above, no extra copying needed.
 
-**✅ SENT 2026-07-22 ~17:30** — founder gave final line-by-line edits (dialect corrections + a
+**⚠️→✅ PDF couldn't be opened by counsel, root-caused and permanently fixed 2026-07-22 ~17:30.**
+Two compounding bugs in `attachMedia`/`mediaTypeFromExt` (`/Users/alimc/Desktop/personal/mcp-whatsapp/internal/client/send.go`),
+affecting every document sent through this bridge, not just this PDF:
+1. `mediaTypeFromExt` had no case for `.pdf` (or almost any document extension) — fell through to
+   the default `application/octet-stream`, a generic binary-blob MIME type with no viewer
+   association, instead of `application/pdf`.
+2. The outbound `DocumentMessage` only set `Title`, never WhatsApp's actual `FileName` field — so
+   even the extension hint was missing client-side.
+Confirmed the underlying bytes were never corrupted (local file and the copy downloaded back
+through our own bridge are both valid 35-page PDFs, byte-identical) — purely a "recipient's client
+has no idea what kind of file this is" problem. Fix: added a document-mimetype table (pdf, doc,
+docx, xls, xlsx, ppt, pptx, txt, csv, zip) and set `FileName` alongside `Title`. New test
+(`TestMediaTypeFromExt_KnownDocumentTypes`), full suite green, daemon rebuilt/restarted. **Not yet
+resent** — founder is revoking the broken copy from all recipients first; resend once that's done.
+
+**✅ SENT 2026-07-22 ~17:30 (original, since found broken — see above)** — founder gave final line-by-line edits (dialect corrections + a
 new 5th line about the meeting + auto-send instruction) and it went out as 6 separate messages +
 the Arabic SCC PDF, via `mcp__whatsapp__send_message`/`send_file` to `966550131601@s.whatsapp.net`:
 
