@@ -931,3 +931,56 @@ directly (only sub-detail genuinely disputed across sources), and confirm the mi
 office-area rule with whichever option is chosen — research found it disputed (one source says no
 universal minimum exists, another cites an exact 18 sqm standalone / 6-7 sqm coworking-unit rule
 from a named Dec 2024 Balady/MOMAH document) — see the full note for both sides.
+
+---
+
+## N. General KSA legal obligations — second opinion (researched 2026-07-22, `/research`, accuracy-audited same day)
+
+**Not a replacement for counsel** — a second-opinion reference to self-check counsel's answers and
+ask better questions. Full note with sources/confidence levels: `[[taweed-ksa-legal-obligations-
+second-opinion]]` in the Obsidian vault. Deliberately excludes ZATCA/tax (done, §G6) and
+labor/hiring (not applicable, no employees) and doesn't re-derive PDPL/SDAIA/NPHIES/SFDA/SAMA/CST
+(§C1, §G already cover those in depth).
+
+**Highest-priority actionable item — SAIP trademark registration ("Taweed"/"تعويض"):**
+- Saudi Arabia is **first-to-file**, not first-to-use — rights go to whoever registers first.
+  Registering pre-revenue is a real, live risk-mitigation move, not premature.
+- **Note: the Ministry of Commerce trade-name reservation already done during CR formation is a
+  SEPARATE registry from SAIP trademark protection** — it only blocks another KSA company from
+  registering the identical *company name*, not a trademark in a different entity form. The
+  first-to-file SAIP risk stands regardless of the MOC reservation.
+- Government fee: **SAR 6,500 flat for one Nice class** (confidence 4 — this rests on third-party
+  legal-blog sources, not a fee schedule found directly on SAIP's own site; the earlier "+15% VAT"
+  framing was checked and refuted). Nice classes: 42 = SaaS/software, 9 = downloadable apps, 44 =
+  medical/healthcare services.
+- Timeline: ~90-day examination + mandatory 60-day opposition period; 3-5 months smooth, 8-12
+  months if contested.
+- **Ground-truthed directly on saip.gov.sa (2026-07-22): trademark protection lasts 10 years,
+  renewable.**
+
+**Other findings worth knowing before/during counsel conversations:**
+- **CR annual confirmation** (تأكيد سنوي) replaced fixed CR expiration under the new Commercial
+  Registration Law (eff. April 3, 2025) — do this every 12 months, 90-day grace period. SAR
+  200/year Ministry fee is separate from the ~SAR 500/year Chamber of Commerce membership fee
+  (3-year exemption on the latter for new establishments) — two different fees, not a conflict.
+- **UBO disclosure**: 15-day update deadline; sole owner is automatically the UBO for an individual
+  establishment.
+- **GOSI**: voluntary for the owner with zero employees; becomes mandatory the month the first
+  employee starts (SAR 10,000 penalty for late registration).
+- **Qiwa**: SAR 1,265/year for zero-employee establishments (re-confirmed via independent search)
+  — but whether it's actually *mandatory* for a zero-employee establishment specifically wasn't
+  firmly located. **A previously-flagged "SAR 115 reduced fee" claim did NOT hold up under a
+  fresh independent re-check — don't rely on it, budget the full SAR 1,265/year.**
+- **AML/CTF**: scoped to financial institutions/DNFBPs, not ordinary SaaS — unless Taweed's
+  product ever directly touches payment/remittance flows (it currently doesn't, per §G7).
+- **Insurance**: not statutorily mandated, but expect B2B healthcare clients to require CGL/PI
+  insurance contractually.
+- **Civil Transactions Law (CTL, eff. Dec 16, 2023)**: liability caps in contracts are void only
+  for fraud/gross negligence (Article 173); riba/interest-void rule is **Article 385** (re-verified
+  independently, high confidence) — ordinary late-payment/delay-damage clauses remain enforceable,
+  don't assume they're void. SCCA arbitration is the common choice for KSA tech contracts.
+- **Bookkeeping**: establishments with capital ≥ SAR 100,000 must keep formal commercial books;
+  below that, exempt (confirmed via a second independent source during the audit pass — exact
+  retention period and a possible SAR 500,000 non-compliance fine remain unconfirmed).
+- **Balady/co-working**: a co-working rental agreement CAN work for a Balady municipal license, but
+  confirm the specific space's zoning fit directly — ties into §M's office-space research.

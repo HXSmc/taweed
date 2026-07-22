@@ -4,6 +4,28 @@ Working log for the autonomous hourly check (Gmail + WhatsApp counsel thread), s
 2026-07-22. Append-only — newest entry on top. Nothing here is sent to counsel automatically;
 every drafted reply or prepared document below is waiting on founder review/edit/send.
 
+## 2026-07-22 17:33 — Founder resent the SCC PDF a second time
+
+Two more messages appeared after the v3 batch below was sent (founder's own follow-up, sent
+directly from their phone, not drafted by this loop):
+- 17:26:51 — resent `SCC-عربي-تعويض.pdf` (message `3EB0A129B8EA7AB61909D9`, confirmed same
+  filename via `download_media`).
+- 17:33:20 — resent the **same file again** (`3EB0243BB41393CCAC1A60`), with 17:33:53 text: "هذا
+  الملف لان اول واحد ما كان يفتح" (sending this one because the first one didn't open).
+- **RESOLVED — confirmed by founder 2026-07-22: the PDF did open fine.** Not the mimetype/filename
+  bug recurring; just a founder-side resend for caution.
+- **Home-address question — RESOLVED.** Answered by counsel on a phone call, not in this WhatsApp
+  thread: a home address **cannot** be used as the registered "مقر رئيسي." This is the direct
+  reason the office-space research (§M) was commissioned — treat a real registered office as a
+  confirmed requirement now, not an open question.
+- **Possible addition worth raising with counsel, not yet sent:** the 2026-07-22 legal-obligations
+  research (`docs/HUMAN_CONFIRMATION_NEEDED.md` §N) found Saudi Arabia is first-to-file on
+  trademarks and recommends filing SAIP protection for "Taweed"/"تعويض" now, independent of the
+  office/CR question — worth mentioning to counsel (or asking if he handles SAIP filings) next
+  time there's a natural opening, since it's genuinely time-sensitive and hasn't come up in the
+  thread yet. Not drafted as a message — flagging for founder's own judgment on when/how to raise
+  it, since it's a new topic rather than a reply to something counsel asked.
+
 Counsel WhatsApp chat: JID `71511339728956@lid`, phone `966550131601` (name not resolved by the
 WhatsApp client cache).
 

@@ -109,6 +109,23 @@ credit disbursement, clinic invoicing once revenue starts)
   not a compliance gap) — but flagging since several downstream items (ZATCA registration,
   eventual clinic invoicing, AWS/Oracle billing) assume one exists.
 
+### A5. File the SAIP trademark application for "Taweed"/"تعويض" — 🔴 time-sensitive, doesn't need counsel or the office decision first
+**Unlocks:** protects the brand name before any competitor first-files it; independent of `B1`
+(office/counsel) and `A2` (NPHIES) — can run in parallel, no blocker.
+- From `HUMAN_CONFIRMATION_NEEDED.md` §N (`/research`, accuracy-audited 2026-07-22): Saudi Arabia
+  is **first-to-file**, not first-to-use. The Ministry of Commerce trade-name reservation done
+  during CR formation does **not** cover this — it's a separate registry that only blocks an
+  identical company name, not a trademark filed by someone else in a different entity form.
+- Government fee ~SAR 6,500 flat for one Nice class (confidence 4 — sourced from law-firm
+  summaries, not a primary SAIP fee schedule; worth a direct SAIP portal check before paying).
+  File under Class 42 (SaaS/software) at minimum; consider Class 9 (apps) and Class 44 (medical
+  services) too given Taweed's healthtech positioning.
+  Timeline: 3-5 months uncontested, 8-12 if opposed. Protection: 10 years, renewable (confirmed
+  directly on saip.gov.sa).
+- **Human decision needed:** file directly via SAIP's portal, or have counsel/an IP agent handle
+  it — either way, don't let this sit behind the office-address or counsel-meeting decisions,
+  since none of those block it.
+
 ---
 
 ## B. 🟡 Now possible, but sequence matters
@@ -121,26 +138,34 @@ credit disbursement, clinic invoicing once revenue starts)
   now actually draft a DPA *for* something, not in the abstract). **This is the single highest-
   leverage next step after A1/A2** — everything in section C below stays blocked until this
   happens.
-- **Status: actively engaged, not yet a scheduled meeting.** Real KSA privacy counsel contact
-  confirmed over WhatsApp (a WhatsApp MCP connector is now set up in this environment, added
-  2026-07-22 — this thread is now checked hourly, see the loop note below). Full history so far
-  (chat started 2026-07-21 17:19):
-  - Counsel asked which parts of the project are on track vs. need adjusting, and specifically
-    flagged **part #2 — the difficulty of getting approval for using US-hosted AI** — as the hard
-    one.
-  - After the CR landed, counsel asked for a voice-note walkthrough of the project (something in
-    a sent file wasn't clear). Founder sent 4 voice notes explaining it.
-  - **One was transcribed** (Whisper, run locally — the WhatsApp MCP's `download_media` tool has
-    a caching bug that returned byte-identical audio for all 4 distinct message IDs, so only one
-    of the 4 notes' actual content was recoverable, not all four). It covers: (1) the need for a
-    data-processing agreement over the data flow feeding the product, and (2) the exact same open
-    question already tracked as `C1`/`BLK-AI-1` here — using Anthropic (US-hosted) and whether
-    that's hard to clear, versus the in-Kingdom self-hosted fallback in
-    `docs/05_open_source_switching.md`.
-  - Founder has since sent counsel the SDAIA-guideline-type document and the NPHIES ToU PDF (both
-    sourced from `docs/counsel-docs/official-sources/`).
-  - Update this section again once an actual meeting gets booked — being responsive over chat
-    isn't the same as having a scoping call scheduled.
+- **Status (updated 2026-07-22 ~17:30): meeting is set to happen, remote-friendly, exact
+  date/time still TBD.** Full history — see `docs/counsel-whatsapp-log.md` for the message-by-
+  message log, this is the condensed version:
+  - Counsel asked which parts of the project are on track vs. need adjusting, flagged **part #2 —
+    US-hosted AI approval difficulty** — as the hard one (same open question as `C1`/`BLK-AI-1`).
+  - Counsel independently raised the same two NPHIES ToU gaps `docs/counsel-docs/
+    06-nphies-tou-business-risk.md` had already flagged: (1) who "the user" means in the
+    liability-disclaimer clause (Taweed, the clinic, or the medical facility — NPHIES needs to
+    answer this, not us), and (2) Taweed needs a **separate trademark-use agreement/MOU with
+    NPHIES** before referencing their brand commercially.
+  - Founder confirmed: a direct email to NPHIES asking exactly the "who is the user" question was
+    **sent** (Gmail thread `19f8a0a0db892b7a`, 2026-07-22 13:56, to `onboarding@chi.gov.sa` cc
+    `support@nphies.sa`) — logged as verified-sent, not just drafted.
+  - Founder confirmed with counsel: the NPHIES trademark-use question will also be asked directly
+    to NPHIES, reply to follow.
+  - **Meeting confirmed as remote-friendly** — counsel offered virtual, founder accepted; a
+    specific date/time (tomorrow vs. later) is still being nailed down. A partner ("خالد") joins
+    remotely either way.
+  - Founder sent counsel the Arabic SDAIA/SCC document (`scc-controller-to-processor-ar.pdf`) —
+    resent once after the first copy reportedly didn't open (same filename, `SCC-عربي-تعويض.pdf`;
+    not confirmed whether this was the pre-fix or post-fix version of the WhatsApp PDF-mimetype
+    bug fixed earlier 2026-07-22 — worth a quick "did it open this time?" check with counsel).
+  - **Home-address question — RESOLVED, answered by counsel on a call (not WhatsApp text):
+    a home address CANNOT be used as the registered "مقر رئيسي."** This is exactly why the
+    office-space research (§M / `[[office-space-dammam-khobar-dhahran-hq]]`) was commissioned —
+    a real registered office is now a confirmed requirement, not a maybe. Move to picking one of
+    §M's options (Sharik Hub recommended first) rather than treating this as still open.
+  - Update this section again once an exact meeting date/time is locked in.
 - **Autonomous hourly loop (started 2026-07-22):** Gmail and this WhatsApp thread are checked
   every hour; on a genuinely new counsel message, a next-step (requested document, or an
   Arabic-drafted reply) is prepared and logged in `docs/counsel-whatsapp-log.md` for review —
