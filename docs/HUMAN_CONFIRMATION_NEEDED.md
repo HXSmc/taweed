@@ -587,6 +587,8 @@ Ali Almuhaysh
 ```
 
 ### Email 7b — Almosa (Al Moosa Specialist Hospital) — customer-validation, 2026-07-23
+**✅ Gmail draft created** (English version) — draft id `r-5939221424015273546`, not sent, review
+before sending.
 **To:** `abrar.alessa@almoosahealth.com.sa` — Almoosa exec contact, provided directly by founder.
 **⚠️ Scope note:** Almosa is a hospital, above this project's usual mid-market-clinic ICP ceiling
 (§6 explicitly excludes hospital groups from the 36-account list) — added here as a possible
