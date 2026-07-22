@@ -38,12 +38,23 @@ last blocker on its own.
 **Unlocks:** `B1` (PKI issuance), `B2` (sandbox/conformance), `G9` (vendor liability/agreements)
 - Replied in-thread to `onboarding@chi.gov.sa` (CC `support@nphies.sa`) with: CR/National
   Number `7054836007` (**Taweed Establishment**, released 21/07/2026, Active), confirmation
-  that the company is Saudi-based with all founders Saudi nationals but **no physical office
-  yet** (asked NPHIES directly whether one is required for certification — still open), and
-  confirmed FHIR/NPHIES-IG awareness. Re-asked the original PKI/sandbox/conformance questions
-  that never got answered. **Waiting on their reply now** — no response yet as of this writing.
-- If no reply in ~1-2 weeks, follow up by phone (920033808 / call center 920004299) per the
-  same pattern as Email 1.
+  that the company is Saudi-based with all founders Saudi nationals but no physical office yet,
+  and confirmed FHIR/NPHIES-IG awareness. Re-asked the original PKI/sandbox/conformance questions
+  that never got answered.
+- **🔴 Answered 2026-07-22 06:54 — a physical KSA office IS required.** NPHIES's reply: *"يشترط
+  وجود مقر رئيسي للشركة في المملكة العربية السعودية، مع توفر سجل تجاري ساري المفعول"* ("a main
+  headquarters for the company in the Kingdom of Saudi Arabia is required, along with a valid
+  commercial registration"). This is a **new real requirement, not previously confirmed** — the
+  CR alone isn't sufficient for vendor certification; a registered physical address is also
+  needed. **Human decision needed:** whether to lease a physical office/registered address now
+  (cost + timeline), or explore whether a virtual office / registered-agent address satisfies
+  "مقر رئيسي" (NPHIES's reply doesn't specify — worth a direct follow-up question before assuming
+  either way).
+  - The reply did **not** answer any of the original PKI/sandbox/conformance/clearinghouse
+    questions — those remain open. It just pointed back to the same `onboarding@chi.gov.sa` /
+    `19977` contact already being used, so a further email to the same address risks the same
+    circular non-answer pattern seen already (see the boilerplate-close cycle in `A2` below) —
+    worth trying the call center (19977) directly instead next time, per this doc's own note.
 
 ### A2. Self-enroll in NPHIES Academy — 🔴 BLOCKED on a platform bug, not us
 **Unlocks:** the self-serve half of `B1`/`B2`
