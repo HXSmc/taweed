@@ -892,3 +892,42 @@ Ali Almuhaysh
 
 ### Counsel flag (add to §J's meeting agenda if this path is ever activated)
 - [ ] Does a client hosting the inference hardware themselves shift the controller/processor determination (G14) for that specific data flow — i.e. does the client become clearly the controller for on-prem-processed data in a way that differs from the cloud-hosted clinic-SaaS model already being reviewed? Ask counsel to treat this as a variant of G14, not a brand-new question, when/if it comes up.
+
+---
+
+## M. Office space options — Dammam/Khobar/Dhahran HQ (researched 2026-07-22, `/research`)
+
+NPHIES confirmed (real email, §post-CR.md A1) that a registered KSA headquarters address is
+required for vendor certification, beyond the CR alone. Full research (dual-engine: agy 5-agent +
+GLM adversarial verify, 2 of 3 verify rounds completed — round 2 timed out at the 5-min ceiling,
+no quota/limit hit, excluded from the tally rather than silently counted) is in
+[[office-space-dammam-khobar-dhahran-hq]] in the Obsidian vault. **Key finding: a claimed
+IT-vendor exemption from the physical-HQ requirement was checked and REFUTED (2/2 verify
+rounds)** — no public source supports it, and it directly conflicts with NPHIES's own email
+already on file. This confirms a real office is actually needed, not just a virtual registered
+address, unless counsel or a direct NPHIES answer says otherwise later.
+
+Team context driving the fit scores: CEO (Ali) + a marketing/BD rep both based in Dammam, CTO
+remote in Riyadh (doesn't need desk space here) — so this only needs to be a legitimate,
+low-cost registered address with at most 1-2 people actually using desk space day-to-day.
+
+| Provider / Space | Location | Google Maps | Cheapest Viable Price | Ejar/CR-Address Capable? | Fit (1-5) | Notes |
+|---|---|---|---|---|---|---|
+| **Spaces Ajdan Walk** (IWG) | Corniche, Al Khobar | [Ajdan Walk](https://maps.app.goo.gl/MnmCPYNJLAz4SPfS6?g_st=ic) *(founder's own link, confirmed genuine)* | Virtual ~SAR 589/mo; dedicated desk from SAR 1,555/person/mo; private office from SAR 1,895/person/mo | Yes (12-mo min contract) | **4.5** | Premium beachfront location, verified real IWG/Spaces centre. Good if client-facing image matters. |
+| **Sharik Hub** | Sumou Tower, Prince Turki St, Al Khobar | [search link](https://maps.google.com/?q=Sharik+Hub+Sumou+Tower+Khobar) *(no confirmed exact place link — floor number itself disputed between sources, verify before visiting)* | Coworking ~SAR 350/mo; virtual/Ejar package — contact direct | Yes (Ejar virtual contracts) | **5** | Best local-network fit, cheapest confirmed hot-desk price, local KSA brand. Verify floor (4th vs 6th, sources disagree) before visiting. |
+| **Regus** (Al Rashed Towers, Khobar / Novotel Business Park, Dammam) | Olaya, Al Khobar / Dammam | [Al Rashed Towers search](https://www.google.com/maps/search/?api=1&query=Regus+Al+Rashed+Towers+Al+Khobar) · [Novotel Dammam search](https://www.google.com/maps/search/?api=1&query=Regus+Novotel+Business+Park+Dammam) | Virtual ~SAR 480/mo (market band SAR 400-900 confirmed, exact vendor low-end not independently pinned) | Yes (12-mo min contract) | **4.5** | Lowest baseline cost among international chains; Dammam branch is closest to CEO. Search-link only, not a confirmed exact place. |
+| **Servcorp** (Khobar Gate, Bandariyah) | Al Khobar | [search link](https://www.google.com/maps/search/?api=1&query=Servcorp+Al+Khobar+Gate+Tower) | Virtual ~SAR 720/mo + setup fee | Yes | **4** | Premium/reliable but pricier; setup fee adds to real first-year cost. |
+| **Jovia Coworking** | Al Khobar | [search link](https://maps.google.com/?q=Jovia+Al+Khobar) | Group office ~SAR 5,460/mo | Yes — Monsha'at License No. 15 confirmed | **3.5** | Confirmed genuine EP incubator/coworking pioneer, but the group-office tier priced well above what a 1-2 desk need justifies. |
+| **Growth Hub by Fahdan** (Dar Rayhaan by Rotana) | Al Khobar | [search link](https://maps.google.com/?q=Dar+Rayhan+by+Rotana+Al+Khobar) | Serviced office from SAR 625/mo/person (price confirmed; "70 offices/8 meeting rooms" capacity claim unconfirmed — hotel's own site lists only 3 meeting rooms) | Yes (PRO-firm backed) | **3** | Price is real and cheap, but treat capacity/amenity marketing claims skeptically until confirmed directly. |
+| Small standalone commercial office (e.g. Al Shati, Dammam) | Al Shati, Dammam | [search link](https://www.google.com/maps/search/?api=1&query=Al+Shati+Al+Sharqi+Dammam) | ~SAR 3,500/mo (~SAR 42k/yr, 69 sqm) | Yes (direct Ejar lease) | **2.5** | Full standalone lease is unnecessary space/cost for a mostly-remote pre-revenue team right now. |
+
+**Top recommendation order by cost + fit:** Sharik Hub (cheapest confirmed, local, 5/5) →
+Regus Novotel Dammam (lowest-cost international-chain option, closest to CEO, 4.5/5) → Spaces
+Ajdan Walk (the founder's own reference point, verified genuine, better if a premium address
+matters more than lowest cost, 4.5/5).
+
+**Before signing anything:** verify Sharik Hub's exact floor and Ejar-registration process
+directly (only sub-detail genuinely disputed across sources), and confirm the minimum Baladiya
+office-area rule with whichever option is chosen — research found it disputed (one source says no
+universal minimum exists, another cites an exact 18 sqm standalone / 6-7 sqm coworking-unit rule
+from a named Dec 2024 Balady/MOMAH document) — see the full note for both sides.
