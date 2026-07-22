@@ -759,7 +759,9 @@ Ali Almuhaysh
 
 **✅ Status check 2026-07-20 (verified against actual Gmail sent folder):** every row above is sent/done except **#7 (counsel meeting — not yet scheduled)** and **#9 (CR formation — not yet started)** — both are real-world actions only you can take, nothing left for email/research to unblock either one.
 
-**✅ Update 2026-07-21 — #9 is DONE, CR number obtained.** See `docs/post-CR.md` for the full post-CR action list — what this actually unlocks (NPHIES onboarding reply, Academy enrollment, ZATCA registration) and what's still gated on #7 (counsel) regardless. #7 remains the last open item here.
+**✅ Update 2026-07-21 — #9 is DONE, CR number obtained.** See `docs/post-CR.md` for the full post-CR action list — what this actually unlocks (NPHIES onboarding reply, Academy enrollment, ZATCA registration) and what's still gated on #7 (counsel) regardless.
+
+**🟡 Update 2026-07-22 — #7 is now IN PROGRESS, not started.** First contact with KSA privacy counsel underway via WhatsApp (manual — no MCP connector for WhatsApp exists in this environment, so this thread isn't tracked in real time here). Not yet a scheduled meeting — update again once one's actually booked. See `docs/post-CR.md` §B1 for the same status, and `docs/counsel-docs/` for the full review pack (DPA/SCC/risk-assessment/breach-runbook drafts + real official-source PDFs) to bring once a meeting lands.
 
 > **Send order:** 1b (Academy, self-serve, today) → Emails 1 + 2 same day (gov replies are slow; start the clock) → Email 3 (Waseel) → Email 4 (Oracle) → Email 7 via referral/WhatsApp as soon as one warm intro exists → Email 5 anytime before Phase-2 build → Email 6 after a counsel referral.
 
