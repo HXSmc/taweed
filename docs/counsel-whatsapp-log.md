@@ -126,8 +126,12 @@ Confirmed the underlying bytes were never corrupted (local file and the copy dow
 through our own bridge are both valid 35-page PDFs, byte-identical) — purely a "recipient's client
 has no idea what kind of file this is" problem. Fix: added a document-mimetype table (pdf, doc,
 docx, xls, xlsx, ppt, pptx, txt, csv, zip) and set `FileName` alongside `Title`. New test
-(`TestMediaTypeFromExt_KnownDocumentTypes`), full suite green, daemon rebuilt/restarted. **Not yet
-resent** — founder is revoking the broken copy from all recipients first; resend once that's done.
+(`TestMediaTypeFromExt_KnownDocumentTypes`), full suite green, daemon rebuilt/restarted.
+
+**✅ Resent 2026-07-22 ~17:40** after founder deleted the broken copy — message ID
+`3EB0243BB41393CCAC1A60`. Verified the fix actually took: downloading the sent message back
+through the bridge now returns `SCC-عربي-تعويض.pdf` (proper filename + extension), where the
+broken send returned a bare `document_<timestamp>` with no extension at all.
 
 **✅ SENT 2026-07-22 ~17:30 (original, since found broken — see above)** — founder gave final line-by-line edits (dialect corrections + a
 new 5th line about the meeting + auto-send instruction) and it went out as 6 separate messages +
