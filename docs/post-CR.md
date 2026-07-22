@@ -55,6 +55,11 @@ last blocker on its own.
     `19977` contact already being used, so a further email to the same address risks the same
     circular non-answer pattern seen already (see the boilerplate-close cycle in `A2` below) —
     worth trying the call center (19977) directly instead next time, per this doc's own note.
+  - **2026-07-22 11:22:** founder forwarded this exact reply to an external contact
+    (`Abdullahalsaadoun7@gmail.com`) — no note attached, so likely someone being looped in to help
+    resolve the office-requirement decision above (e.g. office space, or a registered-agent
+    option). No action needed from this log; just recording that the human decision above may
+    already be in motion outside this doc.
 
 ### A2. Self-enroll in NPHIES Academy — 🔴 BLOCKED on a platform bug, not us
 **Unlocks:** the self-serve half of `B1`/`B2`
