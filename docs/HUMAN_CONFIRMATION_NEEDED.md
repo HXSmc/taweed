@@ -587,8 +587,14 @@ Ali Almuhaysh
 ```
 
 ### Email 7b — Almosa (Al Moosa Specialist Hospital) — customer-validation, 2026-07-23
-**✅ Gmail draft created** (English version) — draft id `r-5939221424015273546`, not sent, review
-before sending.
+**✅ Drafts created in TWO places**, not sent: (1) `r-5939221424015273546` in the founder's
+personal Gmail, and (2) directly in the new company inbox `taweed.ksa@gmail.com` (created
+2026-07-23, credentials in the Secrets vault) via browser — the Gmail MCP connector is tied to the
+personal account only, so the company-inbox copies were written straight into Gmail's compose UI.
+The 6 real clinic drafts from §Email 7 (My Clinic, Saba Medical, Stars Smile, AlShakreen, Roaya
+Eye Center, Ryan Clinics) were also rewritten to this validation-meeting framing and saved as
+drafts in `taweed.ksa@gmail.com` the same way — all 7 sit in that inbox's Drafts folder, review
+and send from there whenever ready.
 **To:** `abrar.alessa@almoosahealth.com.sa` — Almoosa exec contact, provided directly by founder.
 **⚠️ Scope note:** Almosa is a hospital, above this project's usual mid-market-clinic ICP ceiling
 (§6 explicitly excludes hospital groups from the 36-account list) — added here as a possible
