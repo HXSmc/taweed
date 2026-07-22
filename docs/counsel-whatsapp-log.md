@@ -114,7 +114,29 @@ founder approval before sending, not v1:
 bridge's designated outbound-attachment folder) — ready to attach whenever the founder sends the
 reply above, no extra copying needed.
 
-**Draft WhatsApp reply, v3 (2026-07-22 17:20)** — founder asked for two changes: (1) mention the
+**✅ SENT 2026-07-22 ~17:30** — founder gave final line-by-line edits (dialect corrections + a
+new 5th line about the meeting + auto-send instruction) and it went out as 6 separate messages +
+the Arabic SCC PDF, via `mcp__whatsapp__send_message`/`send_file` to `966550131601@s.whatsapp.net`:
+
+| # | Message ID | Content |
+|---|---|---|
+| 1 | `3EB0D5887549DD6B0EAAFE` | وعليكم السلام يا عم |
+| 2 | `3EB09BDEF791371544E0FE` | بالنسبة لسؤال "المستخدم" حق بند نفيس - هذا سؤال لازم يردون عليه نفيس نفسهم مو احنا، ارسلنا لهم نسألهم يقصدون منصة تعويض ولا العيادة |
+| 3 | `3EB014106ED7847FB92923` | نفس الشي بخصوص اتفاقية استخدام علامتهم التجارية - بنسألهم فيها مباشرة واطلع لك الرد أول ما يوصلني |
+| 4 | `3EB034DC0B5C994BB69E33` | و الاجتماع خلاص باذن الله ما عندك مشكلة بتواصل مع الشركاء و احددلك يا بكرا يا عن بعد (و خالد بيكون عن بعد في الحالتين) |
+| 5 | `3EB0A63520673CB1B193A5` | وملف سدايا اللي تبيه بالعربي - حصلت النسخة العربية الرسمية وجايتك الحين |
+| — | `3EB0A129B8EA7AB61909D9` | [file] SCC-عربي-تعويض.pdf |
+| 6 | `3EB07C3FAB72176239C8DC` | و الله يعطيك العافية يا عم ما قصرت معنا |
+
+Sent one at a time in order, respecting the bridge's own send rate limit (~40s minimum interval)
+rather than bypassing it. Original line 2 ("وصلتني تسجيلاتك الصوتية...") was dropped per founder's
+edit. Dialect corrections applied: حقت→حق, يرد→يردون, نفسها→نفسهم, بنراسلهم→ارسلنا لهم (already
+sent, not future tense), اطلعك عالرد→اطلع لك الرد. Line 4 replaced entirely with the meeting-
+scheduling line (mentions "خالد" — a partner/team member joining remotely either way). Verified
+the NPHIES follow-up email was actually **sent** (not just drafted) before saying so — Gmail
+thread `19f8a0a0db892b7a`, SENT label, 2026-07-22 13:56.
+
+**Draft WhatsApp reply, v3 (2026-07-22 17:20, superseded by the sent version above)** — founder asked for two changes: (1) mention the
 NPHIES follow-up email — **verified actually sent** (Gmail thread `19f8a0a0db892b7a`, SENT label,
 2026-07-22 13:56, to `onboarding@chi.gov.sa` cc `support@nphies.sa`, asking the same two questions
 counsel raised) — not just drafted, confirmed before writing this; (2) match his real texting
