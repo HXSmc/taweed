@@ -114,6 +114,23 @@ founder approval before sending, not v1:
 bridge's designated outbound-attachment folder) — ready to attach whenever the founder sends the
 reply above, no extra copying needed.
 
+**Draft WhatsApp reply, v3 (2026-07-22 17:20)** — founder asked for two changes: (1) mention the
+NPHIES follow-up email — **verified actually sent** (Gmail thread `19f8a0a0db892b7a`, SENT label,
+2026-07-22 13:56, to `onboarding@chi.gov.sa` cc `support@nphies.sa`, asking the same two questions
+counsel raised) — not just drafted, confirmed before writing this; (2) match his real texting
+pattern — several short separate message bubbles, not one long block with line breaks (per his
+actual chat history: short bursts, one thought per message). This is the current version awaiting
+approval, replaces v2. Send as 8 separate messages, in order:
+
+1. وعليكم السلام يا عم
+2. وصلتني تسجيلاتك الصوتية مشكور عالتفصيل
+3. بخصوص سؤال "المستخدم" حقت بند نفيس
+4. وكذا اتفاقية العلامة التجارية
+5. راسلنا نفيس اليوم نسألهم فيهم مباشرة
+6. اجتماع العيادات تمام، خلنا نحدد وقت
+7. وعن بعد ما فيها مشكلة
+8. وملف سدايا بالعربي حصلته، جايك الحين
+
 **Not addressed / left for founder:** counsel didn't answer the 14:26 home-address question
 directly in these two notes — worth asking again if it's still open by the time of the meeting.
 
