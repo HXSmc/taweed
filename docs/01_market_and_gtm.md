@@ -187,6 +187,7 @@ Owner-physician = **economic buyer/decision-maker**; RCM/Finance manager = **cha
 | 34 | Dentex / دنتكس | Riyadh | Dental | 1 | [dentex.sa](https://dentex.sa/en/) | H | 2 — dentist-owned single location |
 | 35 | Designers Clinic / ديزاينرز كلينك | Riyadh | Dental (cosmetic) | 1–2 | [ddclinic.sa](https://ddclinic.sa/) | H | 2 — boutique cosmetic dental, small |
 | 36 | Nabda IVF — "The Clinics" / نبضة | Riyadh | IVF / fertility | 1 | [the-clinics.com](https://the-clinics.com) | H | 2 — strong IVF unit, single location. **2026-07-19: fresh search across Google/Instagram/Maps/business directories for "Nabda"/"نبضة" variants found no better/multi-branch candidate** — a same-entity mirror domain (nabdasa.com) and several unrelated "Nabd"/نبض (different word — clinic-management SaaS vendors, not clinics) turned up, none is a better match. This single-site IVF unit is confirmed as the only real candidate; treat E2 as closed, not just deprioritized. |
+| 37 | ⚠️ Al Moosa Specialist Hospital / مستشفى الموسى التخصصي — **added 2026-07-23, deliberate ICP exception** | Al-Ahsa | Hospital (multi-specialty) | Large (hospital, not clinic-scale) | [almoosahealth.com.sa](https://www.almoosahealth.com.sa) | H | N/A — **above the hospital-exclusion line this list otherwise applies** (§6 notes exclude hospital groups like Almana/Fakeeh/HMG). Added specifically per founder instruction with a direct exec contact already in hand (Abrar Alessa, `abrar.alessa@almoosahealth.com.sa`) — treat as a validation-stage exception to confirm fit during the call itself, not a pre-scored ICP match. See Email 7b in `HUMAN_CONFIRMATION_NEEDED.md`. |
 
 **Notes / data quality:**
 - **Prioritize fit-5 + insured-heavy:** rows 1–4, 7, 8 are the cleanest first targets — high insured volume = high denial exposure = strongest value prop. Ryan Clinics (#7) and Al Subhi (#18) now have the strongest independent insurance confirmation in the whole list.
@@ -195,7 +196,7 @@ Owner-physician = **economic buyer/decision-maker**; RCM/Finance manager = **cha
 - **Remaining genuinely unconfirmed** (checked, not found — not for lack of trying): insured-mix for rows 4 (implied via "online insurance booking" only), 15, 16, 25, 29, 31; exact branch count for row 30. These need a direct call, not more web search — the data isn't published.
 - **Seeds not cleanly verified:** *Thuriah* = single flagship IVF center, not a 3–15 chain. *Nabda/نبضة* — see row 36, now closed (no better candidate exists).
 - **Watch-list (insufficient evidence):** Medical World Polyclinic (Riyadh), Zabeedi Eye (Makkah/Jeddah), Radiance Skin, Jood Dental.
-- **Excluded (too large / hospital):** Dr. Sulaiman Al Habib (HMG), Mouwasat, Dallah, Saudi German, Magrabi, Andalusia, Fakeeh, IMC, Almana, Abeer.
+- **Excluded (too large / hospital):** Dr. Sulaiman Al Habib (HMG), Mouwasat, Dallah, Saudi German, Magrabi, Andalusia, Fakeeh, IMC, Almana, Abeer. **Exception, row 37 (2026-07-23): Al Moosa Specialist Hospital** — added deliberately per founder instruction with a direct exec contact already in hand, not because the hospital-exclusion criterion itself changed.
 
 ### 6.1 Sales Navigator boolean
 ```
@@ -221,74 +222,81 @@ OR ("Revenue Cycle" OR "RCM" OR "Insurance Manager" OR "Claims" OR "Billing Mana
 ---
 
 ## 7. Cold Outreach Cadence
-*(/cold-email — 3-step, multi-channel, bilingual; hook = free "denial audit")*
+*(/cold-email — 3-step, multi-channel, bilingual; hook = customer-validation meeting)*
 
-**Hook logic:** never assert the refuted public stats. Offer to *measure their own* denial leak — "send us a recent batch of NPHIES `ClaimResponse`/remittance exports, we'll show you, free, how much you're losing and to which payers." Curiosity + zero risk + their own numbers.
+**⚠️ Rewritten 2026-07-23 — pivoted from the free-denial-audit hook to a customer-validation
+meeting hook.** We are no longer asking clinics to send us NPHIES `ClaimResponse`/remittance
+exports as the first ask — that's a data-handling commitment before any relationship exists, and
+this stage is about validating the product idea with real prospective customers first, not
+collecting their claims data. New hook: request a short intro/discovery call to learn about their
+actual denial-management pain, in exchange for an early look at what we're building and a shot at
+input/design-partner status. **No pricing mentioned anywhere in this cadence** — pricing is not
+disclosed until a real conversation happens.
 
 **Variables:** `{{first_name}}` `{{clinic_name}}` `{{branch_count}}` `{{city}}` `{{specialty}}` `{{top_payer}}` `{{champion_name}}` `{{sender_name}}` `{{calendar_link}}`
 
 ### Step 1 — Email (Day 0)
 
-**Variant A — Owner-physician, EN** · subject: `denial leak`
+**Variant A — Owner-physician, EN** · subject: `quick question about denied claims at {{clinic_name}}`
 > Hi {{first_name}},
 >
-> Running {{branch_count}} {{specialty}} branches on insurance in {{city}}, the part that quietly bleeds cash is denied claims — and most groups your size can't see *which* payer or *which* code is doing the damage.
+> Running {{branch_count}} {{specialty}} branches on insurance in {{city}}, denied claims are almost always a quiet drain on cash — and most groups your size don't have a clean way to see which payer or which code is the real cause.
 >
-> We rebuild that picture from your own NPHIES ClaimResponse exports and tell you, free, exactly how much is recoverable. No system to install.
+> I'm building a product to solve exactly this, and before going further I want to learn directly from clinics like yours what actually hurts most today — not pitch anything yet.
 >
-> Worth a look?
+> Would you be open to a 20-minute call to walk me through how denials get handled at {{clinic_name}} right now? Happy to share what we're building in return, and there'd be a place for you as an early design partner if it's a fit.
 >
 > {{sender_name}}
 
-**Variant A — Owner-physician, AR** · subject: `مطالبات مرفوضة`
+**Variant A — Owner-physician, AR** · subject: `سؤال سريع عن المطالبات المرفوضة في {{clinic_name}}`
 > مرحبًا {{first_name}}،
 >
-> مع تشغيل {{branch_count}} فروع لـ{{clinic_name}} على التأمين في {{city}}، أكثر ما يستنزف الإيرادات بهدوء هو المطالبات المرفوضة — وغالبًا لا تظهر للمجموعات بحجمكم *أي شركة تأمين* أو *أي كود* هو السبب.
+> مع تشغيل {{branch_count}} فروع لـ{{clinic_name}} على التأمين في {{city}}، غالبًا ما تكون المطالبات المرفوضة استنزافًا هادئًا للإيرادات — ونادرًا ما تتوفر للمجموعات بحجمكم رؤية واضحة عن أي شركة تأمين أو أي كود هو السبب الفعلي.
 >
-> نعيد بناء هذه الصورة من ملفات ClaimResponse الخاصة بكم في نفيس، ونوضح لكم مجانًا حجم المبالغ القابلة للاسترداد. دون تركيب أي نظام.
+> أعمل حاليًا على منتج يعالج هذه المشكلة تحديدًا، وقبل المضي قدمًا أحب أن أتعلم مباشرة من عيادات مثل عيادتكم ما الذي يمثل التحدي الأكبر فعليًا — دون أي عرض بيع في هذه المرحلة.
 >
-> هل يستحق نظرة؟
+> هل تتوفر لديكم ٢٠ دقيقة لمكالمة نتعرف فيها على طريقة التعامل مع المرفوضات حاليًا في {{clinic_name}}؟ يسعدني أن أشارككم ما نعمل عليه، وقد يكون هناك مكان لكم كشريك تجريبي مبكر إذا كان مناسبًا.
 >
 > {{sender_name}}
 
-**Variant B — RCM/Finance champion, EN** · subject: `rejections by payer`
+**Variant B — RCM/Finance champion, EN** · subject: `learning how {{clinic_name}} handles denials today`
 > Hi {{first_name}},
 >
-> If denial triage at {{clinic_name}} still runs through spreadsheets and payer portals, you already know the rework is brutal — and it's hard to show the owner the number you actually recovered.
+> If denial triage at {{clinic_name}} still runs through spreadsheets and payer portals, you already know the rework involved.
 >
-> We turn your NPHIES exports into denial analytics by payer/branch/code, plus auto-drafted appeals. Free audit first, on your real data.
+> I'm building a tool for exactly this workflow and want to validate it against how real revenue-cycle teams actually work before building further — not a sales call, a listening one.
 >
-> Want me to send what we'd need?
+> Open to 20 minutes to walk me through your current process? Happy to show you what we have so far and get your read on whether it'd actually help.
 >
 > {{sender_name}}
 
-**Variant B — RCM/Finance champion, AR** · subject: `مرفوضات حسب التأمين`
+**Variant B — RCM/Finance champion, AR** · subject: `نتعرف على طريقة تعامل {{clinic_name}} مع المرفوضات`
 > مرحبًا {{first_name}}،
 >
-> إذا كانت معالجة المرفوضات في {{clinic_name}} لا تزال عبر ملفات إكسل وبوابات شركات التأمين، فأنت تعرف حجم العمل المكرر — ويصعب إثبات المبلغ الذي استرددته فعليًا للإدارة.
+> إذا كانت معالجة المرفوضات في {{clinic_name}} لا تزال عبر ملفات إكسل وبوابات شركات التأمين، فأنت تعرف حجم العمل المكرر المطلوب.
 >
-> نحوّل ملفات نفيس لديكم إلى تحليلات مرفوضات حسب شركة التأمين/الفرع/الكود، مع مسودات اعتراضات تلقائية. نبدأ بتدقيق مجاني على بياناتكم الحقيقية.
+> أعمل على أداة لهذا التحدي تحديدًا، وأحب أن أتحقق من فكرتها مع فرق دورة الإيرادات الحقيقية قبل الاستمرار في البناء — مكالمة استماع لا مكالمة بيع.
 >
-> أرسل لك ما نحتاجه؟
+> هل تتوفر لديكم ٢٠ دقيقة لتشرحوا لي طريقة عملكم الحالية؟ يسعدني أن أريكم ما وصلنا إليه وآخذ رأيكم إن كان سيفيدكم فعلًا.
 >
 > {{sender_name}}
 
-### Step 2 — Follow-up email (Day 3–4) — *new angle: SBSCS V3.0*
-**EN** · subject: `SBSCS v3`
+### Step 2 — Follow-up email (Day 3–4)
+**EN** · subject: `following up — {{clinic_name}}`
 > Hi {{first_name}},
 >
-> One more reason this is timely: SBSCS V3.0 took effect 1 Jan 2026. Every coding-rule change tends to spike denials for a few months until coders adjust — exactly the kind of leak our scrubber catches before submission.
+> Following up in case the earlier note got buried. I'm talking to a handful of clinic groups in {{city}} this month to understand real denial-management pain before finishing the product — genuinely just want your perspective, no pitch.
 >
-> Still happy to run the free audit on a recent {{top_payer}} batch. One reply and I'll send the steps.
+> Any 20 minutes this week or next work?
 >
 > {{sender_name}}
 
-**AR** · subject: `معايير الترميز ٣`
+**AR** · subject: `متابعة — {{clinic_name}}`
 > مرحبًا {{first_name}}،
 >
-> سبب إضافي يجعل التوقيت مناسبًا: دخلت معايير SBSCS V3.0 حيز التنفيذ في ١ يناير ٢٠٢٦، وكل تغيير في قواعد الترميز يرفع المرفوضات لأشهر حتى يتأقلم المرمّزون — وهذا تحديدًا ما يلتقطه نظام التدقيق لدينا قبل الإرسال.
+> أتابع بخصوص رسالتي السابقة تحسبًا لأنها لم تصلك بوضوح. أتحدث مع عدد من مجموعات العيادات في {{city}} هذا الشهر لفهم التحديات الحقيقية في إدارة المطالبات المرفوضة قبل إنهاء بناء المنتج — أحتاج رأيكم فقط، دون أي عرض بيع.
 >
-> ما زال عرض التدقيق المجاني قائمًا على دفعة حديثة من {{top_payer}}. ردٌّ واحد وأرسل لك الخطوات.
+> هل تتوفر ٢٠ دقيقة هذا الأسبوع أو الأسبوع القادم؟
 >
 > {{sender_name}}
 
@@ -296,55 +304,48 @@ OR ("Revenue Cycle" OR "RCM" OR "Insurance Manager" OR "Claims" OR "Billing Mana
 **EN** · subject: `closing this out`
 > Hi {{first_name}},
 >
-> I'll stop here so I'm not cluttering your inbox. If denied claims ever become the priority at {{clinic_name}}, the free audit offer stands — you keep the findings either way.
+> I'll stop here so I'm not cluttering your inbox. If it's ever useful to compare notes on denial management at {{clinic_name}}, the door's open anytime.
 >
 > {{sender_name}}
 
 **AR** · subject: `إغلاق الموضوع`
 > مرحبًا {{first_name}}،
 >
-> سأكتفي بهذا حتى لا أزحم بريدك. إذا أصبحت المطالبات المرفوضة أولوية لدى {{clinic_name}} مستقبلًا، فعرض التدقيق المجاني قائم — والنتائج لكم في كل الأحوال.
+> سأكتفي بهذا حتى لا أزحم بريدك. إذا كان من المفيد مستقبلًا تبادل الرأي حول إدارة المطالبات المرفوضة في {{clinic_name}}، الباب مفتوح دائمًا.
 >
 > {{sender_name}}
 
 ### LinkedIn touch (parallel, Day 1–2 — connect, then message on accept)
 **EN:**
-> Hi {{first_name}} — we help multi-branch {{specialty}} groups in KSA recover denied insurance claims from their own NPHIES data. Not pitching here; happy to share a free denial audit if it's ever useful to {{clinic_name}}.
+> Hi {{first_name}} — building a denial-management product for multi-branch {{specialty}} groups in KSA and talking to real clinic owners/RCM leads before finishing it. Not pitching; would value 20 minutes to learn how {{clinic_name}} handles this today.
 
 **AR:**
-> مرحبًا {{first_name}} — نساعد مجموعات {{specialty}} متعددة الفروع في السعودية على استرداد المطالبات المرفوضة من بيانات نفيس الخاصة بها. لست هنا للبيع؛ يسعدني تقديم تدقيق مجاني للمرفوضات إن كان مفيدًا لـ{{clinic_name}}.
+> مرحبًا {{first_name}} — أعمل على منتج لإدارة المطالبات المرفوضة لمجموعات {{specialty}} متعددة الفروع في السعودية، وأتحدث مع أصحاب العيادات ومسؤولي دورة الإيرادات قبل إنهاء بنائه. لست هنا للبيع؛ أقدّر ٢٠ دقيقة لأتعرف على طريقة تعامل {{clinic_name}} مع هذا التحدي حاليًا.
 
 ### WhatsApp touch (Day 5, champions/owners with verified mobile — keep it human, opt-out aware)
 **EN:**
-> Hi {{first_name}}, {{sender_name}} here — re: denied claims at {{clinic_name}}. We can show you free, from your own NPHIES exports, how much is recoverable by payer. Want the 2-step to send a sample? (Reply STOP to opt out.)
+> Hi {{first_name}}, {{sender_name}} here — building a denial-management product and would value 20 minutes to learn how {{clinic_name}} handles denied claims today. No pitch, just want your real input before we finish building. (Reply STOP to opt out.)
 
 **AR:**
-> مرحبًا {{first_name}}، أنا {{sender_name}} — بخصوص المطالبات المرفوضة في {{clinic_name}}. نوضح لكم مجانًا، من ملفات نفيس لديكم، حجم المبالغ القابلة للاسترداد حسب شركة التأمين. أرسل لكم الخطوتين لإرسال عيّنة؟ (للإيقاف اكتب إيقاف.)
+> مرحبًا {{first_name}}، أنا {{sender_name}} — أعمل على منتج لإدارة المطالبات المرفوضة، وأقدّر ٢٠ دقيقة لأتعرف على طريقة تعامل {{clinic_name}} مع المرفوضات حاليًا. لا يوجد عرض بيع، فقط أحتاج رأيكم قبل إنهاء بناء المنتج. (للإيقاف اكتب إيقاف.)
 
 ### Standalone Arabic email (copy-ready, Arabic-only — for owners who prefer Arabic)
 *Self-contained full email, not paired with EN — use as-is for Arabic-first owner-physicians.*
 
-· subject: `استرداد المطالبات المرفوضة`
+· subject: `التحقق من فكرة منتج لإدارة المطالبات المرفوضة`
 > السلام عليكم {{first_name}}،
 >
 > مع إدارة {{branch_count}} فروع لـ{{clinic_name}} في {{city}} والاعتماد على التأمين، غالبًا ما تُستنزف الإيرادات بهدوء عبر المطالبات المرفوضة — ونادرًا ما تتوفر للمجموعات بحجمكم رؤية واضحة عن *أي شركة تأمين* أو *أي كود طبي* هو السبب الرئيسي.
 >
-> نحن نساعد مجموعات العيادات متعددة الفروع في المملكة على استرداد هذه المبالغ من بيانات نفيس الخاصة بهم — دون تركيب أي نظام جديد.
+> أعمل حاليًا على منتج يساعد مجموعات العيادات متعددة الفروع في المملكة على فهم واسترداد هذه المبالغ من بيانات نفيس الخاصة بهم، وقبل إنهاء بنائه أحب أن أتحقق من الفكرة مباشرة مع عيادات حقيقية مثل عيادتكم.
 >
-> نقترح أن نبدأ بـ**تدقيق مجاني للمرفوضات**: ترسلون لنا دفعة حديثة من ملفات ClaimResponse / الإشعارات المالية من نفيس، ونعيد لكم تقريرًا يوضح:
-> - حجم المبالغ المرفوضة القابلة للاسترداد،
-> - أكثر شركات التأمين والأكواد تسببًا في الرفض،
-> - والخطوات العملية لاستعادتها.
->
-> التقرير لكم في كل الأحوال، ودون أي التزام. وتزداد أهمية التوقيت مع دخول معايير الترميز SBSCS V3.0 حيز التنفيذ في ١ يناير ٢٠٢٦، وما يصاحبها عادةً من ارتفاع مؤقت في المرفوضات.
->
-> هل أرسل لكم الخطوتين اللازمتين لإرسال عيّنة؟
+> هل تتوفر لديكم ٢٠-٣٠ دقيقة لمكالمة تعريفية نتعرف فيها على طريقة التعامل مع المطالبات المرفوضة لديكم حاليًا؟ هذه ليست مكالمة بيع — الهدف هو فهم تحدياتكم الفعلية والاستفادة من ملاحظاتكم، ويسعدني أن أشارككم لمحة عما نبنيه مقابل ذلك.
 >
 > مع التقدير،
 > {{sender_name}}
 > {{calendar_link}}
 
-> **Sequencing:** Email Step 1 (D0) → LinkedIn connect (D1–2) → Email Step 2 (D3–4) → WhatsApp (D5, if mobile verified) → Email Step 3 breakup (D8–10). Arabic-first for owner-physicians (use the standalone Arabic email above); EN or bilingual for RCM/Finance. Personalize the opening to a real signal (new branch, payer, hiring a coder) — generic = ignored.
+> **Sequencing:** Email Step 1 (D0) → LinkedIn connect (D1–2) → Email Step 2 (D3–4) → WhatsApp (D5, if mobile verified) → Email Step 3 breakup (D8–10). Arabic-first for owner-physicians (use the standalone Arabic email above); EN or bilingual for RCM/Finance. Personalize the opening to a real signal (new branch, payer, hiring a coder) — generic = ignored. **No step in this cadence mentions pricing** — that's deliberate at the validation stage.
 
 ---
 

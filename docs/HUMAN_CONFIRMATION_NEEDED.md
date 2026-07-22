@@ -545,23 +545,26 @@ Ali Almuhaysh
 +966566201233
 ```
 
-### Email 7 — Design-partner clinic: free denial audit *(unblocks A1/A2 the reliable way)*
+### Email 7 — Clinic outreach: customer-validation meeting *(unblocks A1/A2 the reliable way)*
 **To:** `[clinic owner / medical director — enrich via the §6 target list in 01_market_and_gtm.md]`
-**🏆 Send the ARABIC version** — targets are Saudi physician-owners (File 1 §5 persona); Arabic converts better with this segment. ⚠️ **Best used after a warm referral or WhatsApp intro** (see in-person list). Full 5-touch sequence + WhatsApp scripts already live in `01_market_and_gtm.md` §7 — this is the first touch, aligned to that sequence.
+**🏆 Send the ARABIC version** — targets are Saudi physician-owners (File 1 §5 persona); Arabic converts better with this segment. ⚠️ **Best used after a warm referral or WhatsApp intro** (see in-person list). Full 5-touch sequence + WhatsApp scripts live in `01_market_and_gtm.md` §7 — this is the first touch, aligned to that sequence.
+
+**⚠️ Rewritten 2026-07-23** — pivoted away from the "send us your NPHIES ClaimResponse exports for
+a free audit" ask (a real data-handling commitment before any relationship exists) to a
+**customer-validation meeting** ask: learn how the clinic actually handles denials today, share
+what we're building, gauge fit for an early design-partner relationship. **No pricing mentioned.**
 
 **Arabic (recommended):**
 ```text
-الموضوع: مطالبات {{clinic_name}} المرفوضة
+الموضوع: سؤال سريع عن المطالبات المرفوضة في {{clinic_name}}
 
 مرحبًا د. {{first_name}}،
 
-مع تشغيل {{branch_count}} فروع على التأمين في {{city}}، غالبًا ما يتسرب جزء من الإيرادات في المطالبات المرفوضة — دون أن يظهر بوضوح أي شركة تأمين أو أي كود هو السبب.
+مع تشغيل {{branch_count}} فروع على التأمين في {{city}}، غالبًا ما تكون المطالبات المرفوضة استنزافًا هادئًا للإيرادات — دون أن يظهر بوضوح أي شركة تأمين أو أي كود هو السبب.
 
-نقدم تدقيقًا مجانيًا كاملًا: ترسلون لنا ملفات نفيس (ClaimResponse) لآخر ٦ أشهر، ونعيد لكم خلال أيام تقريرًا يوضح: نسبة الرفض الفعلية لديكم، وأكثر ٥ أسباب تكرارًا، والمبلغ القابل للاسترداد بالريال.
+أعمل حاليًا على منتج يعالج هذه المشكلة تحديدًا، وقبل المضي قدمًا أحب أن أتعلم مباشرة من عيادات مثل عيادتكم ما الذي يمثل التحدي الأكبر فعليًا — دون أي عرض بيع في هذه المرحلة.
 
-التقرير لكم بالكامل سواء عملنا معًا بعدها أم لا.
-
-هل يهمك الاطلاع على عينة تقرير؟
+هل تتوفر لديكم ٢٠-٣٠ دقيقة لمكالمة نتعرف فيها على طريقة التعامل مع المرفوضات حاليًا لديكم؟ يسعدني أن أشارككم لمحة عما نبنيه، وقد يكون هناك مكان لكم كشريك تجريبي مبكر إذا كان مناسبًا.
 
 Ali Almuhaysh
 +966566201233
@@ -569,18 +572,58 @@ Ali Almuhaysh
 
 **English (fallback for English-preferring management):**
 ```text
-Subject: {{clinic_name}} denied claims
+Subject: quick question about denied claims at {{clinic_name}}
 
 Hi Dr. {{first_name}},
 
-Running {{branch_count}} insured branches in {{city}}, some revenue almost always leaks into denied claims — without it being clear which payer or which code is responsible.
+Running {{branch_count}} insured branches in {{city}}, denied claims are almost always a quiet drain on revenue — without it being clear which payer or which code is responsible.
 
-We offer a complete free audit: you send us your NPHIES ClaimResponse exports for the last 6 months, and within days we return a report showing your actual denial rate, your top 5 recurring denial reasons, and the recoverable amount in SAR.
+I'm building a product to solve exactly this, and before going further I want to learn directly from clinics like yours what actually hurts most today — not pitch anything yet.
 
-The report is yours either way — whether we work together afterwards or not.
+Would you be open to a 20-30 minute call to walk me through how denials get handled at {{clinic_name}} right now? Happy to share what we're building in return, and there'd be a place for you as an early design partner if it's a fit.
 
-Want to see a sample report?
+Ali Almuhaysh
++966566201233
+```
 
+### Email 7b — Almosa (Al Moosa Specialist Hospital) — customer-validation, 2026-07-23
+**To:** `abrar.alessa@almoosahealth.com.sa` — Almoosa exec contact, provided directly by founder.
+**⚠️ Scope note:** Almosa is a hospital, above this project's usual mid-market-clinic ICP ceiling
+(§6 explicitly excludes hospital groups from the 36-account list) — added here as a possible
+customer specifically per founder instruction, not because it independently scored into the ICP.
+Treat as a deliberate exception, worth validating fit for during the call itself rather than
+assuming hospital-scale = automatic fit.
+**No pricing mentioned**, matches the same validation-meeting ask as Email 7 above, personalized
+since this is a named individual, not a template variable.
+
+**English (recommended — corporate/exec contact, no prior relationship established):**
+```text
+Subject: Quick question about denied-claims management at Al Moosa
+
+Hi Abrar,
+
+I'm building a product focused on denial management for NPHIES-connected providers in Saudi Arabia, and before going further I want to learn directly from real teams like yours what actually hurts most today — not a sales pitch.
+
+Would you be open to a 20-30 minute call to walk me through how denied claims get handled at Al Moosa currently? I'd be glad to share what we're building in return, and there could be a place for Al Moosa as an early design partner if it's a genuine fit.
+
+Happy to work around your schedule.
+
+Best,
+Ali Almuhaysh
++966566201233
+```
+
+**Arabic (offer as an alternative if she prefers):**
+```text
+الموضوع: سؤال سريع عن إدارة المطالبات المرفوضة في الموسى
+
+مرحبًا أ. أبرار،
+
+أعمل حاليًا على منتج يركز على إدارة المطالبات المرفوضة لمقدمي الخدمات الصحية المرتبطين بمنصة نفيس في المملكة، وقبل المضي قدمًا أحب أن أتعلم مباشرة من فريق حقيقي مثل فريقكم ما الذي يمثل التحدي الأكبر فعليًا — دون أي عرض بيع.
+
+هل تتوفر لديكم ٢٠-٣٠ دقيقة لمكالمة نتعرف فيها على طريقة التعامل مع المطالبات المرفوضة حاليًا في مستشفى الموسى؟ يسعدني أن أشارككم لمحة عما نبنيه، وقد يكون هناك مكان للموسى كشريك تجريبي مبكر إذا كان مناسبًا.
+
+مع خالص التقدير،
 Ali Almuhaysh
 +966566201233
 ```
