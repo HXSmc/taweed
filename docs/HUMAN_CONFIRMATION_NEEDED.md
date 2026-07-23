@@ -603,6 +603,23 @@ sender name/phone in these drafts be changed to Abdullah Alsaadoun / عبدال�
 company inbox. **Not applied** to the personal-Gmail Almosa draft (`r-5939221424015273546`) — that
 one still has the original signature; flag if it should be updated too or discarded in favor of
 the company-inbox copy.
+
+**Founder's own edit, 2026-07-22 21:53 — personal-Gmail draft only:** founder directly edited
+`r-5939221424015273546` (the only Almosa draft reachable via the Gmail MCP connector; the
+company-inbox copies are browser-only and got signed out mid-edit, see below). Changes made:
+"Hi Abrar," → "Hello Dr. Abrar," and "I'm building a product" → "We are building a product".
+Logged as a standing voice preference in `[[feedback-ali-voice-tone]]` — formal cold-outreach to
+unfamiliar corporate contacts uses "Hello Dr. X" + "We", distinct from the casual Najdi WhatsApp
+voice. **These edits are NOT yet reflected in the 7 `taweed.ksa@gmail.com` drafts** — apply them
+there too once that inbox is reachable again.
+
+**🔴 Blocked, 2026-07-23: `taweed.ksa@gmail.com` browser session got signed out mid-task**
+(requested: remove em dashes + other AI-slop phrasing from all 7 company-inbox drafts, and change
+the Arabic greeting from "مرحبًا د. [اسم الطبيب]" to "مرحبا فريق [اسم العيادة/المستشفى]"). Google
+now blocks the automated browser from signing back in ("This browser or app may not be secure") —
+tried twice (same tab retry, new tab) with no change. **Needs founder to sign in manually** in a
+real browser first (password in Secrets vault) before automation can resume there. None of these
+7 drafts have been de-slopped or had the greeting changed yet.
 **To:** `abrar.alessa@almoosahealth.com.sa` — Almoosa exec contact, provided directly by founder.
 **⚠️ Scope note:** Almosa is a hospital, above this project's usual mid-market-clinic ICP ceiling
 (§6 explicitly excludes hospital groups from the 36-account list) — added here as a possible
