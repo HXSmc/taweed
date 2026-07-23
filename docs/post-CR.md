@@ -119,12 +119,13 @@ last blocker on its own.
   supplies, roughly the 3rd-5th paying client per `G6`'s modeling) — taxpayer registration is
   separate from VAT; put VAT on the radar for later, no action needed now.
 
-### A4. Open a business bank account
+### A4. ~~Open a business bank account~~ ✅ DONE — 2026-07-23
 **Unlocks:** invoicing, any future vendor contract requiring a company bank account (Oracle/AWS
 credit disbursement, clinic invoicing once revenue starts)
-- Not explicitly researched in `HUMAN_CONFIRMATION_NEEDED.md` (standard post-CR housekeeping,
-  not a compliance gap) — but flagging since several downstream items (ZATCA registration,
-  eventual clinic invoicing, AWS/Oracle billing) assume one exists.
+- Company account open, IBAN + account number on file (Secrets vault, Taweed section — not
+  reproduced here). Bank name not yet logged — add if it comes up.
+- Clears the assumption several downstream items depend on: ZATCA registration, eventual clinic
+  invoicing, AWS/Oracle billing.
 
 ### A5. File the SAIP trademark application for "Taweed"/"تعويض" — 🔴 time-sensitive, doesn't need counsel or the office decision first
 **Unlocks:** protects the brand name before any competitor first-files it; independent of `B1`
