@@ -4,39 +4,39 @@ import { newId } from "@taweed/shared";
 import { getPool, withTenant, schema, type Pool } from "@taweed/db";
 import { appConnectionString } from "../../db/test/migrate.js";
 import { seedTenant } from "../../db/test/helpers.js";
-import { explainFlag } from "@taweed/ai";
-import { EXPLAIN_FLAG_CORPUS } from "./explainFlagCorpus.js";
+import { assistAppeal } from "@taweed/ai";
+import { ASSIST_APPEAL_CORPUS } from "./assistAppealCorpus.js";
 import {
-  scoreExplainFlag,
-  buildExplainFlagReport,
-  schemaInvalidExplainFlagCheck,
-} from "./explainFlagScoring.js";
+  scoreAssistAppeal,
+  buildAssistAppealReport,
+  schemaInvalidAssistAppealCheck,
+} from "./assistAppealScoring.js";
 import { runEvalLoop, buildRunMeta } from "./resilience.js";
 
-// LIVE scoring eval for AI-1 explainFlag (part of the 4-feature eval suite,
-// 2026-07-24 — upgraded from a single-item smoke test to a full corpus-scored
-// eval; see explainFlagScoring.ts for why this uses objective heuristic
-// checks rather than an LLM-as-judge). Same double gate as every other eval
-// in this directory: lives under packages/ai/evals/ (its own vitest project,
-// never run in CI), skipped unless AI_EVALS_LIVE=1 + ANTHROPIC_API_KEY +
+// LIVE scoring eval for AI-2 assistAppeal (part of the 4-feature eval suite,
+// 2026-07-24). Scores the REAL 3-stage pipeline (generate -> deterministic
+// paragraph gate -> self-verify judge) via assistAppealScoring.ts's
+// classification of the pipeline's own `reason` string — deliberately NOT
+// using the internal self-judge verifyScore as the primary cross-provider
+// metric (see that module's header: one provider generating AND grading its
+// own output is not comparable to another provider doing the same to ITS OWN
+// output). Same double gate as every other eval here: packages/ai/evals/
+// (never run in CI), skipped unless AI_EVALS_LIVE=1 + ANTHROPIC_API_KEY +
 // DATABASE_URL are all present.
 //
-// Corpus is the REAL shipped rule set (explainFlagCorpus.ts), so cache
-// collisions are a non-issue: each eval run creates its own fresh tenant
-// (newId()), and flag_explanations is cache-keyed by (tenant, rule, version)
-// — a fresh tenant means every item is a genuine live model call, never a
-// cache hit from a prior run.
-//
-// The per-item loop (try/classify/react to balance/rate-limit/transient/
-// schema-invalid) lives in resilience.ts's runEvalLoop — shared across all 3
-// new eval files rather than copy-pasted, so a resilience-policy change
-// applies everywhere at once.
+// Neither of assistAppeal()'s two runStructured calls (generate, verify) has
+// a surrounding try/catch, so a schema-validation failure on either one DOES
+// propagate to this eval loop exactly like every other feature — scored as a
+// miss via runEvalLoop's schema-invalid handling (resilience.ts), not
+// rethrown. (An earlier version of this file incorrectly assumed this case
+// couldn't happen here; corrected 2026-07-24 after review found the same
+// mistaken assumption already flagged as a real bug on explainFlag.eval.ts.)
 
 const LIVE = process.env.AI_EVALS_LIVE === "1";
 const adminUrl = process.env.DATABASE_URL ?? "";
 const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
 const REPORT_DIR = new URL("./.output/", import.meta.url);
-const IT_TIMEOUT_MS = 600_000;
+const IT_TIMEOUT_MS = 900_000;
 
 function writeJsonReport(fileName: string, report: unknown): void {
   mkdirSync(REPORT_DIR, { recursive: true });
@@ -44,7 +44,7 @@ function writeJsonReport(fileName: string, report: unknown): void {
 }
 
 describe.skipIf(!LIVE || !adminUrl || !hasKey)(
-  "explainFlag LIVE eval (AI_EVALS_LIVE=1 + ANTHROPIC_API_KEY + DATABASE_URL)",
+  "assistAppeal LIVE eval (AI_EVALS_LIVE=1 + ANTHROPIC_API_KEY + DATABASE_URL)",
   () => {
     let adminPool: Pool;
     let appPool: Pool;
@@ -66,7 +66,6 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
       const client = await adminPool.connect();
       try {
         await client.query("DELETE FROM llm_calls WHERE tenant_id = $1", [tenant]);
-        await client.query("DELETE FROM flag_explanations WHERE tenant_id = $1", [tenant]);
         await client.query("DELETE FROM tenant_ai_settings WHERE tenant_id = $1", [tenant]);
         await client.query("DELETE FROM tenants WHERE id = $1", [tenant]);
       } finally {
@@ -77,36 +76,33 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
     });
 
     it(
-      "scores the real rule corpus against objective safety-constraint checks",
+      "scores the appeal-facts corpus (objective paragraph-gate pass rate as the primary metric)",
       async () => {
         const loop = await runEvalLoop(
-          EXPLAIN_FLAG_CORPUS,
-          (flag) => flag.ruleId,
-          (flag) =>
-            explainFlag({
+          ASSIST_APPEAL_CORPUS,
+          (fixture) => fixture.id,
+          (fixture) =>
+            assistAppeal({
               actor: "eval-runner",
               tenantId: tenant,
               pool: appPool,
-              flag,
-              // See extractEob.eval.ts's identical fix (2026-07-18) for why
-              // process.env must be spread first — a bare literal here fully
-              // replaces process.env for this call, hiding ANTHROPIC_API_KEY.
+              input: fixture.input,
               env: {
                 ...process.env,
                 TAWEED_AI_ENABLED: "true",
-                TAWEED_AI_EXPLAIN_ENABLED: "true",
+                TAWEED_AI_APPEAL_ENABLED: "true",
               },
             }),
-          (result) => scoreExplainFlag(result),
-          schemaInvalidExplainFlagCheck,
-          "[explainFlag-eval]",
+          (result) => scoreAssistAppeal(result),
+          schemaInvalidAssistAppealCheck,
+          "[assistAppeal-eval]",
         );
 
-        const report = buildExplainFlagReport("anthropic-1p", loop.checks);
+        const report = buildAssistAppealReport("anthropic-1p", loop.checks);
         const meta = buildRunMeta({
           provider: "anthropic-1p",
-          model: "claude-haiku",
-          fullCorpusSize: EXPLAIN_FLAG_CORPUS.length,
+          model: "claude-opus",
+          fullCorpusSize: ASSIST_APPEAL_CORPUS.length,
           scoredCount: loop.checks.length,
           skippedDocIds: loop.skipped,
           stopReason: loop.stopReason,
@@ -114,11 +110,10 @@ describe.skipIf(!LIVE || !adminUrl || !hasKey)(
         });
 
         console.table([report]);
-        console.log("[explainFlag-eval] meta:", meta);
+        console.log("[assistAppeal-eval] meta:", meta);
 
-        writeJsonReport("explainFlag-anthropic.json", { ...report, ...meta });
+        writeJsonReport("assistAppeal-anthropic.json", { ...report, ...meta });
 
-        // Harness-plumbing assertions only — never a model-quality gate.
         expect(report.itemCount).toBe(loop.checks.length);
         expect(meta.scoredCount).toBe(loop.checks.length);
       },

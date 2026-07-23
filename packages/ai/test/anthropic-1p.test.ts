@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { AnthropicError, APIError, RateLimitError } from "@anthropic-ai/sdk";
 import {
   buildSystemBlocks,
   buildUserContent,
   mapParseResponse,
   supportsInferenceGeo,
+  isSdkParseFailure,
   type ParseResponseLike,
 } from "../src/anthropic-1p.js";
 import { LLM_MODEL_IDS } from "../src/models.js";
@@ -70,6 +72,35 @@ describe("supportsInferenceGeo", () => {
   it("returns true for Sonnet and Opus — both accept inference_geo", () => {
     expect(supportsInferenceGeo(LLM_MODEL_IDS.sonnet)).toBe(true);
     expect(supportsInferenceGeo(LLM_MODEL_IDS.opus)).toBe(true);
+  });
+});
+
+describe("isSdkParseFailure", () => {
+  // Found live 2026-07-24: anthropic.messages.parse() throws a bare
+  // AnthropicError (not mapParseResponse's normal return) when the SDK's own
+  // JSON.parse/zod validation of the model's raw completion fails — this is
+  // the discriminator that lets the provider convert JUST that case to
+  // parsed:null without swallowing real infrastructure errors.
+  it("returns true for a bare AnthropicError (the SDK's own parse-failure shape)", () => {
+    const err = new AnthropicError(
+      "Failed to parse structured output: SyntaxError: Unterminated string in JSON",
+    );
+    expect(isSdkParseFailure(err)).toBe(true);
+  });
+
+  it("returns false for APIError and its subclasses (real infrastructure failures)", () => {
+    expect(isSdkParseFailure(new APIError(500, undefined, "server error", undefined))).toBe(
+      false,
+    );
+    expect(
+      isSdkParseFailure(new RateLimitError(429, undefined, "rate limited", new Headers())),
+    ).toBe(false);
+  });
+
+  it("returns false for a plain Error or non-Error value", () => {
+    expect(isSdkParseFailure(new Error("something else"))).toBe(false);
+    expect(isSdkParseFailure("a string")).toBe(false);
+    expect(isSdkParseFailure(undefined)).toBe(false);
   });
 });
 

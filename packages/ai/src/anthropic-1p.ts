@@ -1,5 +1,5 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { AnthropicError, APIError } from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { mapTaweedModel, LLM_MODEL_IDS } from "./models.js";
 import type {
@@ -124,6 +124,26 @@ export function mapParseResponse<T>(
   };
 }
 
+/**
+ * `anthropic.messages.parse()` (the SDK's own zodOutputFormat helper) throws a
+ * bare `AnthropicError` — not `mapParseResponse`'s normal return path — when
+ * the model's raw completion fails the SDK's internal JSON.parse or zod
+ * validation (e.g. a truncated response cut off mid-string by max_tokens).
+ * Found live 2026-07-24: this broke the null-on-parse-failure contract every
+ * OTHER provider (gemini-1p.ts, glm-1p.ts, fixture.ts) already follows —
+ * `assistAppeal.eval.ts`'s Opus-tier generate call hit exactly this on a real
+ * run ("Failed to parse structured output: ...Unterminated string..."),
+ * crashing the whole eval instead of surfacing as a scoreable parse miss.
+ * `APIError` (network/HTTP failures — auth, rate limit, timeout, 5xx) is a
+ * SEPARATE subclass of `AnthropicError`, not this bare base-class throw, so
+ * checking `instanceof AnthropicError && !(instanceof APIError)` catches only
+ * the parse-failure case and lets every real infrastructure error keep
+ * propagating exactly as before.
+ */
+export function isSdkParseFailure(err: unknown): boolean {
+  return err instanceof AnthropicError && !(err instanceof APIError);
+}
+
 // Bound the request so a hung upstream can't stall a caller indefinitely (the
 // explainer's payload is tiny — 1024 max_tokens — so 30s is generous). This is
 // the CLIENT default; a call with a heavier payload (e.g. AI-4's PDF
@@ -145,19 +165,46 @@ export function createAnthropicProvider(
     ): Promise<StructuredResult<T>> {
       const started = Date.now();
       const model = mapTaweedModel(req.model);
-      const res = await anthropic.messages.parse({
-        model,
-        max_tokens: req.maxTokens,
-        system: buildSystemBlocks(req.system, req.cacheSystem),
-        messages: [
-          { role: "user", content: buildUserContent(req.user, req.documents) },
-        ],
-        output_config: { format: zodOutputFormat(req.schema) },
-        // Data-residency pin — only on models that accept it (see header).
-        ...(supportsInferenceGeo(model) ? { inference_geo: INFERENCE_GEO } : {}),
-      }, req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : undefined);
+      let res: unknown;
+      try {
+        res = await anthropic.messages.parse({
+          model,
+          max_tokens: req.maxTokens,
+          system: buildSystemBlocks(req.system, req.cacheSystem),
+          messages: [
+            { role: "user", content: buildUserContent(req.user, req.documents) },
+          ],
+          output_config: { format: zodOutputFormat(req.schema) },
+          // Data-residency pin — only on models that accept it (see header).
+          ...(supportsInferenceGeo(model) ? { inference_geo: INFERENCE_GEO } : {}),
+        }, req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : undefined);
+      } catch (err) {
+        if (!isSdkParseFailure(err)) throw err;
+        // See isSdkParseFailure's doc comment — this is a real model-output
+        // miss (truncated/malformed JSON), not an infrastructure failure.
+        // Matches every other provider's null-on-parse-failure contract.
+        //
+        // requestId: the SDK throws BEFORE returning any response object, so
+        // there is no real request id to report. audit.ts's writeLlmCall
+        // requires a non-empty string when requestId is provided at all (an
+        // empty string — found live 2026-07-24 — fails that check, which
+        // then fails run.ts's audit-write CLOSED and discards this
+        // already-correctly-null result with an unrelated-looking DB error).
+        // A clear sentinel (matching fixture.ts's `fixture-${key}` precedent
+        // for "no real id available") satisfies both StructuredResult's
+        // `requestId: string` contract and the audit table's non-empty check
+        // while staying honest that it isn't a genuine Anthropic request id.
+        return {
+          parsed: null,
+          model,
+          requestId: "anthropic-sdk-parse-failure",
+          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
+          latencyMs: Date.now() - started,
+          rawOutput: "",
+        };
+      }
       return mapParseResponse<T>(
-        res as unknown as ParseResponseLike<T>,
+        res as ParseResponseLike<T>,
         Date.now() - started,
       );
     },
