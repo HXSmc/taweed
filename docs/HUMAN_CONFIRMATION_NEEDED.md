@@ -636,6 +636,15 @@ until the tool itself is fixed upstream. Current draft IDs: My Clinic `r78778410
 Saba Medical `r-2575053713370116665`, Stars Smile `r-3128914315576730979`, AlShakreen
 `r5725186440762902921`, Roaya Eye Center `r-6703052326925150029`, Ryan Clinics
 `r929597018442556647`, Almosa `r-917208773868999506` (English, unaffected by the bug).
+
+**✅ Roaya Eye Center — email bounced, resent via WhatsApp instead, SENT 2026-07-23.**
+`info@roayaeyecenter.com` bounced ("address not found," mailer-daemon). Checked their site
+(no email listed anywhere, only phone/WhatsApp), checked ZoomInfo/RocketReach/Lusha (all mask the
+address, same `@roayaeyecenter.com` domain as the bounced one — no verified alternate found).
+Founder authorized sending the same message via WhatsApp instead, to their listed number
+`966920007606` — **sent**, message ID `3EB0E34480FC6E1D3EFD6E`. Same validation-meeting text,
+Abdullah Alsaadoun signature. The `r-6703052326925150029` email draft is now moot (bounced
+address) — leave as-is or discard, WhatsApp is the live channel for Roaya going forward.
 **To:** `abrar.alessa@almoosahealth.com.sa` — Almoosa exec contact, provided directly by founder.
 **⚠️ Scope note:** Almosa is a hospital, above this project's usual mid-market-clinic ICP ceiling
 (§6 explicitly excludes hospital groups from the 36-account list) — added here as a possible
