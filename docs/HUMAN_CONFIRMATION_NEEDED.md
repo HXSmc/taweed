@@ -622,10 +622,20 @@ edit applied: em dashes removed, other AI-slop phrasing trimmed, Arabic greeting
 "مرحبًا د. [اسم الطبيب]" to "مرحبا فريق [اسم العيادة]" (per-clinic real name), and Almosa's draft
 carries the founder's own edit (Hello Dr. Abrar, / "We" voice) plus the Abdullah Alsaadoun
 signature. **`contact.taweed@gmail.com` is now the working outreach inbox** — `taweed.ksa@gmail.com`
-and its 7 old drafts are stale, left as-is, not deleted. Draft IDs: My Clinic
-`r-8069172292547058558`, Saba Medical `r9056592108510621999`, Stars Smile `r-2650023372984296018`,
-AlShakreen `r5029319462977092505`, Roaya Eye Center `r8806056778660780148`, Ryan Clinics
-`r-8885949771378380616`, Almosa `r-917208773868999506`.
+and its 7 old drafts are stale, left as-is, not deleted.
+
+**🐛 Bug found + fixed 2026-07-23: multi-gmail MCP's `create_draft` mis-encodes non-ASCII
+subject lines** — the 6 Arabic subjects came out as raw UTF-8 bytes with no RFC 2047 encoded-word
+wrapper, which Gmail then displayed as mojibake (`Ø³Ø¤Ø§Ù„ Ø³Ø±ÙŠØ¹...`) — body text was unaffected
+(only the Subject header). Fix: pass the subject pre-encoded as
+`=?UTF-8?B?<base64 of the UTF-8 bytes>?=` — confirmed this renders correctly in Gmail. All 6
+Arabic drafts were recreated this way and the 6 garbled originals + a leftover test draft were
+trashed (`add_label` → `TRASH`; `archive_email` doesn't touch drafts since they were never in the
+inbox). **Any future non-English subject sent through this MCP needs the same RFC 2047 workaround**
+until the tool itself is fixed upstream. Current draft IDs: My Clinic `r7877841075933532230`,
+Saba Medical `r-2575053713370116665`, Stars Smile `r-3128914315576730979`, AlShakreen
+`r5725186440762902921`, Roaya Eye Center `r-6703052326925150029`, Ryan Clinics
+`r929597018442556647`, Almosa `r-917208773868999506` (English, unaffected by the bug).
 **To:** `abrar.alessa@almoosahealth.com.sa` — Almoosa exec contact, provided directly by founder.
 **⚠️ Scope note:** Almosa is a hospital, above this project's usual mid-market-clinic ICP ceiling
 (§6 explicitly excludes hospital groups from the 36-account list) — added here as a possible
