@@ -94,6 +94,24 @@ const nextConfig = {
   // binary (@napi-rs/canvas) that webpack cannot parse as a module — these
   // must stay external and be `require()`d directly by the Node server
   // runtime instead of bundled.
+  //
+  // @napi-rs/canvas and pdf-parse are also direct dependencies of THIS
+  // package (apps/web), even though the only import site is
+  // packages/ingest/src/pdf-text-layer.ts. Root cause: a real
+  // `require("@napi-rs/canvas")` at runtime resolves from wherever the
+  // COMPILED output file lives (apps/web/.next/server/...), not from the
+  // original source file's location — but pnpm's strict, per-package
+  // isolated node_modules only created the `@napi-rs/canvas` symlink under
+  // packages/ingest/node_modules (where the dependency was declared), which
+  // is unreachable from apps/web's own resolution chain. Declaring it here
+  // too gives apps/web its own symlink into the same pnpm store, which is
+  // what actually makes the module resolvable at runtime — and, as a
+  // bonus, is what let Next's Output File Tracing (OFT / @vercel/nft)
+  // discover and package the native platform binary correctly on its own
+  // (confirmed: an `outputFileTracingIncludes` glob-based workaround was
+  // tried first and did NOT fix the live MODULE_NOT_FOUND — the files were
+  // traceable but the symlink Node needs for resolution was still missing;
+  // fixing the dependency declaration fixed both issues at once).
   serverExternalPackages: ["pg", "pdf-parse", "pdfjs-dist", "@napi-rs/canvas"],
   webpack: (config, { isServer }) => {
     // Workspace packages use ESM ".js" import specifiers that point at ".ts"

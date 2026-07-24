@@ -12,6 +12,7 @@ export default tseslint.config(
       "**/next-env.d.ts",
       "**/*.config.{ts,cts,mts}",
       "packages/db/drizzle/**",
+      ".claude/**",
     ],
   },
   {

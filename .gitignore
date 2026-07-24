@@ -43,3 +43,5 @@ docs/audit docs/
 apps/web/public/axe-core-audit.min.js
 # temp: chrome-devtools MCP manual-QA fixtures, never commit
 .scratch/
+.vercel
+.env*

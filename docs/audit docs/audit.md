@@ -46,6 +46,7 @@
 | 23 | Continued investigation — corrects pass #22 finding #23 (client-side RSC-apply gap, real root cause) | 2026-07-19 | `bugs.md` | 1 confirmed+fixed across 4 call sites (finding #24: Recovery, branch switcher, EOB review, rule authoring all forced to hard navigation); bug (3) confirmed resolved by pass #22's fix, no separate bug | unit 1049/1049, typecheck green, verified live via chrome-devtools against rebuilt local production server |
 | 24 | **Item 0 (NEW), idea pressure-test** — hub-run, Paul Graham YC-evaluator frame, per explicit user request | 2026-07-21 | `idea-pressure-test.md` (new, gitignored) | **Verdict: WEAK, not pivot-required** — core value prop (do clinics actually feel/pay for this) still empirically unproven (`HUMAN_CONFIRMATION_NEEDED.md` A1/A2), and the fastest path to proving it (a real free-audit design partner) is itself blocked on CR formation, not yet started. Investment order inverted (built before validated), not a bad idea. Mitigation is a business action already identified in the docs (land CR + first design partner), not a code fix — loop paused pending either landing. | n/a — judgment task, no code gate |
 | 25 | **Full `/audit-workflow` re-run, items 1-8, incremental/diff-scoped since a796b65** — 4 parallel GLM find-only spokes (bugs+security+auth+deps combined, WCAG, minimap+UI-slop, ponytail — ponytail routed to GLM this run per explicit user correction, no longer hub-run) + 1 GLM fix spoke + hub-run agy dependency research | 2026-07-21 | `bugs.md`, `secure.md`, `a11y.md`, `deps.md`, `minimap.md`, `ponytail-debt.md`, `ui-slop.md` | **1 confirmed+fixed** (finding #25: missing `catch` in new `recovery-outcome-actions.tsx`, RPC-rejection surfaced no operator error — parity fix matching sibling components). Items 2/3/6/7/8 came back 0 new findings (clean, diff-scoped). Item 4: `pnpm audit` clean, brace-expansion CVE confirmed resolved, real May-2026 Next.js advisories confirmed inapplicable (installed 15.5.20 above every patched ceiling) — **1 agy fabrication caught and refuted** (a claimed "new 2026-07-21 disclosure" that doesn't exist in the real GitHub advisories API, same failure pattern as pass #17). Item 9 (production readiness): still gated, `BLK-7`/`BLK-8` both open, re-confirmed not public-facing. | tsc clean, unit **1050/1050**, lint matches known `.claude/**` baseline exactly (0 tracked files confirmed), build green (all locale routes prerendered); int suite not re-run (UI-only fix, same proportionality call as pass #18) |
+| 26 | **Full `/audit-workflow` re-run, incremental/diff-scoped since 96e14fa (first real Vercel deploy landed this pass)** — 1 GLM combined find spoke (bugs+security+auth+ponytail+UI-slop over the scoped diff only), item 4 reused Phase-4-verified CVE checks (no new agy dispatch — same-session evidence), item 9 gate re-evaluated fresh against `docs/blocker.md` | 2026-07-24 | `minimap.md` (new subsystem #10), gate note below | **0 new confirmed findings.** Scope: this session's uncommitted deploy-fix diff (already independently reviewed 3× — architecture/correctness, security, code-quality — as this task's own Phase 4; 1 real bug found there and fixed: `seed-prod.ts` was using a test helper's hardcoded weak DB password instead of an env-overridable one) + the `aae37c7` eval-suite-extension commit (13 new files under `packages/ai/evals/`, read in full, 3 candidates considered and refuted with file:line evidence) + confirmed the `f8b39e2` Next 15.5.21 bump is genuinely installed, nothing downgrades it. Item 4: `@napi-rs/canvas@0.1.80` (patched past the only known low-severity issue, ≤0.1.65) and `pdf-parse@2.4.5` (no known CVEs) — both already verified in Phase 4's security review, cited directly rather than re-researched. Item 9: re-confirmed still gated — Vercel/Neon hosting is now genuinely live and public (`taweed.vercel.app`), satisfying the gate's "real domain/hosting live" half for the first time, but `BLK-7` (KSA-resident OIDC) stays 🔴 open by explicit task scope (dev-auth intentional for this synthetic-data deploy) — the gate's AND condition still isn't met, item 9 correctly stays skipped, not stale. | tsc clean; `eslint scripts/seed*.ts packages/ai/evals/` clean; unit `eval-*` suite 69/69 passed; full monorepo QA gates (this task's own Phase 3, run just before this audit pass) — typecheck/lint/unit 1111/1111/int 43/43/build all green |
 
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
@@ -120,6 +121,20 @@ first.
 **Re-confirmed 2026-07-21 (item 25 below): still NOT public-facing.** `docs/blocker.md` checked
 fresh — `BLK-7` (KSA-resident OIDC) and `BLK-8` (Oracle Riyadh creds) both still 🔴 open, no
 deployment landed. Gate decision unchanged; item 9 stays skipped.
+
+**Re-confirmed 2026-07-24 (item 26 above) — status CHANGED, still skipped, but for a narrower
+reason now.** The app is now genuinely deployed and publicly reachable at `taweed.vercel.app`
+(Vercel + Neon Postgres, real hosting, real RLS-scoped multi-tenant DB) — this satisfies the
+gate's "real domain/hosting live" half for the first time. But the gate is an AND, not an OR:
+`BLK-7` (KSA-resident OIDC) is still 🔴 open, and this deploy's own task scope EXPLICITLY keeps
+auth on the existing `TAWEED_ENABLE_DEV_AUTH` passwordless demo-login path by design (not an
+oversight — see this task's own Phase 0 spec) — no real auth provider was swapped in. So item 9
+still stays skipped, but future re-runs should know the hosting half is now real: **the trigger to
+finally un-skip item 9 is BLK-7 closing (a real OIDC provider landing), not another hosting
+change** — Vercel/Neon is not going away, and re-deploying to it again doesn't move this gate
+further. Note also: this Vercel/Neon deployment is a separate track from `BLK-8` (Oracle Cloud
+Riyadh, `infra/`'s Terraform skeleton) — closing BLK-8 doesn't affect this gate either, since this
+demo deploy was never going to use that infra. Only BLK-7 matters for item 9 going forward.
 
 ## Queue completion summary — 2026-07-21 incremental `/audit-workflow` run (item 25, item 10 equiv.)
 
@@ -240,6 +255,47 @@ planning, spec-writing, the item-0 judgment task, independent dependency-advisor
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #26 — first real Vercel deploy + incremental audit re-run (2026-07-24)
+
+- **A live production error that persists identically after a "correct-looking" fix (verified
+  against real trace-manifest evidence, twice) is a signal the diagnosis is wrong, not that the
+  fix needs a third variation.** The `@napi-rs/canvas` MODULE_NOT_FOUND bug got a first fix
+  (`outputFileTracingIncludes` in `next.config.mjs`) that looked verified — a real `.nft.json` grep
+  showed nonzero trace entries after the change — and still failed identically live across two
+  redeploys, one cache-free. The actual root cause (pnpm's per-package `node_modules` isolation
+  meant `apps/web` itself had no resolvable symlink to the dependency, regardless of what OFT
+  traced) was one layer beneath what the first fix addressed. **"The trace manifest changed" is
+  not the same claim as "the runtime require will resolve" — a temporary diagnostic route
+  (`fs.readdirSync`/`require.resolve` against the live deployed function, deleted after use) gave
+  ground truth in one deploy cycle where two rounds of "looks right locally" guessing hadn't.**
+  When a fix is verified-correct-on-paper but the live symptom doesn't move, stop iterating on the
+  same fix mechanism and get a direct read of the actual deployed runtime state before trying
+  again.
+- **Running the wrong local package-manager version can silently corrupt security-relevant
+  lockfile state with zero error output.** This machine's default `pnpm` (9.15.0) doesn't match
+  this repo's pinned `pnpm@11.13.0` (needs Node ≥22 via corepack; default shell Node is 20.2.0).
+  Running `pnpm install` under the wrong version silently stripped `pnpm-workspace.yaml`'s
+  `overrides:` CVE-remediation block from `pnpm-lock.yaml` — no error, no warning, just a smaller
+  lockfile. Caught only because `git diff --stat pnpm-lock.yaml` was checked before treating the
+  install as done, per this file's own standing discipline (see pass #14's git-diff-before-assuming
+  lesson, applied here to package-manager output instead of agent output). **Always diff a
+  regenerated lockfile before trusting it, even for a routine `pnpm install` — a version mismatch
+  can drop content as quietly as a bad agent run can.**
+- **Right-sizing an incremental audit pass to a genuinely tiny diff is not corner-cutting when the
+  diff was already reviewed by an equal-or-greater-rigor process minutes earlier.** This pass's
+  scoped-diff GLM spoke came back with 0 new findings — expected and correct, not a shallow-run
+  signal, because this task's own Phase 4 had already run 3 independent parallel reviewers
+  (architecture/correctness, security, code-quality) over the exact same diff and found (and fixed)
+  the one real issue. Re-running the full 10-item queue from scratch on a 6-file diff over a
+  25-pass-audited codebase would have been pure duplication, not thoroughness.
+- **A gate re-evaluation can legitimately change "why" something is skipped without changing
+  "whether."** Item 9 (production readiness) was skipped in every prior pass because NEITHER half
+  of its AND condition (real hosting, real auth) was true. This pass is the first time one half
+  (hosting) became genuinely true — worth recording precisely, because a future pass that only
+  checks "is item 9 still skipped? yes" without reading why would miss that the remaining blocker
+  narrowed from two open items to exactly one (`BLK-7`), which changes what future work should
+  actually watch for as the real trigger to finally run item 9.
 
 ### Real CI failure caught post-item-7, fixed same session (2026-07-18)
 
