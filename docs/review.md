@@ -529,7 +529,20 @@ Expected: all integration tests green (baseline 37 passing, up from ~33 pre-AI-4
 > 888/924). Two new manual walkthrough fixtures also ship in `docs/test-fixtures/` from this pass —
 > see §1.14 Fixtures 7-8.
 
+**Load testing (`scripts/load-test.ts`, `autocannon`) — opt-in, never run by CI, hits a real live
+deployment.** Run against production for real numbers (real latency/error rate under concurrent
+load — landing page, cached authenticated analytics page, a bounded authenticated ingest-page
+read):
 
+```fish
+env BASE_URL=https://taweed.vercel.app \
+    ~/.local/bin/pnpm --filter @taweed/web load-test
+```
+
+Real 2026-07-24 run: zero errors/timeouts across all 3 scenarios, p50 latency ~590-615ms, p99
+under 1.2s — see `docs/load-test-report.md` for the full numbers and the (deliberate) finding that
+the analytics cache's effect isn't visible in end-to-end HTTP latency at this concurrency (the
+unit test's call-count assertions are the real proof the cache works, not this load test).
 
 **Full build check** (the root `build` script is just the type check; to run the real Next.js production build):
 

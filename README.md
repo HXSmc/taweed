@@ -198,3 +198,10 @@ are never run by CI or `pnpm test`/`pnpm test:int`. Opt in explicitly:
 ```bash
 env AI_EVALS_LIVE=1 pnpm vitest run --project evals
 ```
+
+Load testing (`scripts/load-test.ts`, `autocannon`) hits a real deployment and is never run by
+CI or `pnpm test`/`pnpm test:int`. Point it at a real URL:
+
+```bash
+env BASE_URL=https://taweed.vercel.app pnpm --filter @taweed/web load-test
+```
