@@ -1,11 +1,17 @@
 # Handoff — start here (next session)
 
-> Entry point for a new Claude Code session picking up Taweed. Read this, then run the
+> Entry point for a new Claude Code session picking up Taweed. **New engineering partner? Read
+> `summary.md` at the repo root FIRST** (business context, full repo/docs minimap), then this
+> file. Then run the
 > next-step prompt (`docs/NEXT_STEP_PROMPT.md`). Blocker register + a per-blocker unblock prompt:
-> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-16 (newest entries at the end of the
-> log below: the real-tester bug-fix pass + the 2026-07-16 docs-only follow-ups — blocker.md,
-> review.md AI-4 eval sync, and deferred.md/DEF-1 — are all merged and pushed to `origin/main`, CI
-> green). Earlier context (kept for history): 2026-07-10 (**the EXECUTE UI tail — A2
+> `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-24 (newest entries at the end of the
+> log below: first real Vercel+Neon production deploy, then a same-day production-hardening pass —
+> caching, async EOB extraction, load testing, a live-monitored seeding investigation with an
+> honest non-result, and a proven `seed-prod.ts` run — all merged and pushed to `origin/main`,
+> Phase 4-validated by 3 parallel reviewers, CI green). Earlier: 2026-07-16 (the real-tester bug-fix
+> pass + the docs-only follow-ups — blocker.md, review.md AI-4 eval sync, and deferred.md/DEF-1 —
+> all merged and pushed to `origin/main`, CI green). Earlier context (kept for history): 2026-07-10
+> (**the EXECUTE UI tail — A2
 > first-run corridor + A3 free-audit/owner reports — is now BUILT** on branch `execute-ui-tail`, in
 > this directory, not yet merged to `main`; see the new bullet in "Where the project stands" below
 > and `docs/NEXT_STEP_PROMPT.md` for what comes after). Earlier the same day: **a full 6-pass
