@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { parseBundle, type ClaimPair } from "@taweed/fhir";
 import { normalize, type NormalizeContext } from "@taweed/normalizer";
 import { insertNormalizedClaim } from "@taweed/db";
@@ -8,6 +8,7 @@ import { authorizeAction } from "@/lib/authz";
 import { withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
 import { resolveFirstDimensions } from "@/lib/tenant-dimensions";
+import { analyticsTag } from "@/lib/cache-tags";
 
 // Per-tenant+actor throttle for this action (common/security.md): each call does
 // an unbounded JSON.parse plus a per-claim DB insert loop, so without a ceiling
@@ -186,6 +187,10 @@ export async function ingestBundle(formData: FormData): Promise<IngestResult> {
   }
 
   revalidatePath("/[locale]/(app)", "layout");
+  // Invalidate this tenant's cached analytics aggregations — the ingested
+  // claims/denials change every rollup the Analytics/Overview pages serve from
+  // cache. Scoped to THIS tenant's tag only (never another tenant's).
+  revalidateTag(analyticsTag(session.tenantId));
   return {
     ok: true,
     fileName,

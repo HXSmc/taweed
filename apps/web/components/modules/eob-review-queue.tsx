@@ -125,7 +125,20 @@ export function EobReviewQueue({ rows }: { rows: EobReviewRow[] }) {
                   <TD className="max-w-[16rem] truncate">{row.sourceFilename}</TD>
                   <TD className="mono text-label text-muted">{row.model}</TD>
                   <TD>
-                    {row.extraction ? (
+                    {row.status === "processing" ? (
+                      // The async extraction path lands the row as 'processing'
+                      // before the heavy AI work in `after()` flips it to
+                      // 'pending_review'. A 'processing' row has no extraction
+                      // payload yet (confidence is meaningless) and isn't
+                      // reviewable — a distinct spinning badge is the MVP so a
+                      // user who just uploaded isn't staring at an empty queue
+                      // or a broken/unreadable row. No polling: the existing
+                      // page-load read picks up the transition on next reload.
+                      <Badge variant="neutral">
+                        <Loader2 className="size-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                        {t("processing")}
+                      </Badge>
+                    ) : row.extraction ? (
                       <ConfidenceBadge value={row.extraction.overallConfidence} />
                     ) : (
                       <Badge variant="neutral">
@@ -146,7 +159,11 @@ export function EobReviewQueue({ rows }: { rows: EobReviewRow[] }) {
                     <Button
                       variant="secondary"
                       size="sm"
-                      disabled={!row.extraction}
+                      // A 'processing' row cannot be reviewed yet — its
+                      // extraction hasn't landed. (The approve/reject server
+                      // actions additionally guard on status === 'pending_review',
+                      // so a stale client can never act on one regardless.)
+                      disabled={row.status === "processing" || !row.extraction}
                       onClick={() => setSelectedId(row.id === selectedId ? null : row.id)}
                     >
                       {t("review")}

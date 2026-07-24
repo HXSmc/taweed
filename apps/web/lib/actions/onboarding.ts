@@ -1,11 +1,12 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { sql } from "drizzle-orm";
 import { captureBaseline, getLatestBaseline } from "@taweed/analytics";
 import { logAudit } from "@taweed/audit";
 import { getSession } from "@/lib/session";
 import { withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
+import { analyticsTag } from "@/lib/cache-tags";
 
 // Per-tenant+actor throttle for this mutating action, mirroring every sibling
 // action in this directory (ingest.ts, recovery.ts, appeals.ts, ...).
@@ -55,5 +56,12 @@ export async function completeOnboarding(): Promise<CompleteOnboardingResult> {
   });
 
   revalidatePath("/[locale]", "layout");
+  // The baseline capture above changes what getRecovery/getOwnerReportData's
+  // cached bundles read via getLatestBaseline (apps/web/lib/data.ts) — without
+  // this, a tenant who viewed Recovery/Owner-report pre-onboarding (baseline
+  // still null) could see stale data for up to the cache's TTL right after
+  // completing onboarding, exactly the "first-insight" moment this action
+  // exists for. Found in Phase 4 validation (architecture/correctness review).
+  revalidateTag(analyticsTag(session.tenantId));
   return { ok: true };
 }

@@ -1,4 +1,5 @@
 "use server";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
   EobExtractionSchema,
@@ -6,31 +7,41 @@ import {
   isAiDisabledError,
   isAiConfigError,
 } from "@taweed/ai";
-import { extractEobFromPdf, extractPdfTextLayer } from "@taweed/ingest";
+import {
+  extractEobFromPdf,
+  extractPdfTextLayer,
+  type EobExtractionAdapter,
+} from "@taweed/ingest";
 import { logAudit } from "@taweed/audit";
 import { authorizeAction } from "@/lib/authz";
 import { appPool, withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
-import { insertPendingEobExtraction } from "@/lib/eob-review-data";
+import {
+  insertProcessingEobExtraction,
+  completeEobExtractionProcessing,
+  failEobExtractionProcessing,
+} from "@/lib/eob-review-data";
 import { describeErrorForLog } from "@/lib/error-log";
 
 // AI-4 — the PDF-drop ingest path (plan 04 §9): a payer EOB/remittance PDF
 // goes through resolveEobExtractionAdapter (the isFeatureEnabled("extractEob")
-// gate) -> packages/ingest's extractEobFromPdf seam -> a NEW eob_extractions
-// row ('pending_review'), which the existing review-queue UI/actions
-// (eob-review-data.ts / actions/eob-review.ts) already read, approve, and
-// reject. This file only ever CREATES a pending row; it never approves one or
-// touches claims/denials — that gate is entirely the human-reviewed approve
-// action's job.
+// gate) -> a NEW eob_extractions row ('processing'), returned to the client
+// FAST. The heavy work — packages/ingest's extractPdfTextLayer +
+// extractEobFromPdf seam — runs in `after()` (next/server) AFTER the response
+// is flushed, transitioning that same row to 'pending_review' (success) or
+// 'failed' (caught throw). The existing review-queue UI/actions
+// (eob-review-data.ts / actions/eob-review.ts) then read, approve, and reject
+// the 'pending_review' rows. This file only ever CREATES a row and runs the
+// extraction into it; it never approves one or touches claims/denials — that
+// gate is entirely the human-reviewed approve action's job.
 //
 // Feature gate, precisely: resolveEobExtractionAdapter(...) is the ONLY branch
 // keyed on the flag (@taweed/ai). When extractEob is off it returns
-// `undefined`, and `extractEobFromPdf(pdfBytes, undefined)` is packages/
-// ingest's UNTOUCHED pre-existing "not wired" throw — this action does not
-// special-case the flag itself; the catch block below runs identically
-// whether the flag is off (not-wired throw), a tenant has AI disabled
-// (AiDisabledError), the provider is misconfigured (AiConfigError), or the
-// model call itself fails.
+// `undefined`, and this action fast-fails synchronously with 'disabled' BEFORE
+// inserting any row. When the flag is on, the billable model call happens
+// inside `after()`; a per-tenant AI disable (AiDisabledError), a misconfigured
+// provider (AiConfigError), or any other extraction failure is caught there and
+// recorded on the row's reason field, transitioning it to 'failed'.
 //
 // Same RBAC + reviewer roles as the FHIR-bundle ingest path (ingestBundle)
 // and the review-queue approve/reject actions.
@@ -120,81 +131,60 @@ export async function extractEobPdfAction(
   if (!hasPdfMagicBytes(pdfBytes)) return { ok: false, error: "invalid" };
 
   // The ONLY branch keyed on isFeatureEnabled("extractEob", env): off ->
-  // undefined -> extractEobFromPdf's pre-existing "not wired" throw below.
+  // undefined. Resolved on the REQUEST path (cheap — a flag read, no model
+  // call) so the global-feature-off case still fast-fails with a distinct
+  // 'disabled' error to the client, WITHOUT inserting a row that would only
+  // ever fail inside `after()`. Per-tenant disable (AiDisabledError) and a
+  // misconfigured provider (AiConfigError) are only detectable once the model
+  // is actually called, so those surface as a 'failed' row from inside the
+  // `after()` callback below rather than a synchronous error code.
   const adapter = resolveEobExtractionAdapter({
     actor: session.userId,
     tenantId: session.tenantId,
     pool: appPool(),
   });
+  if (adapter === undefined) return { ok: false, error: "disabled" };
 
-  // Born-digital PDFs carry their own text layer, independent of whatever the
-  // vision model reads off the page image — eob-validators' "text-layer-match"
-  // check uses it as a non-LLM source-fidelity signal. A scanned PDF has none
-  // (extractPdfTextLayer resolves to undefined, not an error); the adapter
-  // skips that specific check in that case rather than scoring against "".
-  //
-  // Pass a COPY: pdf-parse's pdfjs-dist internals detach the underlying
-  // ArrayBuffer of whatever typed array they're given (a pdfjs-dist
-  // optimization to avoid copying large PDFs). Handing them `pdfBytes`
-  // directly left the buffer empty by the time the vision adapter below
-  // base64-encoded the same reference, so every extraction died with a real
-  // API 400 ("PDF cannot be empty") that surfaced as a generic schema-parse
-  // failure — caught live via chrome-devtools MCP against the real API,
-  // 2026-07-16. `.slice()` copies into a fresh buffer pdf-parse can consume.
-  const textLayer = await extractPdfTextLayer(pdfBytes.slice());
-
-  let extracted;
-  try {
-    extracted = await extractEobFromPdf(pdfBytes, adapter, { textLayer });
-  } catch (err) {
-    if (isAiDisabledError(err)) return { ok: false, error: "disabled" };
-    if (isAiConfigError(err)) return { ok: false, error: "misconfigured" };
-    // Covers packages/ingest's pre-existing "not wired" Error (adapter
-    // undefined) and any other extraction failure — none of these are a
-    // distinct branch from the caller's point of view.
-    console.error(
-      `extractEobPdfAction extraction failed (${describeErrorForLog(err)})`,
-    );
-    return { ok: false, error: "failed" };
-  }
-
-  const parsedExtraction = EobExtractionSchema.safeParse(extracted.data);
-  if (!parsedExtraction.success) {
-    console.error(
-      "extractEobPdfAction: model output failed EobExtractionSchema",
-      parsedExtraction.error,
-    );
-    return { ok: false, error: "failed" };
-  }
-
+  // Insert the row as 'processing' BEFORE the heavy work runs, so the HTTP
+  // response can return immediately. The expensive PDF text-layer parse and
+  // billable AI extraction happen in `after()` (next/server) — after this
+  // response is flushed — and transition this same row to 'pending_review'
+  // (success) or 'failed' (caught throw) once done.
   let rowId: string;
   try {
-    rowId = await insertPendingEobExtraction(session.tenantId, {
+    rowId = await insertProcessingEobExtraction(session.tenantId, {
       actorId: session.userId,
       sourceFilename: file.name,
-      extraction: parsedExtraction.data,
-      // Persist the SAME report the adapter derived escalated/confidence
-      // from — never recomputed independently (see eob-extraction-adapter.ts's
-      // EobExtractionResult.validatorReport doc comment for why that would be
-      // unsafe: a naive re-run without the adapter's exact textLayer/filtering
-      // can disagree with the escalated/confidence already derived from it).
-      // `validator_report` is NOT NULL jsonb — an empty object (not `null`,
-      // which would violate that column) is the defensive fallback for a
-      // hypothetical adapter that omits it; the real Claude adapter always
-      // sets it, so this branch is not expected to be exercised in practice.
-      validatorReport: extracted.validatorReport ?? {},
-      // Both are optional on the generic ingest seam (non-LLM adapters have no
-      // natural "model id"/"prompt hash"); the real Claude adapter always sets
-      // them, but fall back defensively rather than violate the NOT NULL
-      // columns if some future adapter omits them.
-      model: extracted.model ?? extracted.modelTier,
-      escalated: extracted.escalated,
-      promptSha256: extracted.promptSha256 ?? "",
     });
   } catch (err) {
-    console.error("extractEobPdfAction: failed to persist row", err);
+    console.error("extractEobPdfAction: failed to persist processing row", err);
     return { ok: false, error: "failed" };
   }
+
+  // Schedule the heavy work to run after the response is sent. The callback
+  // closes over the already-validated bytes, the resolved adapter, and the
+  // row id — nothing request-scoped is touched after the response flushes.
+  // All DB writes inside it are short, single-purpose UPDATEs (one per
+  // terminal state): a post-response Neon connection must not be held open in
+  // a long transaction (separate seeding-hang investigation against this DB).
+  after(() =>
+    runExtractionAfterResponse({
+      tenantId: session.tenantId,
+      rowId,
+      pdfBytes,
+      adapter,
+    }).catch((err) => {
+      // The callback's own try/catch already transitions the row to 'failed'
+      // on an extraction error; this outer catch is the last-resort guard for
+      // an unexpected throw in the transition itself (e.g. a transient DB
+      // error during the failure UPDATE) so `after()` never rejects
+      // unhandled. The row may stay 'processing' here — the reaper
+      // (reapStalledProcessingExtractions) is the backstop for that case.
+      console.error(
+        `extractEobPdfAction after() threw (${describeErrorForLog(err)})`,
+      );
+    }),
+  );
 
   try {
     await withSession(session.tenantId, (db) =>
@@ -212,4 +202,84 @@ export async function extractEobPdfAction(
 
   revalidatePath("/[locale]/(app)/ingest", "page");
   return { ok: true, rowId };
+}
+
+/**
+ * The post-response half of the PDF-drop ingest path. Runs the text-layer
+ * extraction + the billable AI call and transitions the 'processing' row to a
+ * terminal state. Extracted into its own function so the failure transition is
+ * a single explicit catch around all the heavy work (including the schema
+ * parse), and so it is directly unit-testable without driving the full request
+ * action. Never writes claims/denials — the row only becomes real data on a
+ * later human approve (approveEobExtractionAction).
+ */
+async function runExtractionAfterResponse(args: {
+  tenantId: string;
+  rowId: string;
+  pdfBytes: Uint8Array;
+  adapter: EobExtractionAdapter;
+}): Promise<void> {
+  const { tenantId, rowId, pdfBytes, adapter } = args;
+  try {
+    // Born-digital PDFs carry their own text layer, independent of whatever the
+    // vision model reads off the page image — eob-validators' "text-layer-match"
+    // check uses it as a non-LLM source-fidelity signal. A scanned PDF has none
+    // (extractPdfTextLayer resolves to undefined, not an error); the adapter
+    // skips that specific check in that case rather than scoring against "".
+    //
+    // Pass a COPY: pdf-parse's pdfjs-dist internals detach the underlying
+    // ArrayBuffer of whatever typed array they're given (a pdfjs-dist
+    // optimization to avoid copying large PDFs). Handing them `pdfBytes`
+    // directly left the buffer empty by the time the vision adapter below
+    // base64-encoded the same reference, so every extraction died with a real
+    // API 400 ("PDF cannot be empty") that surfaced as a generic schema-parse
+    // failure — caught live via chrome-devtools MCP against the real API,
+    // 2026-07-16. `.slice()` copies into a fresh buffer pdf-parse can consume.
+    const textLayer = await extractPdfTextLayer(pdfBytes.slice());
+
+    const extracted = await extractEobFromPdf(pdfBytes, adapter, { textLayer });
+
+    const parsedExtraction = EobExtractionSchema.safeParse(extracted.data);
+    if (!parsedExtraction.success) {
+      console.error(
+        "extractEobPdfAction: model output failed EobExtractionSchema",
+        parsedExtraction.error,
+      );
+      await failEobExtractionProcessing(tenantId, rowId, "schema_parse_failed");
+      return;
+    }
+
+    await completeEobExtractionProcessing(tenantId, rowId, {
+      extraction: parsedExtraction.data,
+      // Persist the SAME report the adapter derived escalated/confidence from
+      // — never recomputed independently (see eob-extraction-adapter.ts's
+      // EobExtractionResult.validatorReport doc comment). `validator_report`
+      // is NOT NULL jsonb — `{}` is the defensive fallback for a hypothetical
+      // adapter that omits it; the real Claude adapter always sets it.
+      validatorReport: extracted.validatorReport ?? {},
+      // Both are optional on the generic ingest seam; the real Claude adapter
+      // always sets them, but fall back defensively rather than violate the
+      // NOT NULL columns if some future adapter omits them.
+      model: extracted.model ?? extracted.modelTier ?? "",
+      escalated: extracted.escalated,
+      promptSha256: extracted.promptSha256 ?? "",
+    });
+    // Bust the ingest page cache so a reviewer reloading sees the row land as
+    // 'pending_review' without waiting for the next scheduled revalidation.
+    revalidatePath("/[locale]/(app)/ingest", "page");
+  } catch (err) {
+    // Categorize the failure for the row's reason field. The disabled/
+    // misconfigured distinctions are not surfaced to the client synchronously
+    // in the async path (the response already went out as {ok:true}); they
+    // are recorded here for ops/debuggability instead.
+    let reason: string;
+    if (isAiDisabledError(err)) reason = "ai_disabled";
+    else if (isAiConfigError(err)) reason = "misconfigured";
+    else reason = describeErrorForLog(err);
+    console.error(
+      `extractEobPdfAction extraction failed (${reason})`,
+    );
+    await failEobExtractionProcessing(tenantId, rowId, reason);
+    revalidatePath("/[locale]/(app)/ingest", "page");
+  }
 }

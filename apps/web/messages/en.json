@@ -187,6 +187,7 @@
     "receivedColumn": "Received",
     "actionColumn": "",
     "review": "Review",
+    "processing": "Processing",
     "unreadable": "Unreadable",
     "escalated": "Escalated",
     "escalatedNote": "The model flagged this extraction for extra scrutiny before you approve it.",

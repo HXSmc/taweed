@@ -48,6 +48,10 @@
 | 25 | **Full `/audit-workflow` re-run, items 1-8, incremental/diff-scoped since a796b65** — 4 parallel GLM find-only spokes (bugs+security+auth+deps combined, WCAG, minimap+UI-slop, ponytail — ponytail routed to GLM this run per explicit user correction, no longer hub-run) + 1 GLM fix spoke + hub-run agy dependency research | 2026-07-21 | `bugs.md`, `secure.md`, `a11y.md`, `deps.md`, `minimap.md`, `ponytail-debt.md`, `ui-slop.md` | **1 confirmed+fixed** (finding #25: missing `catch` in new `recovery-outcome-actions.tsx`, RPC-rejection surfaced no operator error — parity fix matching sibling components). Items 2/3/6/7/8 came back 0 new findings (clean, diff-scoped). Item 4: `pnpm audit` clean, brace-expansion CVE confirmed resolved, real May-2026 Next.js advisories confirmed inapplicable (installed 15.5.20 above every patched ceiling) — **1 agy fabrication caught and refuted** (a claimed "new 2026-07-21 disclosure" that doesn't exist in the real GitHub advisories API, same failure pattern as pass #17). Item 9 (production readiness): still gated, `BLK-7`/`BLK-8` both open, re-confirmed not public-facing. | tsc clean, unit **1050/1050**, lint matches known `.claude/**` baseline exactly (0 tracked files confirmed), build green (all locale routes prerendered); int suite not re-run (UI-only fix, same proportionality call as pass #18) |
 | 26 | **Full `/audit-workflow` re-run, incremental/diff-scoped since 96e14fa (first real Vercel deploy landed this pass)** — 1 GLM combined find spoke (bugs+security+auth+ponytail+UI-slop over the scoped diff only), item 4 reused Phase-4-verified CVE checks (no new agy dispatch — same-session evidence), item 9 gate re-evaluated fresh against `docs/blocker.md` | 2026-07-24 | `minimap.md` (new subsystem #10), gate note below | **0 new confirmed findings.** Scope: this session's uncommitted deploy-fix diff (already independently reviewed 3× — architecture/correctness, security, code-quality — as this task's own Phase 4; 1 real bug found there and fixed: `seed-prod.ts` was using a test helper's hardcoded weak DB password instead of an env-overridable one) + the `aae37c7` eval-suite-extension commit (13 new files under `packages/ai/evals/`, read in full, 3 candidates considered and refuted with file:line evidence) + confirmed the `f8b39e2` Next 15.5.21 bump is genuinely installed, nothing downgrades it. Item 4: **incomplete at the time this pass was first marked done** — only checked the 2 newly-added deps (`@napi-rs/canvas@0.1.80`, patched past the only known low-severity issue ≤0.1.65; `pdf-parse@2.4.5`, no known CVEs), reusing Phase 4's already-verified evidence rather than re-running a full-tree `pnpm audit`. That gap let a real, pre-existing issue through: CI's own `pnpm audit --audit-level=high` gate (not this audit pass) caught 3 unpatched advisories on `next-auth@5.0.0-beta.31`/`@auth/core` (2 critical, 1 high) minutes later on the actual push. Fixed same session (bump to `5.0.0-beta.32`, the current real patched release), full-tree `pnpm audit` now clean, verified via a real live sign-in against production post-fix. **Lesson recorded below: a scoped item-4 check on "the deps I just touched" is not the same claim as "the dependency tree has no high/critical CVEs" — always run a full-tree `pnpm audit` before declaring item 4 done, per pass #17's own "ground it in a real tool run first" rule, which this pass should have followed and didn't until CI forced it.** Item 9: re-confirmed still gated — Vercel/Neon hosting is now genuinely live and public (`taweed.vercel.app`), satisfying the gate's "real domain/hosting live" half for the first time, but `BLK-7` (KSA-resident OIDC) stays 🔴 open by explicit task scope (dev-auth intentional for this synthetic-data deploy) — the gate's AND condition still isn't met, item 9 correctly stays skipped, not stale. | tsc clean; `eslint scripts/seed*.ts packages/ai/evals/` clean; unit `eval-*` suite 69/69 passed; full monorepo QA gates (this task's own Phase 3, run just before this audit pass) — typecheck/lint/unit 1111/1111/int 43/43/build all green |
 
+| 27 | **Production-hardening `/autopilot` loop** (caching, async jobs, load testing, seeding root-cause, seed-prod.ts proof) — 2 GLM spokes (Story 1 caching, Story 2 async EOB extraction, parallel wave) + hub-run Story 3/4/5 (load test, live-monitored seeding investigation, seed-prod.ts run) + 3 parallel Phase 4 reviewers (architecture/correctness, security, code quality) | 2026-07-24 | `docs/load-test-report.md` (new), `minimap.md` (seeding-hang entry resolved), `handoff.md` (new entry) | **2 real findings from Phase 4, both fixed:** (1) HIGH — `apps/web/lib/actions/onboarding.ts`'s `completeOnboarding` was missing `revalidateTag`, a genuine staleness bug in the exact "first-insight" flow onboarding exists for (Story 1's cache landed on 4 named write paths per its spec; this 5th site wasn't in that list and was caught by the architecture/correctness reviewer independently tracing every cached-function call site, not just the spec's named paths); (2) MEDIUM — an unsafe double-cast (`as unknown as`) in `data.ts`'s `cachedFor` helper, fixed to a single documented cast. Security reviewer: **ACCEPT**, 1 LOW doc-citation nit fixed. Code quality reviewer: 1 LOW `sql.raw`→parameterized-interval polish fixed. A disputed MEDIUM (whether `cachedFor`'s per-tenant wrapper memoization is removable, per Next's content-addressed cache-key docs) was correctly left as an open question rather than gambled on — both reviewers independently flagged they could not verify this against a real Next.js server runtime from a vitest sandbox, and the mock's own dedup semantics would need a matching rewrite first; deliberately NOT changed this pass. **Story 4 (seeding hang root-cause) — honest non-result:** two live, `pg_stat_activity`-monitored reproduction attempts against the real prod Neon DB (full backup-and-restore-verified first) could NOT reproduce the reported "hangs 5/5 times" — `getPool()`'s new `keepAlive: true` is applied as defensive TCP hygiene, explicitly not a proven fix (comment says so). **Story 5 — real success:** `scripts/seed-prod.ts` run end-to-end against the actual hosted Neon DB, exact parity confirmed (`tenants=2 claims=1196 denials=520 appeals=416 rules=30 users=10`). **Also found+fixed, not a named story:** `TAWEED_APP_PASSWORD` in Vercel was an empty/unretrievable "Sensitive"-flagged env var (CLI-pull limitation, not a real outage) — rotated + redeployed; a moderate `uuid` CVE (GHSA-w5hq-g745-h8pq) introduced transitively by the new `autocannon` devDependency, fixed via a `pnpm-workspace.yaml` override to `hyperid@^4.0.0`. | typecheck ×2, lint, unit **1125/1125**, integration 43/43, real `apps/web` build all green, both before AND after the Phase 4 fixes were applied |
+
+**Pass #27's honesty discipline worth naming explicitly:** this pass could have declared Story 4 "fixed" the moment `keepAlive: true` was added and moved on — the temptation to conflate "applied the leading theoretical fix" with "confirmed the root cause" is exactly the failure mode the user's own standing instruction ("don't stop at 'it doesn't hang anymore'") was written to prevent. Two real, live, monitored reproduction attempts against the actual production database were run specifically to get real evidence either way, and when neither reproduced the hang, that non-result was recorded as what it is — the client.ts comment, the minimap.md entry, and this table row all say the same honest thing rather than three different levels of overclaiming. Phase 4's own findings (the missed `onboarding.ts` revalidateTag site especially) are further evidence that "the spoke's named write paths" and "every write path that actually needs invalidation" are not automatically the same claim — the independent reviewer step earned its keep this pass, not just as a formality.
+
 **Passes #7-#13 (2026-07-10 → 2026-07-14) previously lived at repo root, gitignored, per a
 convention conflict now resolved (see the location note at the top of this file) — folded into
 this file's history for continuity, content not otherwise altered.**
@@ -242,6 +246,21 @@ planning, spec-writing, the item-0 judgment task, independent dependency-advisor
   fine regardless — probe with `nc -z localhost 5432` instead of trusting `docker compose ps`.
 - **Integration tests are destructive** (`pnpm test:int` wipes + re-migrates the shared local DB) —
   re-seed after (`pnpm --filter @taweed/web seed`) before manually clicking through the app again.
+- **`vercel env pull` (and the CLI generally) reads back a "Sensitive"-flagged env var as an empty
+  string, not its real value** — confirmed 2026-07-24 (`TAWEED_APP_PASSWORD`). This is NOT an outage
+  signal by itself; check `mcp__plugin_vercel_vercel__get_runtime_errors` for real auth failures
+  before assuming the var is actually broken in the live deployment (it usually isn't — the live
+  function has the real value, only the CLI-pull path can't surface it). If you genuinely need the
+  real value and can't get it from the user pulling it from the dashboard UI, rotating it (DB-side
+  `ALTER ROLE` + matching Vercel env update + redeploy, in that order) is the only reliable path —
+  don't waste time trying alternate CLI flags to force a Sensitive var to decrypt.
+- **`pg_dump`/`pg_restore`/`psql` aren't installed on this host by default** — `brew install libpq`
+  (keg-only, add `/opt/homebrew/opt/libpq/bin` to PATH) gets client tools matching a recent major
+  version; confirmed forward-compatible against the live Neon server (client 18.4 against server
+  17.10, clean dump+restore, 2026-07-24). For a real restore-verification (not just `pg_restore
+  --list`'s TOC parse), spin up a scratch `docker run -d postgres:<matching-major> -p
+  <non-default-port>:5432` rather than reusing an already-running dev container — keeps the
+  restore test fully isolated from local dev state, tear down with `docker rm -f` after.
 
 ## Conventions for audit output files
 
@@ -255,6 +274,34 @@ planning, spec-writing, the item-0 judgment task, independent dependency-advisor
   section after every audit run, not just at the very end of a queued batch.
 
 ## Learnings (append after each pass — newest on top)
+
+### Pass #27 — a spec's named write paths are a claim, not the full set; verify via call-site tracing, not the spec's own list (2026-07-24)
+
+- **Story 1's caching spec named 4 write paths needing `revalidateTag` (ingest, ingest-csv, recovery,
+  eob-review); a 5th real one (`onboarding.ts`'s baseline capture) existed and was missed by both
+  the spoke and the hub's own initial diff review** — caught only because Phase 4's
+  architecture/correctness reviewer traced every actual call site of the newly-cached functions
+  across `apps/web/app/` from scratch, rather than checking the spec's named list against the diff.
+  A spec is written before the full blast radius of a change is known; treating "the write paths
+  the spec names" as equivalent to "every write path that needs this" is exactly the gap a spoke's
+  own report can't catch (it verifies against its own spec, not against the whole app). **Any time
+  a caching/invalidation change lands, grep every call site of the newly-cached function across the
+  WHOLE app during review, not just the write paths the implementing spec happened to enumerate.**
+- **Two independent reviewers converged on the same open question (whether `cachedFor`'s per-tenant
+  Map memoization is real-Next.js-necessary) and BOTH correctly declined to assert an answer without
+  a way to verify against a live Next.js server runtime** — this is the right call, not indecision.
+  Vitest never exercises Next's actual out-of-process Data Cache; a hand-written mock's behavior
+  (closure-scoped `entries` Map, in this repo's `__mocks__/next/cache.ts`) is not proof of what real
+  `unstable_cache` does. Removing the Map would have also required rewriting the mock to a
+  globally-keyed store first, un-verified against real production behavior — correctly left alone
+  as a "confirmed unverifiable here, not confirmed safe" finding rather than gambled on in a
+  tenant-isolation-sensitive path. **When a simplification's correctness depends on runtime behavior
+  a test double can't faithfully reproduce, "I can't verify this is safe to remove" is a valid,
+  complete answer — don't apply the simplification anyway just because it sounds right on paper.**
+- **A live-monitored, backup-protected reproduction attempt that produces "no hang occurred" is real
+  evidence, not a failed investigation** — see the pass #27 table entry and the Learnings note
+  immediately below this one for the full reasoning; recorded here too since it's the single most
+  important discipline point from this pass and easy to file only under Story 4's own writeup.
 
 ### Pass #26 addendum — item 4 scoped-to-the-diff was not enough, CI caught what it missed (2026-07-24)
 

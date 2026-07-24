@@ -1,5 +1,5 @@
 import "server-only";
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { schema, type Database } from "@taweed/db";
 import {
@@ -31,6 +31,7 @@ import {
 } from "@taweed/rules-engine";
 import { withSession } from "./db";
 import { loadApprovedAuthoredRulesTx } from "./rules-data";
+import { analyticsTag } from "./cache-tags";
 
 // Scrubber "current year" for age derivation. TODO(nphies-creds): once real claims
 // carry service dates, derive age at service date, not at wall-clock year.
@@ -47,15 +48,68 @@ export interface AnalyticsBundle {
   trend: TrendPoint[];
 }
 
-// Wrapped in React's cache() so the layout's CommandBar read and a page's own
-// getAnalytics/getRecovery call (same tenantId, same request) share ONE query
-// instead of each opening an independent RLS transaction for the same
-// MoneyScope. cache() memoizes per server-render request, so this is safe
-// across the request lifetime and never leaks between requests/tenants.
-export const getMoneyScope = cache(
-  (tenantId: string): Promise<MoneyScope> =>
-    withSession(tenantId, (db) => moneyScope(db)),
-);
+// Tenant-scoped caching for the analytics aggregations. Every read of an
+// Analytics/Overview/Recovery/Report page recomputed its SQL rollups from
+// scratch; these wrappers memoize them in Next's Data Cache via unstable_cache.
+//
+// tenantId is derived from the verified session in the calling Server
+// Component/Action and passed in EXPLICITLY — it never enters the cached
+// callback via cookies()/headers() (unstable_cache's callback cannot read the
+// request context). It is supplied BOTH as a call argument AND as an explicit
+// keyParts entry, so two tenants can never share an entry.
+//
+// unstable_cache's `tags` option must be a STATIC array set when the wrapper is
+// defined (confirmed against the Next 15 docs — it cannot be computed per call).
+// So a single wrapper cannot tag entries with a runtime tenantId. Instead we
+// memoize ONE wrapper per (label, tenantId), each created with its own static
+// `analytics:<tenantId>` tag — that tag is the exact target the write side's
+// revalidateTag(analyticsTag(tenantId)) hits, invalidating only that tenant.
+// `revalidate: 60` is a TTL safety net in case a tag invalidation is ever
+// missed by a write path.
+// Value type is `unknown`, not a generic function shape — this Map holds
+// wrappers for several distinct (TArgs, TResult) pairs (getMoneyScope,
+// getAnalytics, getRecovery, ...) keyed only by string label, so there is no
+// sound way to express the real per-label type here. The single cast at the
+// read site below is the one unavoidable narrowing: `TArgs`/`TResult` are
+// caller-controlled per label (each label's call site always passes the same
+// shape), so it's safe in practice even though the Map itself can't prove it.
+const wrapperByTenant = new Map<string, Map<string, unknown>>();
+
+function cachedFor<TArgs extends unknown[], TResult>(
+  label: string,
+  tenantId: string,
+  fn: (...args: TArgs) => Promise<TResult>,
+): (...args: TArgs) => Promise<TResult> {
+  let byTenant = wrapperByTenant.get(label);
+  if (!byTenant) {
+    byTenant = new Map();
+    wrapperByTenant.set(label, byTenant);
+  }
+  let cached = byTenant.get(tenantId) as
+    | ((...args: TArgs) => Promise<TResult>)
+    | undefined;
+  if (!cached) {
+    cached = unstable_cache(fn, [label, tenantId], {
+      tags: [analyticsTag(tenantId)],
+      revalidate: 60,
+    });
+    byTenant.set(tenantId, cached);
+  }
+  return cached;
+}
+
+// Cached so the layout's CommandBar read and a page's own getAnalytics/
+// getRecovery call (same tenantId) share ONE MoneyScope query instead of each
+// recomputing it. Keyed on tenantId (both as a keyPart and a call arg) and
+// tagged analytics:<tenantId>, so it never leaks between tenants and is
+// invalidated by the write paths' revalidateTag.
+export function getMoneyScope(tenantId: string): Promise<MoneyScope> {
+  return cachedFor(
+    "getMoneyScope",
+    tenantId,
+    (tid: string): Promise<MoneyScope> => withSession(tid, (db) => moneyScope(db)),
+  )(tenantId);
+}
 
 /**
  * TRUE denial rate by claim dimension: denied claims / TOTAL claims (0..1), so
@@ -107,7 +161,7 @@ async function denialRateDim(
   }));
 }
 
-export function getAnalytics(
+async function getAnalyticsRaw(
   tenantId: string,
   branchId?: string,
 ): Promise<AnalyticsBundle> {
@@ -145,6 +199,20 @@ export function getAnalytics(
     const overallRate = totalClaims > 0 ? deniedClaims / totalClaims : 0;
     return { money, overallRate, byPayer, byBranch, pareto, trend: trendPts };
   });
+}
+
+/**
+ * Cached analytics bundle for a tenant (optionally narrowed to a branch). The
+ * whole bundle is memoized per (tenantId, branchId) so the Analytics page's
+ * six rollups are recomputed at most once per 60s / until the tenant's write
+ * path invalidates the `analytics:<tenantId>` tag. tenantId comes from the
+ * session in the caller and is part of the cache key, never a shared key.
+ */
+export function getAnalytics(
+  tenantId: string,
+  branchId?: string,
+): Promise<AnalyticsBundle> {
+  return cachedFor("getAnalytics", tenantId, getAnalyticsRaw)(tenantId, branchId);
 }
 
 // ---------- Scrubber ----------
@@ -320,7 +388,7 @@ async function appealPipelineRows(
   }));
 }
 
-export function getRecovery(
+async function getRecoveryRaw(
   tenantId: string,
   branchId?: string,
 ): Promise<RecoveryBundle> {
@@ -378,6 +446,14 @@ export function getRecovery(
   });
 }
 
+/** Cached Recovery bundle — see getAnalytics for the cache contract. */
+export function getRecovery(
+  tenantId: string,
+  branchId?: string,
+): Promise<RecoveryBundle> {
+  return cachedFor("getRecovery", tenantId, getRecoveryRaw)(tenantId, branchId);
+}
+
 // ---------- Reports (A3) ----------
 // Both bundles are read-only presentation layers over the SAME rollups
 // getAnalytics/getRecovery already use — no new money math, per design-brief §9/§10.
@@ -392,7 +468,9 @@ export interface AuditReportBundle {
 }
 
 /** A3 free-audit leave-behind report: the tenant's own denial exposure. */
-export function getAuditReportData(tenantId: string): Promise<AuditReportBundle> {
+async function getAuditReportDataRaw(
+  tenantId: string,
+): Promise<AuditReportBundle> {
   return withSession(tenantId, async (db) => {
     // Sequential — one shared transaction client, see the note in getAnalytics.
     const money = await getMoneyScope(tenantId);
@@ -413,6 +491,13 @@ export function getAuditReportData(tenantId: string): Promise<AuditReportBundle>
   });
 }
 
+/** Cached Audit report bundle — see getAnalytics for the cache contract. */
+export function getAuditReportData(
+  tenantId: string,
+): Promise<AuditReportBundle> {
+  return cachedFor("getAuditReport", tenantId, getAuditReportDataRaw)(tenantId);
+}
+
 export interface OwnerReportBundle {
   recoveredThisMonthSar: string;
   /** "YYYY-MM" of the most recent trend bucket, or null with no dated claims. */
@@ -424,7 +509,9 @@ export interface OwnerReportBundle {
 }
 
 /** A3 one-tap owner report: what a signed-in owner recovered, on demand. */
-export function getOwnerReportData(tenantId: string): Promise<OwnerReportBundle> {
+async function getOwnerReportDataRaw(
+  tenantId: string,
+): Promise<OwnerReportBundle> {
   return withSession(tenantId, async (db) => {
     // Sequential — one shared transaction client, see the note in getAnalytics.
     const byPayer = await denialRateDim(db, "payer");
@@ -447,6 +534,13 @@ export function getOwnerReportData(tenantId: string): Promise<OwnerReportBundle>
       topPayers: aggregateTopPayers(rows),
     };
   });
+}
+
+/** Cached Owner report bundle — see getAnalytics for the cache contract. */
+export function getOwnerReportData(
+  tenantId: string,
+): Promise<OwnerReportBundle> {
+  return cachedFor("getOwnerReport", tenantId, getOwnerReportDataRaw)(tenantId);
 }
 
 // ---------- Admin / trust ----------

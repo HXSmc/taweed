@@ -187,6 +187,7 @@
     "receivedColumn": "الاستلام",
     "actionColumn": "",
     "review": "مراجعة",
+    "processing": "قيد المعالجة",
     "unreadable": "غير قابل للقراءة",
     "escalated": "مُصعَّد",
     "escalatedNote": "وضع النموذج علامة على هذا الاستخراج لمزيد من التدقيق قبل اعتماده.",

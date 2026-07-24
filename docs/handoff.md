@@ -1132,3 +1132,61 @@ IMPLEMENT:
   queue, Scrubber + detail panel, Appeals + draft load/switch, Recovery + outcomes, Settings +
   Author tab), EN/AR, light/dark, and tenant isolation (Al Salama Dental Group vs. Noor Polyclinic
   — confirmed fully separate data) — all clean.
+
+- **First real production deployment, to Vercel + Neon Postgres (2026-07-24).** Taweed is now
+  genuinely live at `https://taweed.vercel.app` — synthetic-data demo, dev-auth intentional
+  (real KSA-resident OIDC and the business blockers in `blocker.md` remain out of scope for this
+  deploy). Hit and fixed a real production bug along the way: `@napi-rs/canvas`/`pdf-parse`
+  MODULE_NOT_FOUND on the deployed Ingest upload route. Root cause was NOT a Next.js Output File
+  Tracing gap (the first, plausible-looking fix attempt) — it was pnpm's strict per-package
+  `node_modules` isolation: those two packages were only declared in `packages/ingest`'s own
+  `package.json`, so `apps/web`'s compiled runtime had no resolvable symlink to them at all. Fixed
+  by declaring both as direct `apps/web` dependencies too (see `docs/audit docs/audit.md` pass #26
+  for the full diagnostic trail, including the temporary diagnostic route used to get ground truth
+  from the live deployed function's filesystem). CI caught a real, pre-existing `next-auth`/
+  `@auth/core` CVE trio (2 critical, 1 high) on the first push — fixed by bumping to the actual
+  patched prerelease (`5.0.0-beta.32`), full-tree `pnpm audit` clean, CI green, live sign-in
+  re-verified post-fix.
+
+- **Production-hardening pass, 2026-07-24 (same day, follow-on `/autopilot` loop).** Explicit user
+  scope: caching, async background jobs, load testing, seeding reliability root-cause, and
+  `seed-prod.ts` proof — real auth and the business blockers (`BLK-7`/`8`/`9`) explicitly excluded.
+  All 5 stories landed:
+  1. **Caching** — `apps/web/lib/data.ts`'s 5 analytics bundle functions now wrapped in
+     `unstable_cache` (Next's Data Cache), tenant-scoped keys + tags (`apps/web/lib/cache-tags.ts`),
+     `revalidateTag` wired into every write path that changes claims/denials/appeals data. A
+     cross-tenant cache-leak test (`apps/web/test/data-cache.test.ts`) was deliberately verified to
+     actually fail when the tenant-scoping is removed, not just pass by construction.
+  2. **Async background jobs** — `extractEobPdfAction` (`apps/web/lib/actions/eob-extract.ts`) now
+     inserts a `processing` row and returns fast; the heavy PDF-parse + AI-extraction work runs in
+     `after()` (`next/server`), transitioning the row to `pending_review`/`failed`. A 10-minute
+     stale-row reaper guards against a killed process leaving a row stuck at `processing` forever.
+  3. **Load testing** — `scripts/load-test.ts` (autocannon) actually run against the real
+     production URL: zero errors/timeouts across 3 scenarios, real latency numbers captured in
+     `docs/load-test-report.md`. Honest finding recorded there: the cache's effect isn't visible in
+     end-to-end HTTP latency at this load (dominated by Hobby-tier cold-start/network overhead, not
+     query time) — the unit test's call-count assertions are the real proof the cache works, not
+     this load test.
+  4. **Seeding reliability root-cause** — the reported "hangs 5/5 times against Neon" could NOT be
+     reproduced under current conditions, despite two real, live-monitored (`pg_stat_activity`
+     polled every 2s throughout) attempts against the actual production DB with a full
+     backup-and-restore-verified safety net in place first. `packages/db/src/client.ts`'s
+     `getPool()` now sets TCP `keepAlive` anyway as cheap, zero-downside defensive hardening — but
+     this is explicitly NOT a confirmed root-cause fix; the comment above it says so honestly. See
+     `docs/audit docs/minimap.md`'s updated entry for the full evidence trail.
+  5. **`seed-prod.ts` proof** — actually run successfully end-to-end against the real hosted Neon
+     DB (the same run that investigated item 4), exact parity confirmed: `tenants=2 claims=1196
+     denials=520 appeals=416 rules=30 users=10`.
+  **Also found and fixed along the way (not one of the 5 named stories, but necessary to unblock
+  4/5):** `TAWEED_APP_PASSWORD` in Vercel read back as an empty string via `vercel env pull`/CLI —
+  a genuine CLI limitation on "Sensitive"-flagged vars, not an actual outage (the live app was
+  working fine on whatever the real value was). Rotated to a new known value (`ALTER ROLE` +
+  Vercel env update + redeploy), saved to the gitignored Secrets vault. Also caught and fixed a
+  moderate CVE (`uuid` buffer-bounds-check, GHSA-w5hq-g745-h8pq) introduced transitively by the new
+  `autocannon` devDependency, via a `pnpm-workspace.yaml` override to `hyperid@^4.0.0` (which
+  dropped the vulnerable `uuid` dep entirely) rather than leaving it unaddressed under the
+  CI-gate's high/critical-only threshold. Full gates green throughout (typecheck ×2, lint, unit
+  1124/1124, integration 43/43, real `apps/web` build), Phase 4 validation (3 parallel reviewers —
+  architecture/correctness, security, code quality) run against the full diff before merge. New
+  onboarding doc `summary.md` written at repo root for a new engineering partner joining the
+  project — read that first if this is your first time here, then this file.

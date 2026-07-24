@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { asc, sql } from "drizzle-orm";
 import { schema, insertNormalizedClaim } from "@taweed/db";
@@ -23,6 +23,7 @@ import { buildNormalizedClaimsFromEob } from "@/lib/eob-to-normalized";
 import { allowRequest } from "@/lib/rate-limit";
 import { SAR_MONEY_REGEX } from "@/lib/money";
 import { describeErrorForLog } from "@/lib/error-log";
+import { analyticsTag } from "@/lib/cache-tags";
 
 // Per-tenant+actor throttle for these mutating review actions (common/security.md),
 // mirroring every sibling mutating action in this directory (eob-extract, ingest,
@@ -293,6 +294,10 @@ export async function approveEobExtractionAction(
   }
 
   revalidatePath("/[locale]/(app)/ingest", "page");
+  // The approved EOB rows were inserted as claims/denials — invalidate this
+  // tenant's cached analytics so the rollups reflect them. Scoped to THIS
+  // tenant's tag only (reject does not write claims and so does not invalidate).
+  revalidateTag(analyticsTag(session.tenantId));
   return { ok: true };
 }
 

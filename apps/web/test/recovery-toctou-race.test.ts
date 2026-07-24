@@ -52,6 +52,7 @@ vi.mock("@taweed/audit", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 vi.mock("@/lib/money", () => ({ SAR_MONEY_REGEX: /^\d+(\.\d{1,2})?$/ }));

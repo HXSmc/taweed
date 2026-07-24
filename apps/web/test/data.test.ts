@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { SQL, StringChunk } from "drizzle-orm";
 
+// The analytics bundle functions are now wrapped in next/cache's unstable_cache
+// (tenant-scoped Data Cache). The real unstable_cache needs Next's server runtime
+// and throws under plain vitest, so use the shared manual mock in
+// __mocks__/next/cache.ts (an in-memory dedupe + tag-invalidation stand-in), the
+// same gap the react cache() mock below bridges for request-level memoization.
+vi.mock("next/cache");
+
 // Coverage gap fixed: every other test that imports "@/lib/data" (recovery-
 // page.test.ts, settings-page.test.ts, scrubber-table.test.tsx, audit-report-
 // document.test.tsx, owner-report-document.test.tsx, recovery-pipeline-*

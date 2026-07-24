@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { schema } from "@taweed/db";
@@ -9,6 +9,7 @@ import { authorizeAction } from "@/lib/authz";
 import { withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
 import { SAR_MONEY_REGEX } from "@/lib/money";
+import { analyticsTag } from "@/lib/cache-tags";
 
 const MONEY = SAR_MONEY_REGEX;
 const Input = z.object({
@@ -143,6 +144,10 @@ export async function markAppealOutcome(
   // `next start` run that the latter left the Recovery totals stale until a
   // manual reload (bugs.md pass #22).
   revalidatePath("/[locale]/(app)", "layout");
+  // An appeal outcome changes recovered/at-risk money, win-rate, and the trend
+  // series — invalidate this tenant's cached analytics so the next read
+  // reflects it. Scoped to THIS tenant's tag only.
+  revalidateTag(analyticsTag(session.tenantId));
   return {
     ok: true,
     corrected: resolution.corrected,

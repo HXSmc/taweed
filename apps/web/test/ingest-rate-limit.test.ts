@@ -26,6 +26,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { ingestBundle } from "../lib/actions/ingest";

@@ -69,6 +69,7 @@ vi.mock("@taweed/audit", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { schema } from "@taweed/db";

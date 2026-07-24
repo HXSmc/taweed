@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
+// getMoneyScope is now wrapped in next/cache's unstable_cache (tenant-scoped Data
+// Cache). The real unstable_cache throws under plain vitest, so use the shared
+// manual mock in __mocks__/next/cache.ts (in-memory dedupe + tag invalidation).
+vi.mock("next/cache");
+
 // Regression coverage for the audit finding: getMoneyScope() ran once for the
 // CommandBar in (app)/layout.tsx, and getAnalytics()/getRecovery() EACH called
 // moneyScope(db) again inside their own independent RLS transaction — doubling

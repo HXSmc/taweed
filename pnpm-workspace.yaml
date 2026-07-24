@@ -33,3 +33,12 @@ overrides:
   # GHSA-f88m-g3jw-g9cj (sharp libvips CVE-2026-33327/33328/35590/35591),
   # 2026-07-21 audit failure — transitive via next/next-auth/geist>sharp.
   sharp: "^0.35.3"
+  # GHSA-w5hq-g745-h8pq (uuid buffer bounds check), 2026-07-24 audit —
+  # transitive via new devDependency autocannon>hyperid@^3.0.0>uuid. hyperid
+  # 4.x dropped the uuid dependency entirely (verified via `npm view
+  # hyperid@4.0.0 dependencies`) — override straight to the fixed major
+  # rather than pin uuid directly, since hyperid's own id-generation API is
+  # the only thing autocannon touches and stayed stable across the bump
+  # (verified: scripts/load-test.ts ran clean against real production traffic
+  # after this override).
+  "autocannon>hyperid": "^4.0.0"

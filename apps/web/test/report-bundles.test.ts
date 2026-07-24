@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
+// The report bundle functions are now wrapped in next/cache's unstable_cache
+// (tenant-scoped Data Cache). The real unstable_cache throws under plain vitest,
+// so use the shared manual mock in __mocks__/next/cache.ts.
+vi.mock("next/cache");
+
 // A3 bundle-assembly tests: getAuditReportData/getOwnerReportData compose
 // EXISTING @taweed/analytics rollups (reasonPareto, recoverability, moneyScope,
 // trend, getLatestBaseline) plus the private denialRateDim/appealPipelineRows

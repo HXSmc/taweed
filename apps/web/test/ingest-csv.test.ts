@@ -44,6 +44,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 import { previewCsvMapping, commitCsvMapping } from "../lib/actions/ingest-csv";

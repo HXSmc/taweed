@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   parseDelimited,
   parseXlsx,
@@ -16,6 +16,7 @@ import { authorizeAction } from "@/lib/authz";
 import { withSession } from "@/lib/db";
 import { allowRequest } from "@/lib/rate-limit";
 import { resolveFirstDimensions } from "@/lib/tenant-dimensions";
+import { analyticsTag } from "@/lib/cache-tags";
 import { type IngestResult, type QuarantineItem } from "./ingest";
 
 // EXECUTE B6 — CSV/TSV/XLSX field-mapping panel actions. Shares the exact same
@@ -293,6 +294,9 @@ export async function commitCsvMapping(
   }
 
   revalidatePath("/[locale]/(app)", "layout");
+  // Invalidate this tenant's cached analytics — the committed CSV rows change
+  // the same rollups ingestBundle does. Scoped to THIS tenant's tag only.
+  revalidateTag(analyticsTag(session.tenantId));
   return {
     ok: true,
     fileName,

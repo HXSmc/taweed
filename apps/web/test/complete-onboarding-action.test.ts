@@ -34,8 +34,10 @@ vi.mock("@taweed/audit", () => ({
 }));
 
 const mockedRevalidatePath = vi.fn();
+const mockedRevalidateTag = vi.fn();
 vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockedRevalidatePath(...args),
+  revalidateTag: (...args: unknown[]) => mockedRevalidateTag(...args),
 }));
 
 import { completeOnboarding } from "../lib/actions/onboarding";
@@ -115,6 +117,22 @@ describe("completeOnboarding server action", () => {
       expect.objectContaining({ actor: SESSION.email, action: "write" }),
     );
     expect(result).toEqual({ ok: true });
+  });
+
+  it("invalidates the tenant's cached analytics on completion (Phase 4 finding)", async () => {
+    // Regression coverage for a CONFIRMED architecture/correctness finding:
+    // getRecovery/getOwnerReportData (apps/web/lib/data.ts) are cached via
+    // unstable_cache and read the baseline this action writes. Without
+    // revalidateTag, a tenant who viewed Recovery/Owner-report pre-onboarding
+    // (baseline null) could see stale data for up to the cache TTL right
+    // after completing onboarding — exactly the "first-insight" moment this
+    // action exists for. Fires unconditionally, same as the revalidatePath
+    // call right above it in the source — harmless on the idempotent
+    // already-onboarded path (a cheap recompute, not a correctness issue),
+    // and simpler than conditioning it on whether a new baseline landed.
+    await completeOnboarding();
+
+    expect(mockedRevalidateTag).toHaveBeenCalledWith(`analytics:${SESSION.tenantId}`);
   });
 
   it("takes a per-tenant advisory lock before the read-then-write, closing the TOCTOU race", async () => {
