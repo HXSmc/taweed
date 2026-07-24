@@ -4,7 +4,7 @@ Bilingual (EN/AR RTL) multi-tenant denial-recovery platform for Saudi NPHIES cla
 Monorepo: `apps/web` (Next.js 15 app) + `packages/*` (data pipeline, rules engine,
 appeals, analytics, AI) + `test/synthetic-*` (synthetic FHIR/EOB fixtures).
 
-**New engineering partner?** Read `summary.md` at the repo root first — business context, full
+**New engineering partner?** Read `docs/summary.md` first — business context, full
 repo/docs minimap. For product/architecture background see `docs/02_product_build_plan.md` and
 `docs/03_design_brief.md`. `infra/README.md` covers the (not-yet-runnable)
 Terraform deploy skeleton — this file covers day-to-day local dev.

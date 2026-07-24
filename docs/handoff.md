@@ -1,7 +1,7 @@
 # Handoff — start here (next session)
 
 > Entry point for a new Claude Code session picking up Taweed. **New engineering partner? Read
-> `summary.md` at the repo root FIRST** (business context, full repo/docs minimap), then this
+> `docs/summary.md` FIRST** (business context, full repo/docs minimap), then this
 > file. Then run the
 > next-step prompt (`docs/NEXT_STEP_PROMPT.md`). Blocker register + a per-blocker unblock prompt:
 > `docs/blocker.md`. Written 2026-07-04; last refreshed 2026-07-24 (newest entries at the end of the
@@ -1194,5 +1194,5 @@ IMPLEMENT:
   CI-gate's high/critical-only threshold. Full gates green throughout (typecheck ×2, lint, unit
   1124/1124, integration 43/43, real `apps/web` build), Phase 4 validation (3 parallel reviewers —
   architecture/correctness, security, code quality) run against the full diff before merge. New
-  onboarding doc `summary.md` written at repo root for a new engineering partner joining the
+  onboarding doc `docs/summary.md` written for a new engineering partner joining the
   project — read that first if this is your first time here, then this file.
